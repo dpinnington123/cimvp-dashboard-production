@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
+import { useNavigate } from 'react-router-dom'; // Import useNavigate
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,6 +12,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const { signInWithPassword } = useAuth(); // Use the hook
+  const navigate = useNavigate(); // Get the navigate function
 
 
   const handleLogin = async (event: React.FormEvent) => {
@@ -21,17 +22,15 @@ export default function LoginPage() {
     try {
       const { error } = await signInWithPassword({ email, password }); // Call Supabase sign in
       if (error) throw error; // Throw if Supabase returns an error
-      // onAuthStateChange in useAuth will handle setting state and loading=false
-      // Redirect happens in AppRoutes based on session state change
-      // Optional: Show success toast here, though redirect might be fast
+      // onAuthStateChange in useAuth will handle setting state and redirect
       toast.success("Login Successful", { description: "Redirecting..." });
-      // navigate('/', { replace: true }); // Navigation now handled by AppRoutes based on session state
+      navigate('/', { replace: true }); // <-- NAVIGATE HERE on success
     } catch (error: any) {
       console.error("Login failed:", error);
       toast.error("Login Failed", { description: error.message || "Invalid credentials" });
-      setLoading(false); // Ensure loading is false on error
-    } 
-    // No finally block needed here as loading is handled by onAuthStateChange on success, and in catch on error
+    } finally {
+      setLoading(false); // Ensure loading is always reset
+    }
   };
 
   return (

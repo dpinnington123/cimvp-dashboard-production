@@ -26,7 +26,16 @@ function App() {
 }
 
 function AppRoutes() {
-  const { session } = useAuth();
+  const { session, loading } = useAuth();
+
+  console.log('AppRoutes rendering. Loading:', loading, 'Session:', session);
+
+  if (!loading && !session) {
+    console.log('AppRoutes: No session and not loading, navigating to /login');
+  }
+  if (session) {
+    console.log('AppRoutes: Session found, rendering DashboardLayout');
+  }
 
   return (
     <Routes>
