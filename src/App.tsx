@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import DashboardLayout from './components/layout/DashboardLayout';
 import DashboardOverview from './pages/DashboardOverview';
-import ContentAnalyzerPage from './pages/ContentAnalyzerPage';
+import ContentEffectivenessPage from './pages/ContentEffectivenessPage';
 import ContentPerformancePage from './pages/ContentPerformancePage';
 import AudienceChannelsPage from './pages/AudienceChannelsPage';
 import LoginPage from './pages/LoginPage';
@@ -47,7 +47,10 @@ function AppRoutes() {
         }
       >
         <Route index element={<DashboardOverview />} />
-        <Route path="analyzer" element={<ContentAnalyzerPage />} />
+        <Route path="effectiveness">
+          <Route index element={<ContentEffectivenessPage />} />
+          <Route path=":contentId" element={<ContentEffectivenessPage />} />
+        </Route>
         <Route path="performance" element={<ContentPerformancePage />} />
         <Route path="audience" element={<AudienceChannelsPage />} />
       </Route>
