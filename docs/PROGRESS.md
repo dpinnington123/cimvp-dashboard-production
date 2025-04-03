@@ -45,14 +45,14 @@ This file tracks the completion of steps outlined in the `Project Instructions_ 
 
 ## Phase 4: Building Dashboard Views
 
--   [ ] **Step 1: Overview Page:** Implement `DashboardOverview.tsx`.
+-   [x] **Step 1: Overview Page:** Implement `DashboardOverview.tsx`.
 -   [x] **Step 2: Content Effectiveness Page:** Implemented `ContentEffectivenessPage.tsx` with:
     -   [x] Basic list view for selecting content items
     -   [x] Detailed analysis view with overall score, performance metrics, content details, and improvement recommendations
     -   [ ] TODO: Enhance the list view with proper filtering, sorting, and pagination
     -   [ ] TODO: Add more comprehensive visualizations and score explanations
--   [ ] **Step 3: Content Performance Page:** Implement `ContentPerformancePage.tsx` and related components (using dummy data).
--   [ ] **Step 4: Audience & Channels Page:** Implement `AudienceChannelsPage.tsx` and related components (partially dummy data).
+-   [x] **Step 3: Content Performance Page:** Implemented `ContentPerformancePage.tsx` and related components (using dummy data).
+-   [x] **Step 4: Audience & Channels Page:** Implemented `AudienceChannelsPage.tsx` and related components (partially dummy data).
 
 ## Phase 5: Refinement
 

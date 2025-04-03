@@ -5,7 +5,7 @@ import { useParams, Link } from "react-router-dom";
 import { useScores } from "@/hooks/useScores";
 import React from "react";
 
-// Import UI components
+// Import Shared UI components
 import {
   Table,
   TableBody,
@@ -17,7 +17,17 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Star } from "lucide-react";
+
+// Import recharts for existing visualizations
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
+
+// Import our new effectiveness components
+import { ContentPreview } from "@/components/views/effectiveness/ContentPreview";
+import { ScoreCard } from "../components/views/effectiveness/ScoreCard";
+import { ImprovementArea } from "@/components/views/effectiveness/ImprovementArea";
+import { CircularProgressIndicator } from "@/components/common/CircularProgressIndicator";
 
 // Define score type based on error messages
 type Score = {
@@ -69,8 +79,44 @@ export default function ContentEffectivenessPage() {
     error: errorScores,
   } = useScores(isValidId ? contentId : null, { enabled: isDetailView && isValidId });
 
-  // Access scores array directly 
+  // Access scores array directly
   const contentScores = scoresData as Score[] | undefined;
+
+  // --- Calculations & Helpers (Moved Up) ---
+  // Calculate overall score (average of all scores) - MUST BE CALLED UNCONDITIONALLY
+  const overallScore = React.useMemo(() => {
+    // Calculation depends on contentScores, handle case where it might be undefined initially
+    if (!contentScores || contentScores.length === 0) return 0;
+    
+    const sum = contentScores.reduce((acc: number, score: Score) => {
+      return acc + (score.score_value || 0);
+    }, 0);
+    
+    // Avoid division by zero if length is 0 (though checked above)
+    return contentScores.length > 0 ? Math.round(sum / contentScores.length) : 0;
+  }, [contentScores]); // Dependency array is correct
+
+  // Helper function to get score label based on value
+  const getScoreLabel = (score: number) => {
+    if (score >= 90) return "Excellent";
+    if (score >= 80) return "Very Good";
+    if (score >= 70) return "Good";
+    if (score >= 60) return "Fair";
+    return "Needs Improvement";
+  };
+
+  // Color by score value
+  const getScoreColor = (score: number) => {
+    if (score >= 80) return "#22c55e"; // Green
+    if (score >= 60) return "#f97316"; // Orange
+    return "#ef4444"; // Red
+  };
+
+  // Pie chart data for overall score - Calculated unconditionally
+  const scoreChartData = [
+    { name: "Score", value: overallScore },
+    { name: "Remaining", value: 100 - overallScore }
+  ];
 
   // --- Loading and Error Handling ---
   const isLoading = isDetailView 
@@ -189,54 +235,21 @@ export default function ContentEffectivenessPage() {
   // --- Detail View Content --- 
   // (Content below is for detail view and will only execute if we have contentId, contentDetails and contentScores)
 
-  // Calculate overall score (average of all scores)
-  const overallScore = React.useMemo(() => {
-    if (!contentScores || contentScores.length === 0) return 0;
-    
-    const sum = contentScores.reduce((acc: number, score: Score) => {
-      return acc + (score.score_value || 0);
-    }, 0);
-    
-    return Math.round(sum / contentScores.length);
-  }, [contentScores]);
-
-  // Helper function to get score label based on value
-  const getScoreLabel = (score: number) => {
-    if (score >= 90) return "Excellent";
-    if (score >= 80) return "Very Good";
-    if (score >= 70) return "Good";
-    if (score >= 60) return "Fair";
-    return "Needs Improvement";
-  };
-
-  // Color by score value
-  const getScoreColor = (score: number) => {
-    if (score >= 80) return "#22c55e"; // Green
-    if (score >= 60) return "#f97316"; // Orange
-    return "#ef4444"; // Red
-  };
-
-  // Pie chart data for overall score
-  const scoreChartData = [
-    { name: "Score", value: overallScore },
-    { name: "Remaining", value: 100 - overallScore }
-  ];
-
   // --- Page Structure (Main Render for Detail View) ---
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 animate-in fade-in">
       {/* Navigation and header */}
-      <div className="flex items-center gap-2 mb-4">
+      <div className="flex items-center gap-2 mb-2">
         <Link 
           to="/effectiveness"
-          className="px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center gap-1 text-sm"
+          className="text-sm flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
         >
           ← Back to List
         </Link>
       </div>
 
       {/* 1. Header Area */}
-      <header>
+      <header className="mb-6">
         <h1 className="text-3xl font-bold">Content Effectiveness Report</h1>
         <p className="text-muted-foreground mt-1">
           Comprehensive analysis of content performance and recommendations for optimization.
@@ -247,66 +260,48 @@ export default function ContentEffectivenessPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* 2.1 Left Column */}
         <div className="lg:col-span-1 space-y-6">
-          {/* Content Preview Card */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle>Content Preview</CardTitle>
+          {/* Use our new ContentPreview component */}
+          <ContentPreview
+            imageSrc={contentDetails?.metadata && typeof contentDetails.metadata === 'object' 
+              ? (contentDetails.metadata as Record<string, any>)?.imageUrl || null 
+              : null}
+            title={contentDetails?.title || 'Untitled Content'}
+            contentType={contentDetails?.format_type}
+            datePublished={contentDetails?.created_at ? new Date(contentDetails.created_at).toLocaleDateString() : null}
+            duration={contentDetails?.metadata && typeof contentDetails.metadata === 'object'
+              ? (contentDetails.metadata as Record<string, any>)?.duration || '6 weeks'
+              : '6 weeks'} 
+            audience={contentDetails?.audience_type}
+          />
+
+          {/* Overall Score Card - Updated with new styling */}
+          <Card className="animate-in slide-up">
+            <CardHeader className="pb-3">
+              <div className="flex justify-between items-center">
+                <CardTitle className="text-xl">Overall Score</CardTitle>
+                <Badge variant="secondary" className="font-medium">
+                  {getScoreLabel(overallScore)}
+                </Badge>
+              </div>
+              <CardDescription>Content performance summary</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="bg-slate-200 dark:bg-slate-700 p-4 rounded-lg min-h-[200px]">
-                {/* Image would go here */}
-                <div className="flex flex-col h-full justify-end">
-                  <div className="bg-black/60 text-white p-3 rounded">
-                    <h3 className="font-medium text-lg">{contentDetails?.title || 'Content Title'}</h3>
-                    <div className="flex items-center gap-2 text-sm mt-1">
-                      <span className="bg-blue-500/80 px-2 py-0.5 rounded-full">
-                        {contentDetails?.format_type || 'Content Type'}
-                      </span>
-                      <span>• {contentDetails?.updated_at ? new Date(contentDetails.updated_at).toLocaleDateString() : 'Date'}</span>
+            <CardContent className="pb-6">
+              <div className="flex items-center justify-center my-4">
+                <div className="relative w-32 h-32 flex items-center justify-center">
+                  <CircularProgressIndicator 
+                    value={overallScore} 
+                    size={128} 
+                    strokeWidth={10}
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center flex-col">
+                    <div className="flex items-center justify-center gap-1">
+                      <Star className="w-5 h-5 text-amber-400 fill-amber-400" />
+                      <span className="text-3xl font-semibold">{overallScore}</span>
                     </div>
+                    <span className="text-sm text-muted-foreground">out of 100</span>
                   </div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-
-          {/* Overall Score Card */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle>Overall Score</CardTitle>
-              <CardDescription>Based on content performance metrics</CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col items-center">
-              <div className="relative w-32 h-32 flex items-center justify-center">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={scoreChartData}
-                      cx="50%"
-                      cy="50%"
-                      startAngle={90}
-                      endAngle={-270}
-                      innerRadius="70%"
-                      outerRadius="100%"
-                      paddingAngle={0}
-                      dataKey="value"
-                    >
-                      <Cell key="score" fill={getScoreColor(overallScore)} />
-                      <Cell key="remaining" fill="#e2e8f0" />
-                    </Pie>
-                  </PieChart>
-                </ResponsiveContainer>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-4xl font-bold">{overallScore}%</span>
-                </div>
-              </div>
-              <span className="mt-2 px-3 py-1 rounded-full text-sm font-medium"
-                style={{ 
-                  backgroundColor: `${getScoreColor(overallScore)}20`, 
-                  color: getScoreColor(overallScore)
-                }}>
-                {getScoreLabel(overallScore)}
-              </span>
             </CardContent>
           </Card>
         </div>
@@ -321,137 +316,118 @@ export default function ContentEffectivenessPage() {
             </TabsList>
             
             {/* Performance Scores Tab Content */}
-            <TabsContent value="performance" className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <TabsContent value="performance" className="mt-0 p-0 animate-in fade-in-50">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {contentScores && contentScores.map((score: Score, index: number) => (
-                  <Card key={index}>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-lg">{score.check_name || `Score ${index + 1}`}</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex justify-between items-center">
-                        <div className="relative w-20 h-20 flex items-center justify-center">
-                          <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                              <Pie
-                                data={[
-                                  { name: "Score", value: score.score_value || 0 },
-                                  { name: "Remaining", value: 100 - (score.score_value || 0) }
-                                ]}
-                                cx="50%"
-                                cy="50%"
-                                startAngle={90}
-                                endAngle={-270}
-                                innerRadius="65%"
-                                outerRadius="100%"
-                                paddingAngle={0}
-                                dataKey="value"
-                              >
-                                <Cell key="score" fill={getScoreColor(score.score_value || 0)} />
-                                <Cell key="remaining" fill="#e2e8f0" />
-                              </Pie>
-                            </PieChart>
-                          </ResponsiveContainer>
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <span className="text-xl font-bold">{score.score_value || 0}%</span>
-                          </div>
-                        </div>
-                        <div className="flex-1 ml-4">
-                          <p className="text-sm text-gray-500">
-                            {score.check_description || score.comments || "This metric evaluates an aspect of your content's effectiveness."}
-                          </p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <ScoreCard
+                    key={index}
+                    title={score.check_name || `Score ${index + 1}`}
+                    value={score.score_value || 0}
+                    description={score.check_description || score.comments || "This metric evaluates an aspect of your content's effectiveness."}
+                  />
                 ))}
               </div>
             </TabsContent>
             
             {/* Content Details Tab Content */}
-            <TabsContent value="details">
+            <TabsContent value="details" className="mt-0 p-0 animate-in fade-in-50">
               <Card>
-                <CardHeader>
-                  <CardTitle>Content Information</CardTitle>
-                  <CardDescription>Full details about this content</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <h3 className="font-medium mb-1">Content Body</h3>
-                    <p className="text-sm text-gray-600 border p-3 rounded-md">
-                      {contentDetails?.body || 'No content body available.'}
-                    </p>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <h3 className="font-medium mb-1">Created Date</h3>
-                      <p className="text-sm">{contentDetails?.created_at ? new Date(contentDetails.created_at).toLocaleDateString() : 'N/A'}</p>
+                <CardContent className="p-6">
+                  <div className="space-y-6">
+                    {/* Content Overview */}
+                    {contentDetails?.body && (
+                      <div className="space-y-2">
+                        <h3 className="text-lg font-medium flex items-center gap-2">
+                          <span className="w-5 h-5 text-primary">📄</span>
+                          Content Overview
+                        </h3>
+                        <p className="text-muted-foreground">{contentDetails.body}</p>
+                      </div>
+                    )}
+                    
+                    {/* Content Goals - Placeholder, replace with actual data if available */}
+                    <div className="space-y-2">
+                      <h3 className="text-lg font-medium flex items-center gap-2">
+                        <span className="w-5 h-5 text-primary">🎯</span>
+                        Content Goals
+                      </h3>
+                      <ul className="space-y-2">
+                        <li className="flex items-start gap-2">
+                          <span className="text-muted-foreground mt-1 flex-shrink-0">→</span>
+                          <span className="text-muted-foreground">Drive engagement and signups</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-muted-foreground mt-1 flex-shrink-0">→</span>
+                          <span className="text-muted-foreground">Explain product features clearly</span>
+                        </li>
+                      </ul>
                     </div>
-                    <div>
-                      <h3 className="font-medium mb-1">Client ID</h3>
-                      <p className="text-sm">{contentDetails?.client_id || 'N/A'}</p>
-                    </div>
-                    <div>
-                      <h3 className="font-medium mb-1">Audience Type</h3>
-                      <p className="text-sm">{contentDetails?.audience_type || 'N/A'}</p>
-                    </div>
-                    <div>
-                      <h3 className="font-medium mb-1">Format</h3>
-                      <p className="text-sm">{contentDetails?.format_type || 'N/A'}</p>
-                    </div>
-                    {/* Display any additional metadata */}
-                    {contentDetails?.metadata && typeof contentDetails.metadata === 'object' && 
-                      Object.entries(contentDetails.metadata).map(([key, value]) => (
-                        <div key={key}>
-                          <h3 className="font-medium mb-1">{key.charAt(0).toUpperCase() + key.slice(1).replace('_', ' ')}</h3>
-                          <p className="text-sm">{typeof value === 'string' ? value : JSON.stringify(value)}</p>
+                    
+                    {/* Metadata in a grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 pt-2">
+                      <div className="flex flex-col p-4 rounded-lg border bg-muted/30">
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                          <span className="w-4 h-4">📅</span>
+                          <span>Published On</span>
                         </div>
-                      ))
-                    }
+                        <p className="font-medium">
+                          {contentDetails?.created_at ? new Date(contentDetails.created_at).toLocaleDateString() : "Not specified"}
+                        </p>
+                      </div>
+                      
+                      <div className="flex flex-col p-4 rounded-lg border bg-muted/30">
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                          <span className="w-4 h-4">⏱️</span>
+                          <span>Format</span>
+                        </div>
+                        <p className="font-medium">{contentDetails?.format_type || "Not specified"}</p>
+                      </div>
+                      
+                      <div className="flex flex-col p-4 rounded-lg border bg-muted/30">
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                          <span className="w-4 h-4">👥</span>
+                          <span>Target Audience</span>
+                        </div>
+                        <p className="font-medium">{contentDetails?.audience_type || "Not specified"}</p>
+                      </div>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
             </TabsContent>
             
             {/* Areas to Improve Tab Content */}
-            <TabsContent value="improvements">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Improvement Recommendations</CardTitle>
-                  <CardDescription>Suggestions to enhance content performance</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ul className="space-y-4">
-                    {contentScores && contentScores
-                      .filter((score: Score) => score.fix_recommendation && (score.score_value || 0) < 80)
-                      .map((score: Score, index: number) => (
-                        <li key={index} className="border-b pb-3 last:border-b-0">
-                          <div className="flex items-center gap-2">
-                            <h3 className="font-medium">{score.check_name}</h3>
-                            <span className="text-sm px-2 py-0.5 rounded-full"
-                              style={{ 
-                                backgroundColor: `${getScoreColor(score.score_value || 0)}20`, 
-                                color: getScoreColor(score.score_value || 0)
-                              }}>
-                              {score.score_value}%
-                            </span>
-                          </div>
-                          <p className="text-sm text-gray-600 mt-1">{score.fix_recommendation}</p>
-                        </li>
-                      ))}
+            <TabsContent value="improvements" className="mt-0 p-0 animate-in fade-in-50">
+              <div className="grid grid-cols-1 gap-4">
+                {contentScores && contentScores
+                  .filter((score: Score) => score.fix_recommendation && (score.score_value || 0) < 80)
+                  .map((score: Score, index: number) => {
+                    // Determine priority based on score value
+                    let priority: 'high' | 'medium' | 'low' = 'medium';
+                    if ((score.score_value || 0) < 50) priority = 'high';
+                    else if ((score.score_value || 0) >= 70) priority = 'low';
                     
-                    {/* Message when no improvements are needed */}
-                    {(!contentScores || 
-                      !contentScores.filter((score: Score) => score.fix_recommendation && (score.score_value || 0) < 80).length) && (
-                      <li className="text-center py-6">
-                        <p className="text-green-600 font-medium">Great job! No significant improvements needed.</p>
-                        <p className="text-sm text-gray-500 mt-1">Your content is performing well across all metrics.</p>
-                      </li>
-                    )}
-                  </ul>
-                </CardContent>
-              </Card>
+                    return (
+                      <ImprovementArea
+                        key={index}
+                        title={score.check_name || `Improvement Area ${index + 1}`}
+                        description={score.fix_recommendation || "No specific recommendation provided."}
+                        priority={priority}
+                      />
+                    );
+                  })}
+                
+                {/* Message when no improvements are needed */}
+                {(!contentScores || 
+                  !contentScores.filter((score: Score) => score.fix_recommendation && (score.score_value || 0) < 80).length) && (
+                  <Card className="text-center py-6 bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-900/50">
+                    <CardContent>
+                      <h3 className="text-emerald-600 font-medium mb-1">Great job! No significant improvements needed.</h3>
+                      <p className="text-sm text-muted-foreground">Your content is performing well across all metrics.</p>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
             </TabsContent>
           </Tabs>
         </div>

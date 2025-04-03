@@ -1,8 +1,14 @@
 import StatCard from "@/components/common/StatCard";
 import ChartCard from "@/components/common/ChartCard";
+import CampaignTable from "@/components/views/performance/CampaignTable";
+import GeoChart from "@/components/views/performance/GeoChart";
+import MultiChannelChart from "@/components/views/performance/MultiChannelChart";
+import PdfReportButton from "@/components/views/performance/PdfReportButton";
 // Import chart library components here later if needed
 
 export default function ContentPerformancePage() {
+  // Acknowledge Dummy Data:
+  console.warn("ContentPerformancePage is currently using dummy data for charts and tables.");
 
   // --- Dummy Data ---
   const performanceStats = [
@@ -32,7 +38,25 @@ export default function ContentPerformancePage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Content Performance Analysis</h1>
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-semibold">Content Performance Analysis (Dummy Data)</h1>
+        <PdfReportButton />
+      </div>
+
+      {/* Add a note about dummy data */}
+      <div className="p-4 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 rounded">
+        <p className="font-bold">Note:</p>
+        <p>This page currently displays placeholder data. Real data integration is pending.</p>
+      </div>
+
+      {/* Campaign Performance Section */}
+      <CampaignTable />
+
+      {/* Geographical and Channel Performance Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <GeoChart />
+        <MultiChannelChart />
+      </div>
 
       {/* Section for Stat Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

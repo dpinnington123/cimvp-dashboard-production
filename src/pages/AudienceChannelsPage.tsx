@@ -1,3 +1,5 @@
+import AudiencePieChart from "@/components/views/audience/AudiencePieChart";
+import ChannelPerformanceChart from "@/components/views/audience/ChannelPerformanceChart";
 import StatCard from "@/components/common/StatCard";
 import ChartCard from "@/components/common/ChartCard";
 import {
@@ -41,8 +43,17 @@ export default function AudienceChannelsPage() {
   // --- End Dummy Data ---
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <h1 className="text-2xl font-semibold">Audience Insights & Channel Performance</h1>
+
+      {/* Grid for Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Audience Distribution Chart (Uses Real Data) */}
+        <AudiencePieChart />
+
+        {/* Channel Performance Chart (Uses Dummy Data) */}
+        <ChannelPerformanceChart />
+      </div>
 
       {/* Audience Demographics Section */}
       <Card>
@@ -106,6 +117,14 @@ export default function AudienceChannelsPage() {
         </CardContent>
       </Card>
 
+      {/* Add more sections or details later if needed */}
+      {/* Example: Table with audience segment details */}
+      {/*
+      <div className="mt-6">
+        <h2 className="text-lg font-semibold">Audience Segment Details</h2>
+        // Add a table component here
+      </div>
+      */}
     </div>
   );
 } 
