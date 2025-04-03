@@ -40,9 +40,18 @@ type Score = {
   created_at: string | null;
   fix_recommendation: string | null;
   id: number;
-  score_value: number | null;
+  score_value: number | null; // Scores from database are on a scale of 0-5
   updated_at: string | null;
   check_description?: string | null; // Optional field that might be present
+};
+
+// Helper function to convert score from 0-5 scale to 0-100 percentage
+const convertScoreToPercentage = (score: number | null): number => {
+  if (score === null) return 0;
+  // Ensure score is in range 0-5 before converting
+  const clampedScore = Math.max(0, Math.min(5, score));
+  // Convert to percentage (0-100)
+  return Math.round(clampedScore * 20);
 };
 
 export default function ContentEffectivenessPage() {
@@ -89,7 +98,8 @@ export default function ContentEffectivenessPage() {
     if (!contentScores || contentScores.length === 0) return 0;
     
     const sum = contentScores.reduce((acc: number, score: Score) => {
-      return acc + (score.score_value || 0);
+      // Convert score from 0-5 scale to 0-100 percentage
+      return acc + convertScoreToPercentage(score.score_value);
     }, 0);
     
     // Avoid division by zero if length is 0 (though checked above)
@@ -322,7 +332,7 @@ export default function ContentEffectivenessPage() {
                   <ScoreCard
                     key={index}
                     title={score.check_name || `Score ${index + 1}`}
-                    value={score.score_value || 0}
+                    value={convertScoreToPercentage(score.score_value)}
                     description={score.check_description || score.comments || "This metric evaluates an aspect of your content's effectiveness."}
                   />
                 ))}
@@ -400,12 +410,13 @@ export default function ContentEffectivenessPage() {
             <TabsContent value="improvements" className="mt-0 p-0 animate-in fade-in-50">
               <div className="grid grid-cols-1 gap-4">
                 {contentScores && contentScores
-                  .filter((score: Score) => score.fix_recommendation && (score.score_value || 0) < 80)
+                  .filter((score: Score) => score.fix_recommendation && convertScoreToPercentage(score.score_value) < 80)
                   .map((score: Score, index: number) => {
-                    // Determine priority based on score value
+                    // Determine priority based on converted percentage score
+                    const percentageScore = convertScoreToPercentage(score.score_value);
                     let priority: 'high' | 'medium' | 'low' = 'medium';
-                    if ((score.score_value || 0) < 50) priority = 'high';
-                    else if ((score.score_value || 0) >= 70) priority = 'low';
+                    if (percentageScore < 50) priority = 'high';
+                    else if (percentageScore >= 70) priority = 'low';
                     
                     return (
                       <ImprovementArea
@@ -419,7 +430,7 @@ export default function ContentEffectivenessPage() {
                 
                 {/* Message when no improvements are needed */}
                 {(!contentScores || 
-                  !contentScores.filter((score: Score) => score.fix_recommendation && (score.score_value || 0) < 80).length) && (
+                  !contentScores.filter((score: Score) => score.fix_recommendation && convertScoreToPercentage(score.score_value) < 80).length) && (
                   <Card className="text-center py-6 bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-900/50">
                     <CardContent>
                       <h3 className="text-emerald-600 font-medium mb-1">Great job! No significant improvements needed.</h3>

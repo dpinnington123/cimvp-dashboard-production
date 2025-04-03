@@ -53,7 +53,7 @@ export function AppSidebar() {
                   <SidebarMenuButton asChild>
                     <Link to={item.path} className="flex items-center">
                       <item.icon className="w-4 h-4 mr-2" />
-                      <div>{item.title}</div>
+                      <span>{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
