@@ -27,7 +27,7 @@ export function ContentPreview({
 }: ContentPreviewProps) {
   
   // Placeholder image if none provided
-  const displayImageSrc = imageSrc || 'https://via.placeholder.com/1600x900.png?text=No+Preview';
+  const displayImageSrc = imageSrc || 'https://gbzrparwhkacvfasltbe.supabase.co/storage/v1/object/sign/client-content/Test_Email_1.png?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1cmwiOiJjbGllbnQtY29udGVudC9UZXN0X0VtYWlsXzEucG5nIiwiaWF0IjoxNzQzNjQ5NTA5LCJleHAiOjE3NzUxODU1MDl9.wfzFu6fY3kTCbECLa26_gB-BwAWCUbQNaNdqAizTvB4';
   const displayTitle = title || 'Untitled Content';
 
   // Simple date formatting (can be improved with date-fns)

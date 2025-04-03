@@ -8,7 +8,7 @@ export default function Sidebar() {
       <nav>
         <Link to="/" className="block py-2 px-4 rounded hover:bg-gray-100 dark:hover:bg-gray-700">Overview</Link>
         <Link to="/effectiveness" className="block py-2 px-4 rounded hover:bg-gray-100 dark:hover:bg-gray-700">Content Effectiveness</Link>
-        <Link to="/performance" className="block py-2 px-4 rounded hover:bg-gray-100 dark:hover:bg-gray-700">Content Performance</Link>
+        <Link to="/campaigns" className="block py-2 px-4 rounded hover:bg-gray-100 dark:hover:bg-gray-700">Campaign Performance</Link>
         <Link to="/audience" className="block py-2 px-4 rounded hover:bg-gray-100 dark:hover:bg-gray-700">Audience & Channels</Link>
         {/* Add more links or structure as needed */}
       </nav>

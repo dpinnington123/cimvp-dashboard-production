@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import DashboardLayout from './components/layout/DashboardLayout';
 import DashboardOverview from './pages/DashboardOverview';
 import ContentEffectivenessPage from './pages/ContentEffectivenessPage';
-import ContentPerformancePage from './pages/ContentPerformancePage';
+import CampaignPerformancePage from './pages/CampaignPerformancePage';
 import AudienceChannelsPage from './pages/AudienceChannelsPage';
 import LoginPage from './pages/LoginPage';
 import NotFound from './pages/NotFound';
@@ -51,7 +51,7 @@ function AppRoutes() {
           <Route index element={<ContentEffectivenessPage />} />
           <Route path=":contentId" element={<ContentEffectivenessPage />} />
         </Route>
-        <Route path="performance" element={<ContentPerformancePage />} />
+        <Route path="campaigns" element={<CampaignPerformancePage />} />
         <Route path="audience" element={<AudienceChannelsPage />} />
       </Route>
       <Route path="*" element={<NotFound />} />

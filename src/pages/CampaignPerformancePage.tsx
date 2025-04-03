@@ -1,20 +1,20 @@
 import StatCard from "@/components/common/StatCard";
 import ChartCard from "@/components/common/ChartCard";
-import CampaignTable from "@/components/views/performance/CampaignTable";
-import GeoChart from "@/components/views/performance/GeoChart";
-import MultiChannelChart from "@/components/views/performance/MultiChannelChart";
-import PdfReportButton from "@/components/views/performance/PdfReportButton";
+import CampaignTable from "@/components/views/campaigns/CampaignTable";
+import GeoChart from "@/components/views/campaigns/GeoChart";
+import MultiChannelChart from "@/components/views/campaigns/MultiChannelChart";
+import PdfReportButton from "@/components/views/campaigns/PdfReportButton";
 // Import chart library components here later if needed
 
-export default function ContentPerformancePage() {
+export default function CampaignPerformancePage() {
   // Acknowledge Dummy Data:
-  console.warn("ContentPerformancePage is currently using dummy data for charts and tables.");
+  console.warn("CampaignPerformancePage is currently using dummy data for charts and tables.");
 
   // --- Dummy Data ---
   const performanceStats = [
     { title: "Highest Content Score", value: "95", description: "'Effective SEO Strategies'" },
     { title: "Lowest Content Score", value: "42", description: "'Quick Social Media Tips'" },
-    { title: "Average Engagement Rate", value: "5.8%", description: "Across all content" },
+    { title: "Average Engagement Rate", value: "5.8%", description: "Across all campaign content" },
     { title: "Average Views per Piece", value: "1.2K", description: "Average over last 30 days" },
   ];
 
@@ -39,14 +39,14 @@ export default function ContentPerformancePage() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-semibold">Content Performance Analysis (Dummy Data)</h1>
+        <h1 className="text-2xl font-semibold">Campaign Performance Analysis (Dummy Data)</h1>
         <PdfReportButton />
       </div>
 
       {/* Add a note about dummy data */}
       <div className="p-4 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 rounded">
         <p className="font-bold">Note:</p>
-        <p>This page currently displays placeholder data. Real data integration is pending.</p>
+        <p>This page currently displays placeholder data. In the future, it will aggregate metrics from individual content pieces within the campaign.</p>
       </div>
 
       {/* Campaign Performance Section */}
@@ -72,7 +72,7 @@ export default function ContentPerformancePage() {
 
       {/* Section for Charts */}
       <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
-        <ChartCard title="Content Score Distribution">
+        <ChartCard title="Campaign Content Score Distribution">
           {/* Placeholder for actual chart implementation */}
           <div className="p-4 text-center text-muted-foreground">
             Chart Placeholder: Display score distribution bar chart using data like:
@@ -80,7 +80,7 @@ export default function ContentPerformancePage() {
           </div>
         </ChartCard>
 
-        <ChartCard title="Average Score Trend (Monthly)">
+        <ChartCard title="Campaign Performance Trend (Monthly)">
           {/* Placeholder for actual chart implementation */}
           <div className="p-4 text-center text-muted-foreground">
             Chart Placeholder: Display score trend line chart using data like:

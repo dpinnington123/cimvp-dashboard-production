@@ -41,29 +41,44 @@ This file tracks the completion of steps outlined in the `Project Instructions_ 
 
 -   [x] **Step 1: Data Fetching Services:** Create `contentService.ts` and `scoreService.ts`.
 -   [x] **Step 2: React Query Hooks:** Create `useContent.ts` and `useScores.ts`.
--   [x] **Step 3: Shared Components:** Create `StatCard.tsx`, `ChartCard.tsx`, `LoadingSpinner.tsx`, `ErrorDisplay.tsx`.
+-   [x] **Step 3: Shared Components:** Created key components for the detailed content analysis report:
+    -   [x] `ContentPreview.tsx`: Displays content thumbnail and metadata 
+    -   [x] `CircularProgressIndicator.tsx`: Shows score metrics as circular gauges
+    -   [x] `ScoreCard.tsx`: Displays individual performance metrics with progress indicators
+    -   [x] `ImprovementArea.tsx`: Shows improvement recommendations with priority indicators
+    -   [x] `LoadingSpinner.tsx` and `ErrorDisplay.tsx`: Handle loading and error states
+    -   [x] `Tabs.tsx`: For organizing content in the report view
 
 ## Phase 4: Building Dashboard Views
 
--   [x] **Step 1: Overview Page:** Implement `DashboardOverview.tsx`.
+-   [x] **Step 1: Overview Page:** Implemented `DashboardOverview.tsx` as a content list/launcher:
+    -   [x] Displays a table of available content items for analysis
+    -   [x] Shows total content count and key statistics
+    -   [x] Provides links to detailed content effectiveness reports
 -   [x] **Step 2: Content Effectiveness Page:** Implemented `ContentEffectivenessPage.tsx` with:
-    -   [x] Basic list view for selecting content items
-    -   [x] Detailed analysis view with overall score, performance metrics, content details, and improvement recommendations
-    -   [ ] TODO: Enhance the list view with proper filtering, sorting, and pagination
-    -   [ ] TODO: Add more comprehensive visualizations and score explanations
--   [x] **Step 3: Content Performance Page:** Implemented `ContentPerformancePage.tsx` and related components (using dummy data).
--   [x] **Step 4: Audience & Channels Page:** Implemented `AudienceChannelsPage.tsx` and related components (partially dummy data).
+    -   [x] List view for selecting content items
+    -   [x] Detailed analysis view with modern design matching the target layout
+    -   [x] Overall score with circular progress indicator
+    -   [x] Performance metrics with individual score cards
+    -   [x] Content details tab with metadata
+    -   [x] Areas to improve tab with prioritized recommendations
+-   [ ] **Step 3: Campaign Performance Page (previously Content Performance):** 
+    -   [ ] Rename from `ContentPerformancePage.tsx` to `CampaignPerformancePage.tsx`
+    -   [ ] Refactor to aggregate metrics from content items within a campaign
+    -   [ ] Replace dummy data with actual campaign performance metrics
+    -   [ ] **TODO:** Implement campaign overview dashboard layout matching design
+-   [ ] **Step 4: Audience & Channels Page:** (Deferred - Out of scope for focused MVP)
 
 ## Phase 5: Refinement
 
 -   [ ] **Step 1: Global Filters:** Implement date range picker (optional).
--   [ ] **Step 2: Responsiveness:** Test and adjust styles.
--   [ ] **Step 3: Error & Loading States:** Ensure comprehensive handling.
--   [ ] **Step 4: Notifications:** Implement user feedback toasts.
+-   [ ] **Step 2: Responsiveness:** Test and adjust styles for the Content Effectiveness report.
+-   [ ] **Step 3: Error & Loading States:** Enhance comprehensive error handling in core views.
+-   [ ] **Step 4: Notifications:** Implement user feedback toasts for actions like PDF generation.
 
 ## Phase 6: Next Steps & Future Work
 
--   [ ] **Step 1: Define Data Sources:** Determine real data sources.
--   [ ] **Step 2: Implement Dynamic Data Fetching:** Replace dummy data.
--   [ ] **Step 3: Refine PDF Report:** Update PDF generation.
--   [ ] **Step 4: Enhancements:** Add further features.
+-   [ ] **Step 1: Define Data Sources:** Determine real data sources for content analysis scores.
+-   [ ] **Step 2: Implement Backend Logic:** Develop backend services to analyze uploaded content and generate scores.
+-   [ ] **Step 3: Refine PDF Report:** Update PDF generation to match the new Content Effectiveness Report layout.
+-   [ ] **Step 4: Campaign Integration:** Fully implement the Campaign Performance page with real aggregated metrics.
