@@ -219,16 +219,6 @@ export const demoData = {
     ]
   },
   
-  // Performance metrics over time
-  performanceData: [
-    { month: "Jan", social: 65, email: 45, ads: 85 },
-    { month: "Feb", social: 59, email: 49, ads: 70 },
-    { month: "Mar", social: 80, email: 52, ads: 65 },
-    { month: "Apr", social: 81, email: 58, ads: 88 },
-    { month: "May", social: 56, email: 63, ads: 90 },
-    { month: "Jun", social: 55, email: 70, ads: 75 }
-  ],
-  
   // Content performance by country
   contentPerformance: {
     byCountry: [

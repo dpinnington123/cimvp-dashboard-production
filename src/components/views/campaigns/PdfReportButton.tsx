@@ -6,7 +6,17 @@ import { Download, Loader2 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
-export default function PdfReportButton() {
+interface PdfReportButtonProps {
+  // Optional ID of the container element to capture
+  targetElementId?: string;
+  // Button label
+  label?: string;
+}
+
+export default function PdfReportButton({ 
+  targetElementId = "content-for-pdf", 
+  label = "Download PDF Report" 
+}: PdfReportButtonProps) {
   // const { toast } = useToast(); // Not needed for Sonner, toast is imported directly
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -26,10 +36,17 @@ export default function PdfReportButton() {
 
     try {
       // --- Step 1: Target the element(s) to capture --- 
-      // Example: Capturing the entire body, adjust selector for specific content area
-      const elementToCapture = document.body; // Or document.getElementById('dashboard-content') etc.
+      // Try to find the specific content container by ID
+      const targetElement = document.getElementById(targetElementId);
+      
+      // If the specified element is not found, warn the user and fall back to the main content area
+      // or the whole document body as a last resort
+      const elementToCapture = targetElement || 
+                              document.querySelector('main') || 
+                              document.body;
+      
       if (!elementToCapture) {
-        throw new Error("Could not find the content element to capture.");
+        throw new Error("Could not find any content to capture.");
       }
 
       // --- Step 2: Use html2canvas to capture the element --- 
@@ -92,7 +109,7 @@ export default function PdfReportButton() {
       ) : (
         <Download className="mr-2 h-4 w-4" />
       )}
-      {isGenerating ? 'Generating...' : 'Download PDF Report'}
+      {isGenerating ? 'Generating...' : label}
     </Button>
   );
 } 

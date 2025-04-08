@@ -9,7 +9,6 @@ import React from "react";
 import {
   Table,
   TableBody,
-  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
@@ -19,9 +18,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Star } from "lucide-react";
-
-// Import recharts for existing visualizations
-import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 
 // Import our new effectiveness components
 import { ContentPreview } from "@/components/views/effectiveness/ContentPreview";
@@ -148,7 +144,8 @@ export default function ContentEffectivenessPage() {
   }
 
   // TODO: Implement a proper content list view with filtering, sorting, and pagination
-  // This is a temporary solution to navigate to content detail views
+  // This button allows users to navigate to the Process Content page for uploading new content
+
   if (!isDetailView) {
     return (
       <div className="p-6 space-y-6">
@@ -158,6 +155,14 @@ export default function ContentEffectivenessPage() {
             Select a content item to view its detailed effectiveness report
           </p>
         </header>
+        <div className="flex justify-end">
+          <Link 
+            to="/process-content"
+            className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 text-sm mr-100"
+          >
+           + Upload New Content
+          </Link>
+        </div>
 
         <Card>
           <CardHeader>
@@ -265,6 +270,14 @@ export default function ContentEffectivenessPage() {
           Comprehensive analysis of content performance and recommendations for optimization.
         </p>
       </header>
+      <div className="flex justify-end">
+          <Link 
+            to="/process-content"
+            className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 text-sm mr-100"
+          >
+           + Upload New Content
+          </Link>
+        </div>
 
       {/* 2. Main Content Grid (Two Columns) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

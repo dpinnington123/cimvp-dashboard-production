@@ -10,8 +10,15 @@ import {
 } from "recharts";
 import ChartCard from "@/components/common/ChartCard"; // Use the shared ChartCard
 
+// Define interface for the component data
+export interface GeoPerformance {
+  country: string;
+  performance: number;
+}
+
 // --- DUMMY DATA PLACEHOLDER ---
-const dummyGeoData = [
+// This will later be replaced with data from an API call
+const dummyGeoData: GeoPerformance[] = [
   { country: 'USA', performance: 450 },
   { country: 'Canada', performance: 200 },
   { country: 'UK', performance: 300 },
@@ -21,12 +28,54 @@ const dummyGeoData = [
 ];
 // --- END DUMMY DATA ---
 
-export default function GeoChart() {
+// Props interface for the component
+interface GeoChartProps {
+  // This will allow passing real data when available
+  data?: GeoPerformance[];
+  title?: string;
+  isLoading?: boolean;
+  error?: Error | null;
+}
+
+export default function GeoChart({ 
+  data = dummyGeoData,
+  title = "Performance by Geography",
+  isLoading = false,
+  error = null
+}: GeoChartProps) {
+  // In a real implementation, you might add:
+  // const { data, isLoading, error } = useQuery(['geoMetrics'], fetchGeoMetrics);
+  
+  // For now, we'll use the prop data or dummy data
+  const chartData = data || dummyGeoData;
+
+  // Basic loading state handling
+  if (isLoading) {
+    return (
+      <ChartCard title={title}>
+        <div className="h-[300px] w-full flex items-center justify-center">
+          <p className="text-muted-foreground">Loading geographic data...</p>
+        </div>
+      </ChartCard>
+    );
+  }
+
+  // Error state handling
+  if (error) {
+    return (
+      <ChartCard title={title}>
+        <div className="h-[300px] w-full flex items-center justify-center">
+          <p className="text-destructive">Error loading data: {error.message}</p>
+        </div>
+      </ChartCard>
+    );
+  }
+
   return (
-    <ChartCard title="Performance by Geography (Dummy)">
+    <ChartCard title={title}>
       <ResponsiveContainer width="100%" height={300}>
         <BarChart
-          data={dummyGeoData}
+          data={chartData}
           margin={{
             top: 5,
             right: 30,

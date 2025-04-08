@@ -67,7 +67,7 @@ This file tracks the completion of steps outlined in the `Project Instructions_ 
     -   [x] Refactor to aggregate metrics from content items within a campaign
     -   [x] Replace dummy data with actual campaign performance metrics
     -   [x] Implement campaign overview dashboard layout matching design with modern UI
--   [ ] **Step 4: Audience & Channels Page:** (Deferred - Out of scope for focused MVP)
+
 
 ## Phase 5: Refinement
 

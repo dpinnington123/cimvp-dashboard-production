@@ -7,7 +7,6 @@ import CampaignTable from "@/components/views/campaigns/CampaignTable";
 import GeoChart from "@/components/views/campaigns/GeoChart";
 import MultiChannelChart from "@/components/views/campaigns/MultiChannelChart";
 import PdfReportButton from "@/components/views/campaigns/PdfReportButton";
-import AudienceInsights from "@/components/views/campaigns/AudienceInsights";
 import ContentPerformanceByCountry from "@/components/views/campaigns/ContentPerformanceByCountry";
 import BrandContentEffectiveness from "@/components/views/campaigns/BrandContentEffectiveness";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -37,6 +36,59 @@ import {
 import { Award, BarChart2, Star, TrendingUp, Target, Users, FileText } from "lucide-react";
 import { demoData } from "@/assets/avatars";
 
+// Define interfaces for campaign data
+interface Campaign {
+  id: number;
+  name: string;
+  status: string;
+  budget: number;
+  spent: number;
+  conversions: number;
+  roi: number;
+  content_count: number;
+  avg_content_score: number;
+  top_performing_content: number | null;
+  start_date: string;
+  end_date: string;
+  description: string;
+}
+
+// Define interface for content items
+interface ContentItem {
+  id: number;
+  title: string;
+  format_type: string;
+  audience_type: string;
+  campaign_id: number;
+  quality_score: number;
+  centricity_score: number;
+  engagement_score: number;
+  overall_score: number;
+  created_at: string;
+  views: number;
+  conversions: number;
+  metadata: {
+    imageUrl: string;
+    duration: string;
+    channels: string[];
+  };
+}
+
+// Define interface for performance statistics
+interface PerformanceStat {
+  title: string;
+  value: string;
+  description: string;
+  icon: React.ReactNode;
+}
+
+// Define interface for score distribution data
+interface ScoreRange {
+  range: string;
+  count: number;
+  fill: string;
+}
+
 // Function to get score label based on value
 const getScoreLabel = (score: number) => {
   if (score >= 85) return "Excellent";
@@ -48,11 +100,11 @@ const getScoreLabel = (score: number) => {
 export default function CampaignPerformancePage() {
   const [selectedCampaign, setSelectedCampaign] = useState<number | null>(null);
   const [campaignView, setCampaignView] = useState<"list" | "detail">("list");
-  const [campaignDetails, setCampaignDetails] = useState<any>(null);
-  const [campaignContentItems, setCampaignContentItems] = useState<any[]>([]);
+  const [campaignDetails, setCampaignDetails] = useState<Campaign | null>(null);
+  const [campaignContentItems, setCampaignContentItems] = useState<ContentItem[]>([]);
   
   // Get campaigns from demo data
-  const campaigns = demoData.campaigns;
+  const campaigns = demoData.campaigns as Campaign[];
   
   // Effect to load campaign details and related content when a campaign is selected
   useEffect(() => {
@@ -63,7 +115,7 @@ export default function CampaignPerformancePage() {
         setCampaignDetails(campaign);
         
         // Find content items associated with this campaign
-        const contentItems = demoData.contentItems.filter(
+        const contentItems = (demoData.contentItems as ContentItem[]).filter(
           item => item.campaign_id === selectedCampaign
         );
         setCampaignContentItems(contentItems);
@@ -72,7 +124,7 @@ export default function CampaignPerformancePage() {
   }, [selectedCampaign]);
   
   // Calculate performance stats based on all content items
-  const performanceStats = [
+  const performanceStats: PerformanceStat[] = [
     { 
       title: "Highest Content Score", 
       value: "95", 
@@ -100,8 +152,8 @@ export default function CampaignPerformancePage() {
   ];
 
   // Prepare data for score distribution chart
-  const prepareScoreDistribution = () => {
-    const scoreRanges = [
+  const prepareScoreDistribution = (): ScoreRange[] => {
+    const scoreRanges: ScoreRange[] = [
       { range: "0-50", count: 0, fill: "#f97066" },
       { range: "51-70", count: 0, fill: "#ffbb00" },
       { range: "71-85", count: 0, fill: "#65d9a5" },
@@ -109,7 +161,7 @@ export default function CampaignPerformancePage() {
     ];
     
     // Count content items in each score range
-    demoData.contentItems.forEach(item => {
+    (demoData.contentItems as ContentItem[]).forEach(item => {
       const score = item.overall_score;
       if (score < 50) scoreRanges[0].count++;
       else if (score < 70) scoreRanges[1].count++;

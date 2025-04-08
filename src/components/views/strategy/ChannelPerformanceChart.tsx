@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   BarChart,
   Bar,
@@ -10,8 +11,17 @@ import {
 } from "recharts";
 import ChartCard from "@/components/common/ChartCard";
 
+// Define interfaces for the component data
+export interface ChannelMetric {
+  channel: string;
+  impressions: number;
+  clicks: number;
+  conversions: number;
+}
+
 // --- DUMMY DATA PLACEHOLDER ---
-const dummyChannelMetrics = [
+// This will later be replaced with data from an API call
+const dummyChannelMetrics: ChannelMetric[] = [
   { channel: 'Social', impressions: 50000, clicks: 2500, conversions: 120 },
   { channel: 'Email', impressions: 20000, clicks: 1800, conversions: 150 },
   { channel: 'Paid', impressions: 75000, clicks: 3500, conversions: 200 },
@@ -20,12 +30,41 @@ const dummyChannelMetrics = [
 ];
 // --- END DUMMY DATA ---
 
-export default function ChannelPerformanceChart() {
+// Props interface for the component
+interface ChannelPerformanceChartProps {
+  // This will allow passing real data when available
+  data?: ChannelMetric[];
+  title?: string;
+  isLoading?: boolean;
+}
+
+export default function ChannelPerformanceChart({ 
+  data = dummyChannelMetrics,
+  title = "Performance by Channel",
+  isLoading = false
+}: ChannelPerformanceChartProps) {
+  // In a real implementation, you might add:
+  // const { data, isLoading, error } = useQuery(['channelMetrics'], fetchChannelMetrics);
+  
+  // For now, we'll use the prop data or dummy data
+  const chartData = data || dummyChannelMetrics;
+
+  // Basic loading state handling
+  if (isLoading) {
+    return (
+      <ChartCard title={title}>
+        <div className="h-[300px] w-full flex items-center justify-center">
+          <p className="text-muted-foreground">Loading chart data...</p>
+        </div>
+      </ChartCard>
+    );
+  }
+
   return (
-    <ChartCard title="Performance by Channel (Dummy)">
+    <ChartCard title={title}>
       <ResponsiveContainer width="100%" height={300}>
         <BarChart
-          data={dummyChannelMetrics}
+          data={chartData}
           margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
           layout="vertical" // Use vertical layout for better label readability
         >

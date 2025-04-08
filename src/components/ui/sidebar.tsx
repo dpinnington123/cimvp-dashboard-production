@@ -690,7 +690,7 @@ function SidebarMenuSubButton({
         size === "md" && "text-sm",
         "group-data-[collapsible=icon]:hidden",
         className
-      )}
+      )}    
       {...props}
     />
   )

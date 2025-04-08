@@ -4,9 +4,10 @@ import DashboardLayout from './components/layout/DashboardLayout';
 import DashboardOverview from './pages/DashboardOverview';
 import ContentEffectivenessPage from './pages/ContentEffectivenessPage';
 import CampaignPerformancePage from './pages/CampaignPerformancePage';
-import AudienceChannelsPage from './pages/AudienceChannelsPage';
+import YourStrategyPage from './pages/YourStrategyPage';
 import LoginPage from './pages/LoginPage';
 import NotFound from './pages/NotFound';
+import ProcessContentPage from './pages/ProcessContentPage';
 import { Toaster } from "@/components/ui/sonner";
 import AuthProvider, { useAuth } from './hooks/useAuth';
 
@@ -52,7 +53,8 @@ function AppRoutes() {
           <Route path=":contentId" element={<ContentEffectivenessPage />} />
         </Route>
         <Route path="campaigns" element={<CampaignPerformancePage />} />
-        <Route path="audience" element={<AudienceChannelsPage />} />
+        <Route path="strategy" element={<YourStrategyPage />} />
+        <Route path="process-content" element={<ProcessContentPage />} />
       </Route>
       <Route path="*" element={<NotFound />} />
     </Routes>

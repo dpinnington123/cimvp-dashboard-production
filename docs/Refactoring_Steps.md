@@ -1,78 +1,93 @@
-# Refactoring Steps: Content Effectiveness Page to Content Analyzer
-
-**Goal:** Transform `src/pages/ContentEffectivenessPage.tsx` from a content list view into a detailed Content Analyzer page for a single content item, matching the provided design image and `ContentEffectivenessImplementation.md`.
-
-**Starting Point:** `src/pages/ContentEffectivenessPage.tsx` has been scaffolded with basic state management, data fetching hooks (`useContentDetail`, `useScores`), loading/error handling, and the main two-column layout structure.
+Okay, here is a Product Requirements Document (PRD) based on the codebase analysis, outlining the necessary refactoring and cleanup tasks.
 
 ---
 
-## Step-by-Step Implementation Guide
+## Product Requirements Document: Marketing Dashboard Codebase Refactoring
 
-### Phase 1: Core Structure & Data Flow
+**Version:** 1.0
+**Date:** 2024-07-26
+**Author:** AI Assistant (based on user request)
+**Status:** Draft
 
-1.  **Implement Content Selection:**
-    *   **Context:** The page needs to know *which* content item to analyze. The current hardcoded `selectedContentId` is temporary.
-    *   **Action:** Replace the placeholder state logic in `ContentEffectivenessPage.tsx`. Options:
-        *   **Route Parameter:** Modify routing (e.g., `/content/analyzer/:contentId`) and read the ID using a router hook (like `useParams` from `react-router-dom`). This is common for detail pages.
-        *   **Dropdown Selector:** Create/use a `ContentSelector` component (as mentioned in the implementation guide). This component would use `useContentList` to fetch available content, display it in a `shadcn/ui Select` or `Command` component, and update the `selectedContentId` state in `ContentEffectivenessPage.tsx` via a callback prop (`onContentSelect`).
-    *   **Files:** `src/pages/ContentEffectivenessPage.tsx`, potentially `src/components/views/analyzer/ContentSelector.tsx`, routing configuration.
+**1. Introduction**
 
-2.  **Verify Data Hooks:**
-    *   **Context:** Ensure the `useContentDetail` and `useScores` hooks are correctly implemented and fetch the necessary data based on the `selectedContentId`.
-    *   **Action:** Test the hooks independently or within the page component using `console.log` or React DevTools to inspect the fetched `contentDetails` and `contentScores` data structure. Confirm they match the expected structure needed for the UI components. Resolve any issues with the hook implementation or data fetching logic.
-    *   **Files:** `src/hooks/useContentDetail.ts`, `src/hooks/useScores.ts`, `src/pages/ContentEffectivenessPage.tsx`.
+This document outlines the requirements for refactoring and cleaning up the existing Marketing Dashboard codebase. The analysis identified several areas with unused code, potential improvements in code quality and type safety, and reliance on placeholder data. Addressing these points will improve maintainability, reduce complexity, and prepare the codebase for future feature development and integration of real data sources.
 
-### Phase 2: Implement UI Components (Based on Design)
+**2. Goals**
 
-*   **Context:** Build the individual visual blocks that make up the Content Analyzer page, populating them with the fetched data. Each component represents a specific part of the report (like the preview, overall score, or individual metrics).
+*   **Reduce Codebase Size & Complexity:** Remove unused components, data, and CSS files.
+*   **Improve Maintainability & Readability:** Enhance code structure, use constants, and ensure consistent patterns.
+*   **Increase Type Safety:** Replace `any` types with specific interfaces or inferred types, leveraging TypeScript and Supabase types.
+*   **Prepare for Real Data Integration:** Identify and replace dummy data placeholders with structures ready for actual data fetching hooks/services.
+*   **Enhance UI Consistency:** Ensure consistent use of `shadcn/ui` components and styling.
+*   **Fix Identified Issues:** Address specific problems like the PDF generation target.
 
-3.  **Implement `ContentPreview` Card (Left Column):**
-    *   **Action:** Create `src/components/views/analyzer/ContentPreview.tsx`. Use `shadcn/ui Card`. Display the image (`contentDetails.data.metadata.imageUrl`), overlay title (`contentDetails.data.title`), format badge (`contentDetails.data.format_type`), date, duration, and audience using data from the `contentDetails` prop. Use `lucide-react` icons. Handle missing data gracefully (placeholders).
-    *   **Integration:** Import and use `<ContentPreview content={contentDetails} />` in `ContentEffectivenessPage.tsx`, replacing its placeholder.
-    *   **Files:** `src/components/views/analyzer/ContentPreview.tsx`, `src/pages/ContentEffectivenessPage.tsx`.
+**3. Target Audience**
 
-4.  **Implement `OverallScoreCard` (Left Column):**
-    *   **Action:** Create `src/components/views/analyzer/OverallScoreCard.tsx`. Use `shadcn/ui Card` and `Badge`. Display title, description. Implement logic to map the overall score value to the badge text ("Very Good"). **Crucially, determine the source of the overall score (76 in the image)** - is it calculated client-side from `contentScores`, or fetched directly? Implement the Recharts radial chart (`RadialBarChart` or custom `PieChart`) to visualize this score. Style the chart to match the design.
-    *   **Integration:** Import and use `<OverallScoreCard scores={contentScores} content={contentDetails} />` (adjust props as needed based on score source) in `ContentEffectivenessPage.tsx`, replacing its placeholder.
-    *   **Files:** `src/components/views/analyzer/OverallScoreCard.tsx`, `src/pages/ContentEffectivenessPage.tsx`.
+*   Development Team responsible for maintaining and extending the Marketing Dashboard application.
 
-5.  **Implement Tabs (Right Column):**
-    *   **Action:** In `ContentEffectivenessPage.tsx`, replace the right-column placeholder with `shadcn/ui Tabs`. Define the three triggers: "Performance Scores", "Content Details", "Areas to Improve". Set "Performance Scores" as the default tab.
-    *   **Files:** `src/pages/ContentEffectivenessPage.tsx`.
+**4. Requirements**
 
-6.  **Implement `ScoreGrid` & `IndividualScoreCard` (Right Column - Performance Scores Tab):**
-    *   **Action (Individual Card):** Create `src/components/views/analyzer/IndividualScoreCard.tsx`. Use `shadcn/ui Card`. It should accept a single score object (from `contentScores.data` array) as a prop. Display `check_name`, formatted `score_value`, description (clarify source), and a Recharts radial progress bar. Implement color logic (green/orange) for the bar based on score value or category.
-    *   **Action (Grid):** Create `src/components/views/analyzer/ScoreGrid.tsx`. It should accept the `contentScores.data` array as a prop. Use Tailwind CSS `grid` (e.g., `grid-cols-2`) to lay out multiple `IndividualScoreCard` components by mapping over the scores data.
-    *   **Integration:** Import `ScoreGrid` into `ContentEffectivenessPage.tsx` and place it inside the `TabsContent` for the "Performance Scores" tab: `<ScoreGrid scores={contentScores.data} />`.
-    *   **Files:** `src/components/views/analyzer/IndividualScoreCard.tsx`, `src/components/views/analyzer/ScoreGrid.tsx`, `src/pages/ContentEffectivenessPage.tsx`.
+This section details the specific tasks derived from the codebase analysis. Priorities are suggested (High, Medium, Low).
 
-7.  **Implement `ContentDetailsTab` Content (Right Column):**
-    *   **Action:** Create `src/components/views/analyzer/ContentDetailsTab.tsx`. It should accept `contentDetails.data` as a prop. Display relevant details (e.g., full text/body, specific metadata fields) using appropriate `shadcn/ui` components (like `Card`, `DescriptionList`, `Textarea` if needed).
-    *   **Integration:** Import and use inside the "Content Details" `TabsContent` in `ContentEffectivenessPage.tsx`.
-    *   **Files:** `src/components/views/analyzer/ContentDetailsTab.tsx`, `src/pages/ContentEffectivenessPage.tsx`.
+**4.1. Code Removal & Cleanup (High Priority)**
 
-8.  **Implement `ImprovementAreasTab` Content (Right Column):**
-    *   **Action:** Create `src/components/views/analyzer/ImprovementAreasTab.tsx`. It should accept `contentScores.data` as a prop. Map over the scores, displaying the `check_name` and `fix_recommendation` for each. Use `shadcn/ui Card` or `Accordion` for structuring the recommendations.
-    *   **Integration:** Import and use inside the "Areas to Improve" `TabsContent` in `ContentEffectivenessPage.tsx`.
-    *   **Files:** `src/components/views/analyzer/ImprovementAreasTab.tsx`, `src/pages/ContentEffectivenessPage.tsx`.
+| ID    | Requirement                                                                                                                               | Files Affected                                                                                                                               | Notes                                                                                                | Priority |
+| :---- | :---------------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------- | :------- |
+| CR-01 | **Verify and Remove Duplicate Layout:** Remove the potentially unused `DashboardLayout.tsx` within the `campaigns` view.                    | `src/components/views/campaigns/DashboardLayout.tsx`, `src/components/views/campaigns/Logo.tsx` (if only used by removed layout)           | **Verify** this layout isn't used elsewhere or planned for imminent integration before removal.      | High     |
+| CR-02 | **Verify and Remove Unused Campaign Components:** Remove components seemingly designed for `CampaignPerformancePage` but not integrated. | `src/components/views/campaigns/AudienceInsights.tsx`, `EditableMetricsTable.tsx`, `MetricsCard.tsx`, `PerformanceChart.tsx`, `AnimatedCounter.tsx` | **Verify** these are not needed for current or near-future functionality. Check `CampaignPerformancePage`. | High     |
+| CR-03 | **Remove Unused Demo Data:** Remove sections from `demoData` corresponding to removed components (CR-02).                               | `src/assets/avatars.ts`                                                                                                                      | Dependent on CR-02. Remove `performanceData`, `kpis`, `audienceData` sections if components are removed. | High     |
+| CR-04 | **Remove Unused CSS:** Delete the default Vite `App.css` file.                                                                            | `src/App.css`                                                                                                                                | Ensure no imports exist.                                                                             | High     |
+| CR-05 | **Remove Unused Imports:** Clean up unused import statements across all modified files.                                                   | All modified files                                                                                                                           | Can often be automated by linters/IDEs.                                                              | Medium   |
 
-### Phase 3: Refinement & Styling
+**4.2. Refactoring & Bug Fixes (Medium-High Priority)**
 
-9.  **Styling and Recharts Customization:**
-    *   **Context:** Ensure the visual appearance matches the design image closely.
-    *   **Action:** Refine Tailwind CSS classes across all components. Pay close attention to the Recharts components (`OverallScoreCard`, `IndividualScoreCard`) - adjust props like `innerRadius`, `outerRadius`, `startAngle`, `endAngle`, `fill`, and potentially use custom label components to match the exact look (percentage display, progress track style). Consult Recharts documentation. Ensure colors match the design (and implement the green/orange logic).
-    *   **Files:** All `.tsx` component files, potentially `src/index.css` or theme configuration if needed.
+| ID    | Requirement                                                                                                                             | Files Affected                                                                                                                                  | Notes                                                                                                                            | Priority |
+| :---- | :-------------------------------------------------------------------------------------------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------- | :------- |
+| RF-01 | **Improve Type Safety:** Replace `any` types with specific types (inferred, interfaces, or Supabase types).                             | `src/pages/CampaignPerformancePage.tsx` (state variables), Potentially others using `any`.                                                    | Use `Tables` helper from `src/types/supabase.ts` where applicable.                                                               | High     |
+| RF-02 | **Replace Dummy Data Placeholders:** Refactor components using hardcoded dummy data to be ready for real data fetching.                 | `src/components/views/strategy/ChannelPerformanceChart.tsx`, `GeoChart.tsx`, `MultiChannelChart.tsx`, `CampaignTable.tsx` (standalone file) | This involves *preparing* the component structure. Actual data fetching implementation might be a separate task/PR.              | High     |
+| RF-03 | **Ensure Consistent Error Handling:** Use the `ErrorDisplay` component in all views/components that perform data fetching.              | Components identified in RF-02, potentially `CampaignPerformancePage` if fetching live data.                                                  | Wrap data-dependent JSX in loading/error checks based on `react-query` state.                                                    | Medium   |
+| RF-04 | **Use Constants for Magic Values:** Replace hardcoded score thresholds, status strings, etc., with named constants.                     | `src/pages/CampaignPerformancePage.tsx`, potentially others.                                                                                  | Improves readability and maintainability. Define constants locally or in `src/lib/constants.ts`.                                 | Medium   |
+| RF-05 | **Fix PDF Generation Target:** Update `PdfReportButton` to target the specific content area of the report instead of `document.body`. | `src/components/views/campaigns/PdfReportButton.tsx`                                                                                          | Requires identifying the correct container element/ID in the pages where the button is used (e.g., `CampaignPerformancePage`). | Medium   |
 
-10. **Address Data Assumptions:**
-    *   **Context:** Resolve the "Key Questions / Assumptions" noted in `ContentEffectivenessImplementation.md`.
-    *   **Action:** Confirm the exact data fields for image URL, duration, audience, overall score source, score descriptions, and the logic for score colors. Update component implementations based on these clarifications. This might involve adjusting data access patterns (e.g., `contentDetails.data.metadata.imageUrl` vs. `contentDetails.data.image_url`).
-    *   **Files:** All relevant `.tsx` component files, potentially data fetching hooks.
+**4.3. Code Quality & Optional Optimizations (Medium-Low Priority)**
 
-11. **Final Review and Testing:**
-    *   **Context:** Ensure the page functions correctly and looks polished.
-    *   **Action:** Test the page with different content items (if selection is implemented). Check responsiveness across different screen sizes. Verify loading and error states work as expected. Perform a final visual comparison against the design image.
-    *   **Files:** Primarily `src/pages/ContentEffectivenessPage.tsx` and its child components.
+| ID    | Requirement                                                                                                                             | Files Affected                                  | Notes                                                                                                                                                              | Priority |
+| :---- | :-------------------------------------------------------------------------------------------------------------------------------------- | :---------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------- |
+| QL-01 | **Review Component Structure:** Evaluate if `CampaignPerformancePage.tsx` should be split into separate List and Detail components.     | `src/pages/CampaignPerformancePage.tsx`         | Optional refactoring for better separation of concerns if the component becomes too large.                                                                         | Low      |
+| QL-02 | **Review Sidebar Complexity:** Assess if the features provided by the custom `src/components/ui/sidebar.tsx` are all necessary.         | `src/components/ui/sidebar.tsx`                 | Optional optimization. If only basic sidebar functionality is needed, consider simplifying or using a more standard `shadcn/ui` pattern if applicable.             | Low      |
+| QL-03 | **Verify Shadcn Component Usage:** Confirm that all installed `shadcn/ui` components (e.g., `Command`, `Dialog`, `Popover`) are used. | `components.json`, `src/components/ui/` | Optional cleanup. If components were installed but are not used in the final intended UI, they could potentially be removed via the `shadcn/ui` CLI (use with caution). | Low      |
+
+**5. Non-Functional Requirements**
+
+*   **Maintainability:** Code should be easy to understand, modify, and debug after refactoring.
+*   **Readability:** Code should follow consistent formatting and naming conventions. Use of constants and specific types contributes to this.
+*   **Performance:** Removing unused code may slightly improve load times and reduce bundle size. Ensure refactoring does not introduce performance regressions.
+*   **Testability:** Well-structured components with clear responsibilities are easier to test (though tests are not part of this PRD).
+
+**6. Design Considerations**
+
+*   Maintain the established visual style defined by `shadcn/ui` and Tailwind configuration.
+*   Ensure UI elements remain consistent across different views after refactoring.
+
+**7. Release Criteria / Definition of Done**
+
+The refactoring effort is considered complete when:
+
+*   All "High" priority requirements (CR-01 to CR-04, RF-01, RF-02) are implemented and verified.
+*   All "Medium" priority requirements (CR-05, RF-03, RF-04, RF-05) are implemented.
+*   Code has been reviewed and approved.
+*   The application builds successfully without errors.
+*   The application runs without any new runtime errors or regressions in existing functionality.
+*   Linters and type checks pass successfully.
+*   Low priority items (QL-01, QL-02, QL-03) are considered but not strictly required for completion of this specific refactoring phase.
+
+**8. Future Considerations / Out of Scope**
+
+*   Implementation of actual data fetching logic for components identified in RF-02.
+*   Implementation of new features not related to refactoring.
+*   Major UI redesigns.
+*   Adding unit or integration tests.
+*   Implementing deferred pages like "Audience & Channels".
 
 ---
-
-By following these steps, `ContentEffectivenessPage.tsx` will be successfully refactored into the detailed Content Analyzer view, providing users with valuable insights into their content's performance. Remember to create the component files (`ContentPreview.tsx`, `OverallScoreCard.tsx`, etc.) as you progress through the steps. 

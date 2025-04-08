@@ -1,8 +1,10 @@
-import { useQuery } from '@tanstack/react-query';
-import { getContent, getContentById } from '../services/contentService';
+import { useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { getContentById, getContent } from '@/services/contentService';
+import { uploadContent, getProcessedContent, ContentFile, ContentMetadata, ProcessedContent } from '@/services/uploadService';
 
 // Unique query key for all content
-const contentListQueryKey = ['content', 'list'];
+const contentListQueryKey = ['content-list'];
 // Unique query key pattern for single content items
 const contentDetailQueryKey = (id: number) => ['content', 'detail', id];
 
@@ -13,7 +15,7 @@ const contentDetailQueryKey = (id: number) => ['content', 'detail', id];
 export const useContentList = () => {
   return useQuery({
     queryKey: contentListQueryKey, // Unique key for this query
-    queryFn: getContent, // The function that fetches the data
+    queryFn: getContent,
     // Optional: Configure stale time, cache time, refetch behavior, etc.
     // staleTime: 5 * 60 * 1000, // 5 minutes
     // gcTime: 10 * 60 * 1000, // 10 minutes (was cacheTime in v4)
@@ -38,6 +40,60 @@ export const useContentDetail = (contentId: number | null, options?: { enabled?:
     // staleTime: 1 * 60 * 1000, // 1 minute
   });
 };
+
+export const useContent = () => {
+  const queryClient = useQueryClient();
+  
+  // Fetch a single piece of content by ID
+  const useContentQuery = (id: number) => {
+    return useQuery({
+      queryKey: ['content', id],
+      queryFn: () => getContentById(id),
+      enabled: !!id,
+    });
+  };
+
+  // Fetch all content with optional filters
+  const useAllContentQuery = (filters?: Record<string, any>) => {
+    return useQuery({
+      queryKey: ['allContent', filters],
+      queryFn: () => getContent(), // No filters support yet, using standard getContent
+    });
+  };
+  
+  // Fetch processed content (from content uploads)
+  const useProcessedContentQuery = (limit?: number) => {
+    return useQuery({
+      queryKey: ['processedContent', limit],
+      queryFn: () => getProcessedContent(limit),
+    });
+  };
+  
+  // Upload content mutation
+  const useUploadContentMutation = () => {
+    return useMutation({
+      mutationFn: ({ files, metadata }: { files: ContentFile[], metadata: ContentMetadata }) => 
+        uploadContent(files, metadata),
+      onSuccess: (data) => {
+        // If we have data, invalidate relevant queries to refetch data
+        if (data.data) {
+          queryClient.invalidateQueries({ queryKey: ['processedContent'] });
+          queryClient.invalidateQueries({ queryKey: ['allContent'] });
+          queryClient.invalidateQueries({ queryKey: contentListQueryKey });
+        }
+      },
+    });
+  };
+  
+  return {
+    useContentQuery,
+    useAllContentQuery,
+    useProcessedContentQuery,
+    useUploadContentMutation,
+  };
+};
+
+export default useContent;
 
 // You might add mutation hooks here later using useMutation for creating, updating, or deleting content.
 // Example:

@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { BarChart3, FileDigit, PieChart, HomeIcon, Settings } from "lucide-react";
-
+import logo from '@/assets/change_influence_logo.png';
 import {
   Sidebar,
   SidebarContent,
@@ -31,9 +31,14 @@ const navigationItems = [
     path: "/campaigns",
   },
   {
-    title: "Audience & Channels",
+    title: "Your Strategy",
     icon: PieChart,
-    path: "/audience",
+    path: "/strategy",
+  },
+  {
+    title: "Process Content",
+    icon: FileDigit,
+    path: "/process-content",
   },
 ];
 
@@ -41,11 +46,11 @@ export function AppSidebar() {
   return (
     <Sidebar>
       <SidebarHeader className="px-4 py-3">
-        <h2 className="text-lg font-semibold">Marketing Dashboard</h2>
+        <img src={logo} alt="Change Influence Logo" className="w-1/2 h-auto mb-2 mx-auto" />
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Analytics</SidebarGroupLabel>
+          <SidebarGroupLabel></SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {navigationItems.map((item) => (

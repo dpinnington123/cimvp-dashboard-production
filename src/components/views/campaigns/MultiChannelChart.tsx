@@ -10,8 +10,18 @@ import {
 } from "recharts";
 import ChartCard from "@/components/common/ChartCard";
 
+// Define interface for the component data
+export interface ChannelDateData {
+  date: string;
+  Social: number;
+  Email: number;
+  Paid: number;
+  [key: string]: string | number; // Allow for additional channel types
+}
+
 // --- DUMMY DATA PLACEHOLDER ---
-const dummyChannelData = [
+// This will later be replaced with data from an API call
+const dummyChannelData: ChannelDateData[] = [
   { date: '2024-03-01', Social: 120, Email: 80, Paid: 150 },
   { date: '2024-03-08', Social: 135, Email: 85, Paid: 160 },
   { date: '2024-03-15', Social: 150, Email: 95, Paid: 175 },
@@ -27,12 +37,54 @@ const lineColors = {
   Paid: "hsl(var(--chart-3))",
 };
 
-export default function MultiChannelChart() {
+// Props interface for the component
+interface MultiChannelChartProps {
+  // This will allow passing real data when available
+  data?: ChannelDateData[];
+  title?: string;
+  isLoading?: boolean;
+  error?: Error | null;
+}
+
+export default function MultiChannelChart({ 
+  data = dummyChannelData,
+  title = "Multi-Channel Performance Trend",
+  isLoading = false,
+  error = null
+}: MultiChannelChartProps) {
+  // In a real implementation, you might add:
+  // const { data, isLoading, error } = useQuery(['channelTrends'], fetchChannelTrends);
+  
+  // For now, we'll use the prop data or dummy data
+  const chartData = data || dummyChannelData;
+
+  // Basic loading state handling
+  if (isLoading) {
+    return (
+      <ChartCard title={title}>
+        <div className="h-[300px] w-full flex items-center justify-center">
+          <p className="text-muted-foreground">Loading channel trend data...</p>
+        </div>
+      </ChartCard>
+    );
+  }
+
+  // Error state handling
+  if (error) {
+    return (
+      <ChartCard title={title}>
+        <div className="h-[300px] w-full flex items-center justify-center">
+          <p className="text-destructive">Error loading data: {error.message}</p>
+        </div>
+      </ChartCard>
+    );
+  }
+
   return (
-    <ChartCard title="Multi-Channel Performance Trend (Dummy)">
+    <ChartCard title={title}>
       <ResponsiveContainer width="100%" height={300}>
         <LineChart
-          data={dummyChannelData}
+          data={chartData}
           margin={{
             top: 5,
             right: 30,
