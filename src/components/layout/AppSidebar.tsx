@@ -16,29 +16,34 @@ import {
 // Navigation items
 const navigationItems = [
   {
-    title: "Overview",
+    title: "Home",
     icon: HomeIcon,
     path: "/",
-  },
-  {
-    title: "Content Effectiveness",
-    icon: FileDigit,
-    path: "/effectiveness",
-  },
-  {
-    title: "Campaign Performance",
-    icon: BarChart3,
-    path: "/campaigns",
-  },
-  {
-    title: "Your Strategy",
-    icon: PieChart,
-    path: "/strategy",
   },
   {
     title: "Process Content",
     icon: FileDigit,
     path: "/process-content",
+  },
+  {
+    title: "Content Reports",
+    icon: FileDigit,
+    path: "/content-reports",
+  },
+  {
+    title: "Brand Strategy",
+    icon: BarChart3,
+    path: "/brand-strategy",
+  },
+  {
+    title: "Brand Dashboard",
+    icon: BarChart3,
+    path: "/brand-dashboard",
+  },
+  {
+    title: "Strategic Dashboard",
+    icon: PieChart,
+    path: "/strategic-dashboard",
   },
 ];
 

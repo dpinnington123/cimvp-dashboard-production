@@ -2,9 +2,10 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import DashboardLayout from './components/layout/DashboardLayout';
 import DashboardOverview from './pages/DashboardOverview';
-import ContentEffectivenessPage from './pages/ContentEffectivenessPage';
-import CampaignPerformancePage from './pages/CampaignPerformancePage';
-import YourStrategyPage from './pages/YourStrategyPage';
+import ContentReportsPage from './pages/ContentReportsPage';
+import BrandDashboardPage from './pages/BrandDashboardPage';
+import StrategicDashboardPage from './pages/StrategicDashboardPage';
+import BrandStrategyPage from './pages/BrandStrategyPage';
 import LoginPage from './pages/LoginPage';
 import NotFound from './pages/NotFound';
 import ProcessContentPage from './pages/ProcessContentPage';
@@ -48,13 +49,14 @@ function AppRoutes() {
         }
       >
         <Route index element={<DashboardOverview />} />
-        <Route path="effectiveness">
-          <Route index element={<ContentEffectivenessPage />} />
-          <Route path=":contentId" element={<ContentEffectivenessPage />} />
+        <Route path="content-reports">
+          <Route index element={<ContentReportsPage />} />
+          <Route path=":contentId" element={<ContentReportsPage />} />
         </Route>
-        <Route path="campaigns" element={<CampaignPerformancePage />} />
-        <Route path="strategy" element={<YourStrategyPage />} />
+        <Route path="brand-dashboard" element={<BrandDashboardPage />} />
+        <Route path="strategic-dashboard" element={<StrategicDashboardPage />} />
         <Route path="process-content" element={<ProcessContentPage />} />
+        <Route path="brand-strategy" element={<BrandStrategyPage />} />
       </Route>
       <Route path="*" element={<NotFound />} />
     </Routes>

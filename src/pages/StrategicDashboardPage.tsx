@@ -1,5 +1,5 @@
-import AudiencePieChart from "@/components/views/strategy/AudiencePieChart";
-import ChannelPerformanceChart from "@/components/views/strategy/ChannelPerformanceChart";
+import AudiencePieChart from "@/components/views/strategic-dashboard/AudiencePieChart";
+import ChannelPerformanceChart from "@/components/views/strategic-dashboard/ChannelPerformanceChart";
 import StatCard from "@/components/common/StatCard";
 import ChartCard from "@/components/common/ChartCard";
 import {
@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-export default function AudienceChannelsPage() {
+export default function StrategicDashboardPage() {
 
   // --- Dummy Data ---
   const audienceLocationData = [
@@ -44,7 +44,7 @@ export default function AudienceChannelsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Your Stragegic Insights</h1>
+      <h1 className="text-2xl font-semibold">Strategic Dashboard</h1>
 
       {/* Grid for Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

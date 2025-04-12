@@ -3,12 +3,12 @@ import { Link } from "react-router-dom";
 import StatCard from "@/components/common/StatCard";
 import ChartCard from "@/components/common/ChartCard";
 import { CircularProgressIndicator } from "@/components/common/CircularProgressIndicator";
-import CampaignTable from "@/components/views/campaigns/CampaignTable";
-import GeoChart from "@/components/views/campaigns/GeoChart";
-import MultiChannelChart from "@/components/views/campaigns/MultiChannelChart";
-import PdfReportButton from "@/components/views/campaigns/PdfReportButton";
-import ContentPerformanceByCountry from "@/components/views/campaigns/ContentPerformanceByCountry";
-import BrandContentEffectiveness from "@/components/views/campaigns/BrandContentEffectiveness";
+import CampaignTable from "@/components/views/brand-dashboard/CampaignTable";
+import GeoChart from "@/components/views/brand-dashboard/GeoChart";
+import MultiChannelChart from "@/components/views/brand-dashboard/MultiChannelChart";
+import PdfReportButton from "@/components/views/brand-dashboard/PdfReportButton";
+import ContentPerformanceByCountry from "@/components/views/brand-dashboard/ContentPerformanceByCountry";
+import BrandContentEffectiveness from "@/components/views/brand-dashboard/BrandContentEffectiveness";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -97,7 +97,7 @@ const getScoreLabel = (score: number) => {
   return "Needs Improvement";
 };
 
-export default function CampaignPerformancePage() {
+export default function BrandDashboardPage() {
   const [selectedCampaign, setSelectedCampaign] = useState<number | null>(null);
   const [campaignView, setCampaignView] = useState<"list" | "detail">("list");
   const [campaignDetails, setCampaignDetails] = useState<Campaign | null>(null);
@@ -179,9 +179,9 @@ export default function CampaignPerformancePage() {
     return (
       <div className="space-y-6 animate-in fade-in p-6">
         <header className="mb-6">
-          <h1 className="text-3xl font-bold">Campaign Performance Analysis</h1>
+          <h1 className="text-3xl font-bold">Brand Dashboard</h1>
           <p className="text-muted-foreground mt-1">
-            View performance metrics for your marketing campaigns and analyze content effectiveness.
+            View performance metrics for your brand campaigns and analyze content effectiveness.
           </p>
         </header>
 

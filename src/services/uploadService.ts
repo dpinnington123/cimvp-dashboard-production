@@ -93,7 +93,7 @@ export const uploadFile = async (file: File, subpath = ''): Promise<{ url: strin
  * Stores content metadata in the database
  * 
  * @param metadata - Content metadata
- * @param fileUrls - Array of uploaded file URLs and information
+ * @param files - Array of uploaded file information
  * @returns The newly created content record
  */
 export const storeContentMetadata = async (
@@ -101,8 +101,6 @@ export const storeContentMetadata = async (
   files: { name: string; type: string; size: number; url: string }[]
 ): Promise<{ data: ProcessedContent | null, error: Error | null }> => {
   try {
-    const contentId = uuidv4();
-    
     // Get the current user
     const { data: { user } } = await supabase.auth.getUser();
     
@@ -110,45 +108,55 @@ export const storeContentMetadata = async (
       throw new Error('User must be authenticated to upload content');
     }
     
-    // Prepare the data for the metadata JSONB column
-    // Combine existing metadata with the uploaded file information
-    const combinedMetadata = {
+    console.log('Inserting content with user ID:', user.id);
+    
+    // Create a metadata object that includes the files
+    const metadataWithFiles = {
       ...metadata,
-      uploadedFiles: files // Add the files array under 'uploadedFiles' key
+      files: files // Store files array inside the metadata JSONB column
     };
+    
+    // Create insert data structure matching the database schema
+    // Omit ID and other auto-populated fields
+    const insertData = {
+      title: metadata.title,
+      description: metadata.description,
+      category: metadata.category,
+      audience: metadata.audience,
+      business_objective: metadata.businessObjective,
+      content_format: metadata.contentFormat,
+      tags: metadata.tags,
+      publish_date: metadata.publishDate,
+      expiry_date: metadata.expiryDate || null,
+      location: metadata.location || null,
+      campaign: metadata.campaign || null,
+      agency: metadata.agency || null,
+      cost: metadata.cost || null,
+      content_type: metadata.contentType || null,
+      metadata: metadataWithFiles, // Store files inside metadata JSONB column
+      client_id: user.id, // Add client_id to satisfy RLS policy
+      // Add other required fields
+      format_type: metadata.contentFormat || null, // Assuming format_type matches contentFormat
+      body: metadata.description || null, // Assuming body can be the same as description temporarily
+      audience_type: metadata.audience || null // Assuming audience_type matches audience
+    };
+    
+    console.log('Content data being inserted:', JSON.stringify(insertData, null, 2));
     
     const { data, error } = await supabase
       .from('content')
-      .insert({
-        id: contentId,
-        title: metadata.title,
-        description: metadata.description,
-        category: metadata.category,
-        audience: metadata.audience,
-        business_objective: metadata.businessObjective,
-        content_format: metadata.contentFormat,
-        tags: metadata.tags,
-        publish_date: metadata.publishDate,
-        expiry_date: metadata.expiryDate || null,
-        location: metadata.location || null,
-        campaign: metadata.campaign || null,
-        agency: metadata.agency || null,
-        cost: metadata.cost || null,
-        content_type: metadata.contentType || null,
-        metadata: combinedMetadata, // Store files inside metadata JSONB
-        created_at: new Date().toISOString(),
-        client_id: user.id // Add client_id to satisfy RLS policy
-      })
-      .select('*')
+      .insert(insertData)
+      .select()
       .single();
 
     if (error) {
+      console.error('Database insertion error details:', JSON.stringify(error, null, 2));
       throw error;
     }
 
     // Transform the data to match our ProcessedContent interface
     const processedContent: ProcessedContent = {
-      id: data.id,
+      id: data.id.toString(), // Convert integer ID to string for consistency
       metadata: {
         title: data.title,
         description: data.description,
@@ -156,7 +164,7 @@ export const storeContentMetadata = async (
         audience: data.audience,
         businessObjective: data.business_objective,
         contentFormat: data.content_format,
-        tags: data.tags,
+        tags: data.tags || [],
         publishDate: data.publish_date,
         expiryDate: data.expiry_date,
         location: data.location,
@@ -165,10 +173,10 @@ export const storeContentMetadata = async (
         cost: data.cost,
         contentType: data.content_type
       },
-      // Read files from the nested structure in the metadata column
-      files: data.metadata?.uploadedFiles || [],
+      // Extract files from the metadata JSONB column
+      files: data.metadata?.files || [],
       createdAt: data.created_at,
-      status: 'processing' // Default status or read from data if available
+      status: data.status || 'processing'
     };
 
     return { data: processedContent, error: null };
@@ -233,6 +241,8 @@ export const getProcessedContent = async (
       throw new Error('User must be authenticated to retrieve content');
     }
     
+    console.log('Fetching content for user ID:', session.user.id);
+    
     const { data, error } = await supabase
       .from('content')
       .select('*')
@@ -240,33 +250,47 @@ export const getProcessedContent = async (
       .limit(limit);
 
     if (error) {
+      console.error('Error fetching content:', JSON.stringify(error, null, 2));
       throw error;
     }
 
+    console.log('Retrieved content items:', data.length);
+    
     // Transform the data to match our ProcessedContent interface
-    const processedContent: ProcessedContent[] = data.map(item => ({
-      id: item.id,
-      metadata: {
-        title: item.title,
-        description: item.description,
-        category: item.category,
-        audience: item.audience,
-        businessObjective: item.business_objective,
-        contentFormat: item.content_format,
-        tags: item.tags || [],
-        publishDate: item.publish_date,
-        expiryDate: item.expiry_date,
-        location: item.location,
-        campaign: item.campaign,
-        agency: item.agency,
-        cost: item.cost,
-        contentType: item.content_type
-      },
-      // Read files from metadata.uploadedFiles if available, otherwise empty array
-      files: item.metadata?.uploadedFiles || [],
-      createdAt: item.created_at,
-      status: item.status || 'processing'
-    }));
+    const processedContent: ProcessedContent[] = data.map(item => {
+      // Extract files from metadata JSONB
+      let fileArray = [];
+      
+      if (item.metadata && Array.isArray(item.metadata.files)) {
+        fileArray = item.metadata.files;
+      } else if (item.metadata && typeof item.metadata.files === 'object' && item.metadata.files !== null) {
+        // Handle case where files might be a JSON object
+        fileArray = Object.values(item.metadata.files);
+      }
+      
+      return {
+        id: item.id.toString(), // Convert to string for consistency
+        metadata: {
+          title: item.title,
+          description: item.description,
+          category: item.category,
+          audience: item.audience,
+          businessObjective: item.business_objective,
+          contentFormat: item.content_format,
+          tags: item.tags || [],
+          publishDate: item.publish_date,
+          expiryDate: item.expiry_date,
+          location: item.location,
+          campaign: item.campaign,
+          agency: item.agency,
+          cost: item.cost,
+          contentType: item.content_type
+        },
+        files: fileArray,
+        createdAt: item.created_at,
+        status: item.status || 'processing'
+      };
+    });
 
     return { data: processedContent, error: null };
   } catch (error) {

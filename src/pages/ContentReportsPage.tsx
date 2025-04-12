@@ -19,10 +19,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Star } from "lucide-react";
 
-// Import our new effectiveness components
-import { ContentPreview } from "@/components/views/effectiveness/ContentPreview";
-import { ScoreCard } from "../components/views/effectiveness/ScoreCard";
-import { ImprovementArea } from "@/components/views/effectiveness/ImprovementArea";
+// Import our content report components
+import { ContentPreview } from "@/components/views/content-reports/ContentPreview";
+import { ScoreCard } from "../components/views/content-reports/ScoreCard";
+import { ImprovementArea } from "@/components/views/content-reports/ImprovementArea";
 import { CircularProgressIndicator } from "@/components/common/CircularProgressIndicator";
 
 // Define score type based on error messages
@@ -50,7 +50,7 @@ const convertScoreToPercentage = (score: number | null): number => {
   return Math.round(clampedScore * 20);
 };
 
-export default function ContentEffectivenessPage() {
+export default function ContentReportsPage() {
   // --- State Management ---
   const { contentId: contentIdParam } = useParams<{ contentId: string }>();
 
@@ -150,7 +150,7 @@ export default function ContentEffectivenessPage() {
     return (
       <div className="p-6 space-y-6">
         <header>
-          <h1 className="text-3xl font-bold">Content Effectiveness</h1>
+          <h1 className="text-3xl font-bold">Content Reports</h1>
           <p className="text-muted-foreground mt-1">
             Select a content item to view its detailed effectiveness report
           </p>
@@ -192,7 +192,7 @@ export default function ContentEffectivenessPage() {
                       </TableCell>
                       <TableCell>
                         <Link 
-                          to={`/effectiveness/${item.id}`}
+                          to={`/content-reports/${item.id}`}
                           className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
                         >
                           View Report
@@ -222,7 +222,7 @@ export default function ContentEffectivenessPage() {
         <h1 className="text-2xl font-semibold mb-4">Invalid Content ID</h1>
         <p>The provided content ID in the URL is missing or invalid.</p>
         <Link 
-          to="/effectiveness"
+          to="/content-reports"
           className="mt-4 inline-block px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
         >
           Return to Content List
@@ -238,7 +238,7 @@ export default function ContentEffectivenessPage() {
         <h1 className="text-2xl font-semibold mb-4">Content Not Found</h1>
         <p>Could not load data for the specified content ID.</p>
         <Link 
-          to="/effectiveness"
+          to="/content-reports"
           className="mt-4 inline-block px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
         >
           Return to Content List
@@ -256,7 +256,7 @@ export default function ContentEffectivenessPage() {
       {/* Navigation and header */}
       <div className="flex items-center gap-2 mb-2">
         <Link 
-          to="/effectiveness"
+          to="/content-reports"
           className="text-sm flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
         >
           ← Back to List
@@ -265,7 +265,7 @@ export default function ContentEffectivenessPage() {
 
       {/* 1. Header Area */}
       <header className="mb-6">
-        <h1 className="text-3xl font-bold">Content Effectiveness Report</h1>
+        <h1 className="text-3xl font-bold">Content Report</h1>
         <p className="text-muted-foreground mt-1">
           Comprehensive analysis of content performance and recommendations for optimization.
         </p>

@@ -22,7 +22,7 @@ export default function Header() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <SidebarTrigger className="hidden md:flex" />
-          <h1 className="text-xl font-semibold text-gray-800 dark:text-gray-100">Marketing Intelligence</h1>
+          <h1 className="text-xl font-semibold text-gray-800 dark:text-gray-100">Your Company Logo Here</h1>
         </div>
         <div className="flex items-center space-x-4">
             {user && <span className="text-sm text-gray-600 dark:text-gray-300">{user.email}</span>} {/* Display user email */} 
