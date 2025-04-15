@@ -12,8 +12,22 @@ import FileDropzone from "@/components/views/processContent/FileDropzone";
 import UploadPreview from "@/components/views/processContent/UploadPreview";
 import { ArrowRight, Info, Tag, CalendarClock, Globe, File, CheckCircle, Users, Target, FileText, FileImage, FileVideo, FileAudio, Layout, BarChart3, Building2, BriefcaseBusiness, Banknote, Layers } from 'lucide-react';
 import { useNavigate } from "react-router-dom";
-import { ContentFile, ContentMetadata } from '@/services/uploadService';
+import { ContentFile } from '@/services/uploadService';
 import useContent from '@/hooks/useContent';
+
+type ContentFormState = {
+  content_name: string;
+  agency: string;
+  audience: string;
+  campaign_aligned_to: string;
+  content_objectives: string;
+  expiry_date: string;
+  format: string;
+  funnel_alignment: string;
+  strategy_aligned_to: string;
+  status: string;
+  type: string;
+};
 
 const ContentUploadForm: React.FC = () => {
   const { toast } = useToast();
@@ -23,15 +37,18 @@ const ContentUploadForm: React.FC = () => {
   
   const [files, setFiles] = useState<ContentFile[]>([]);
   const [currentTag, setCurrentTag] = useState('');
-  const [metadata, setMetadata] = useState<ContentMetadata>({
-    title: '',
-    description: '',
-    category: '',
+  const [metadata, setMetadata] = useState<ContentFormState>({
+    content_name: '',
+    agency: '',
     audience: '',
-    businessObjective: '',
-    contentFormat: '',
-    tags: [],
-    publishDate: new Date().toISOString().split('T')[0]
+    campaign_aligned_to: '',
+    content_objectives: '',
+    expiry_date: '',
+    format: '',
+    funnel_alignment: '',
+    strategy_aligned_to: '',
+    status: '',
+    type: '',
   });
   const [currentStep, setCurrentStep] = useState(1);
   
@@ -64,41 +81,25 @@ const ContentUploadForm: React.FC = () => {
     });
   };
 
-  const handleMetadataChange = (key: keyof ContentMetadata, value: any) => {
+  const handleMetadataChange = (key: string, value: string) => {
     setMetadata(prev => ({
       ...prev,
       [key]: value
     }));
   };
 
-  const addTag = () => {
-    if (currentTag.trim() && !metadata.tags.includes(currentTag.trim())) {
-      setMetadata(prev => ({
-        ...prev,
-        tags: [...prev.tags, currentTag.trim()]
-      }));
-      setCurrentTag('');
-    }
-  };
-
-  const removeTag = (tagToRemove: string) => {
-    setMetadata(prev => ({
-      ...prev,
-      tags: prev.tags.filter(tag => tag !== tagToRemove)
-    }));
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     if (files.length === 0) {
       toast({
         title: "No files selected",
-        description: "Please add at least one file to upload.",
+        description: "Please upload at least one file to continue.",
         variant: "destructive"
       });
       return;
     }
-    if (!metadata.title) {
+    if (!metadata.content_name) {
       toast({
         title: "Title required",
         description: "Please provide a title for your content.",
@@ -108,8 +109,31 @@ const ContentUploadForm: React.FC = () => {
     }
     
     try {
-      // Use the mutation to upload content
-      const result = await uploadContentMutation.mutateAsync({ files, metadata });
+      // Map the form fields to the ContentMetadata type
+      const mappedMetadata = {
+        title: metadata.content_name, // REQUIRED
+        description: "", // Not in form but required by interface
+        category: "", // Not in form but required by interface
+        audience: metadata.audience,
+        businessObjective: metadata.content_objectives,
+        contentFormat: metadata.format,
+        tags: [], // Not in form but required by interface
+        publishDate: new Date().toISOString(), // Use current date
+        expiryDate: metadata.expiry_date,
+        location: "",
+        campaign: metadata.campaign_aligned_to,
+        agency: metadata.agency,
+        cost: "",
+        contentType: metadata.type
+      };
+      
+      console.log('Mapped metadata:', mappedMetadata);
+      
+      // Use the mutation to upload content with properly mapped fields
+      const result = await uploadContentMutation.mutateAsync({ 
+        files, 
+        metadata: mappedMetadata
+      });
       
       if (result.error || !result.data) {
         throw result.error || new Error('Failed to upload content');
@@ -130,14 +154,17 @@ const ContentUploadForm: React.FC = () => {
       // Reset form and go to next step for analysis
       setFiles([]);
       setMetadata({
-        title: '',
-        description: '',
-        category: '',
+        content_name: '',
+        agency: '',
         audience: '',
-        businessObjective: '',
-        contentFormat: '',
-        tags: [],
-        publishDate: new Date().toISOString().split('T')[0]
+        campaign_aligned_to: '',
+        content_objectives: '',
+        expiry_date: '',
+        format: '',
+        funnel_alignment: '',
+        strategy_aligned_to: '',
+        status: '',
+        type: '',
       });
       
       // Move to the next step (analysis)
@@ -167,7 +194,7 @@ const ContentUploadForm: React.FC = () => {
       return files.length > 0 ? 'complete' : 'current';
     }
     if (step === 2) {
-      return metadata.title ? 'complete' : files.length > 0 ? 'current' : 'incomplete';
+      return metadata.content_name ? 'complete' : files.length > 0 ? 'current' : 'incomplete';
     }
     if (step === 3) {
       return currentStep === 3 ? 'current' : 'incomplete';
@@ -243,104 +270,58 @@ const ContentUploadForm: React.FC = () => {
             <div className="grid gap-6 md:grid-cols-2">
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="title" className="flex items-center gap-1">
+                  <Label htmlFor="content_name" className="flex items-center gap-1">
                     Title <span className="text-destructive">*</span>
                   </Label>
                   <Input 
-                    id="title" 
+                    id="content_name" 
                     placeholder="Enter a title for your content" 
-                    value={metadata.title} 
-                    onChange={e => handleMetadataChange('title', e.target.value)} 
+                    value={metadata.content_name} 
+                    onChange={e => handleMetadataChange('content_name', e.target.value)} 
                     className="focus-ring" 
                     required 
                   />
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="description">Description</Label>
+                  <Label htmlFor="content_objectives">Content Objectives</Label>
                   <Textarea 
-                    id="description" 
-                    placeholder="Provide a description of your content" 
-                    value={metadata.description} 
-                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleMetadataChange('description', e.target.value)} 
+                    id="content_objectives" 
+                    placeholder="What is the goal of this content?" 
+                    value={metadata.content_objectives} 
+                    onChange={e => handleMetadataChange('content_objectives', e.target.value)} 
                     className="resize-none h-32 focus-ring" 
                   />
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="category">Category</Label>
-                  <Select 
-                    value={metadata.category} 
-                    onValueChange={value => handleMetadataChange('category', value)}
-                  >
-                    <SelectTrigger className="focus-ring">
-                      <SelectValue placeholder="Select a category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="art">Art & Design</SelectItem>
-                      <SelectItem value="education">Education</SelectItem>
-                      <SelectItem value="entertainment">Entertainment</SelectItem>
-                      <SelectItem value="business">Business</SelectItem>
-                      <SelectItem value="technology">Technology</SelectItem>
-                      <SelectItem value="lifestyle">Lifestyle</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="contentFormat" className="flex items-center gap-2">
+                  <Label htmlFor="format" className="flex items-center gap-2">
                     <Layout className="h-4 w-4" /> Content Format
                   </Label>
                   <Select 
-                    value={metadata.contentFormat} 
-                    onValueChange={value => handleMetadataChange('contentFormat', value)}
+                    value={metadata.format} 
+                    onValueChange={value => handleMetadataChange('format', value)}
                   >
                     <SelectTrigger className="focus-ring">
                       <SelectValue placeholder="Select a format" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="article">
-                        <div className="flex items-center gap-2">
-                          <FileText className="h-4 w-4" /> Article
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="image">
-                        <div className="flex items-center gap-2">
-                          <FileImage className="h-4 w-4" /> Image
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="video">
-                        <div className="flex items-center gap-2">
-                          <FileVideo className="h-4 w-4" /> Video
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="audio">
-                        <div className="flex items-center gap-2">
-                          <FileAudio className="h-4 w-4" /> Audio
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="presentation">
-                        <div className="flex items-center gap-2">
-                          <File className="h-4 w-4" /> Presentation
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="infographic">
-                        <div className="flex items-center gap-2">
-                          <Layout className="h-4 w-4" /> Infographic
-                        </div>
-                      </SelectItem>
+                      <SelectItem value="email">Email</SelectItem>
+                      <SelectItem value="social">Social Media</SelectItem>
+                      <SelectItem value="website">Website</SelectItem>
+                      <SelectItem value="presentation">Presentation</SelectItem>
+                      <SelectItem value="infographic">Infographic</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="contentType" className="flex items-center gap-2">
+                  <Label htmlFor="type" className="flex items-center gap-2">
                     <Layers className="h-4 w-4" /> Type of Content
                   </Label>
                   <Select 
-                    value={metadata.contentType || ''} 
-                    onValueChange={value => handleMetadataChange('contentType', value)}
+                    value={metadata.type} 
+                    onValueChange={value => handleMetadataChange('type', value)}
                   >
                     <SelectTrigger className="focus-ring">
                       <SelectValue placeholder="Select content type" />
@@ -384,14 +365,14 @@ const ContentUploadForm: React.FC = () => {
               
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="campaign" className="flex items-center gap-2">
+                  <Label htmlFor="campaign_aligned_to" className="flex items-center gap-2">
                     <BriefcaseBusiness className="h-4 w-4" /> Campaign
                   </Label>
                   <Input 
-                    id="campaign" 
+                    id="campaign_aligned_to" 
                     placeholder="Enter campaign name" 
-                    value={metadata.campaign || ''} 
-                    onChange={e => handleMetadataChange('campaign', e.target.value)} 
+                    value={metadata.campaign_aligned_to} 
+                    onChange={e => handleMetadataChange('campaign_aligned_to', e.target.value)} 
                     className="focus-ring" 
                   />
                 </div>
@@ -403,102 +384,60 @@ const ContentUploadForm: React.FC = () => {
                   <Input 
                     id="agency" 
                     placeholder="Enter agency name" 
-                    value={metadata.agency || ''} 
+                    value={metadata.agency} 
                     onChange={e => handleMetadataChange('agency', e.target.value)} 
                     className="focus-ring" 
                   />
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="cost" className="flex items-center gap-2">
-                    <Banknote className="h-4 w-4" /> Cost
+                  <Label htmlFor="expiry_date" className="flex items-center gap-2">
+                    <CalendarClock className="h-4 w-4" /> Expiry Date
                   </Label>
                   <Input 
-                    id="cost" 
-                    placeholder="Enter cost amount" 
-                    value={metadata.cost || ''} 
-                    onChange={e => handleMetadataChange('cost', e.target.value)} 
-                    className="focus-ring" 
-                    type="text"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="businessObjective" className="flex items-center gap-2">
-                    <Target className="h-4 w-4" /> Business Objective
-                  </Label>
-                  <Textarea
-                    id="businessObjective"
-                    placeholder="What business goal does this content support?"
-                    value={metadata.businessObjective}
-                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleMetadataChange('businessObjective', e.target.value)}
-                    className="resize-none h-20 focus-ring"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="tags" className="flex items-center gap-2">
-                    <Tag className="h-4 w-4" /> Tags
-                  </Label>
-                  <div className="flex gap-2">
-                    <Input 
-                      id="tags" 
-                      placeholder="Add tags" 
-                      value={currentTag} 
-                      onChange={e => setCurrentTag(e.target.value)} 
-                      onKeyDown={e => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          addTag();
-                        }
-                      }} 
-                      className="focus-ring" 
-                    />
-                    <Button type="button" variant="outline" onClick={addTag} className="whitespace-nowrap">
-                      Add
-                    </Button>
-                  </div>
-                  
-                  {metadata.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {metadata.tags.map(tag => (
-                        <div key={tag} className="inline-flex items-center bg-muted text-muted-foreground rounded-full px-3 py-1 text-xs font-medium">
-                          {tag}
-                          <button 
-                            type="button" 
-                            className="ml-1 text-muted-foreground/70 hover:text-muted-foreground focus:outline-none" 
-                            onClick={() => removeTag(tag)}
-                          >
-                            &times;
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="publish-date" className="flex items-center gap-2">
-                    <CalendarClock className="h-4 w-4" /> Publish Date
-                  </Label>
-                  <Input 
-                    id="publish-date" 
+                    id="expiry_date" 
                     type="date" 
-                    value={metadata.publishDate} 
-                    onChange={e => handleMetadataChange('publishDate', e.target.value)} 
+                    value={metadata.expiry_date} 
+                    onChange={e => handleMetadataChange('expiry_date', e.target.value)} 
                     className="focus-ring" 
                   />
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="location" className="flex items-center gap-2">
-                    <Globe className="h-4 w-4" /> Location (optional)
+                  <Label htmlFor="funnel_alignment" className="flex items-center gap-2">
+                    <BarChart3 className="h-4 w-4" /> Funnel Alignment
                   </Label>
                   <Input 
-                    id="location" 
-                    placeholder="Enter a location" 
-                    value={metadata.location || ''} 
-                    onChange={e => handleMetadataChange('location', e.target.value)} 
+                    id="funnel_alignment" 
+                    placeholder="Enter funnel alignment" 
+                    value={metadata.funnel_alignment} 
+                    onChange={e => handleMetadataChange('funnel_alignment', e.target.value)} 
+                    className="focus-ring" 
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="strategy_aligned_to" className="flex items-center gap-2">
+                    <Target className="h-4 w-4" /> Strategy Aligned To
+                  </Label>
+                  <Input 
+                    id="strategy_aligned_to" 
+                    placeholder="Enter strategy alignment" 
+                    value={metadata.strategy_aligned_to} 
+                    onChange={e => handleMetadataChange('strategy_aligned_to', e.target.value)} 
+                    className="focus-ring" 
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="status" className="flex items-center gap-2">
+                    <Info className="h-4 w-4" /> Status
+                  </Label>
+                  <Input 
+                    id="status" 
+                    placeholder="Enter status (e.g., draft, published)" 
+                    value={metadata.status} 
+                    onChange={e => handleMetadataChange('status', e.target.value)} 
                     className="focus-ring" 
                   />
                 </div>
@@ -514,7 +453,7 @@ const ContentUploadForm: React.FC = () => {
               Review your uploaded files and context information before analysis.
             </p>
             
-            {(files.length > 0 || metadata.title) && (
+            {(files.length > 0 || metadata.content_name) && (
               <div className="space-y-4 bg-muted/20 p-4 rounded-lg border border-border/40">
                 {files.length > 0 && (
                   <div className="space-y-2">
@@ -530,32 +469,16 @@ const ContentUploadForm: React.FC = () => {
                   </div>
                 )}
                 
-                {metadata.title && (
+                {metadata.content_name && (
                   <div className="space-y-2">
                     <h4 className="text-sm font-medium">Context Summary</h4>
                     <div className="text-sm text-muted-foreground space-y-1">
-                      <p><span className="font-medium">Title:</span> {metadata.title}</p>
-                      {metadata.description && <p><span className="font-medium">Description:</span> {metadata.description}</p>}
-                      {metadata.category && <p><span className="font-medium">Category:</span> {metadata.category}</p>}
-                      {metadata.contentFormat && <p><span className="font-medium">Format:</span> {metadata.contentFormat}</p>}
+                      <p><span className="font-medium">Title:</span> {metadata.content_name}</p>
+                      {metadata.content_objectives && <p><span className="font-medium">Content Objectives:</span> {metadata.content_objectives}</p>}
+                      {metadata.format && <p><span className="font-medium">Format:</span> {metadata.format}</p>}
+                      {metadata.type && <p><span className="font-medium">Type:</span> {metadata.type}</p>}
                       {metadata.audience && <p><span className="font-medium">Audience:</span> {metadata.audience}</p>}
-                      {metadata.contentType && <p><span className="font-medium">Type:</span> {metadata.contentType}</p>}
-                      {metadata.campaign && <p><span className="font-medium">Campaign:</span> {metadata.campaign}</p>}
-                      {metadata.agency && <p><span className="font-medium">Agency:</span> {metadata.agency}</p>}
-                      {metadata.cost && <p><span className="font-medium">Cost:</span> {metadata.cost}</p>}
-                      {metadata.businessObjective && <p><span className="font-medium">Business Objective:</span> {metadata.businessObjective}</p>}
-                      {metadata.tags.length > 0 && (
-                        <p className="flex items-center gap-2">
-                          <span className="font-medium">Tags:</span>
-                          <span className="flex flex-wrap gap-1">
-                            {metadata.tags.map(tag => (
-                              <span key={tag} className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-                                {tag}
-                              </span>
-                            ))}
-                          </span>
-                        </p>
-                      )}
+                      {metadata.status && <p><span className="font-medium">Status:</span> {metadata.status}</p>}
                     </div>
                   </div>
                 )}
@@ -572,7 +495,7 @@ const ContentUploadForm: React.FC = () => {
           
           <Button 
             type="submit" 
-            disabled={isSubmitting || files.length === 0 || !metadata.title} 
+            disabled={isSubmitting || files.length === 0 || !metadata.content_name} 
             className="min-w-[150px]"
           >
             {isSubmitting ? 'Processing...' : (

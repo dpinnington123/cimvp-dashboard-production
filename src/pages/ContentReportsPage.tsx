@@ -183,8 +183,8 @@ export default function ContentReportsPage() {
                 {contentList && contentList.length > 0 ? (
                   contentList.map((item: any) => (
                     <TableRow key={item.id}>
-                      <TableCell>{item.title || 'Untitled'}</TableCell>
-                      <TableCell>{item.format_type || 'Unknown'}</TableCell>
+                      <TableCell>{item.content_name || 'Untitled'}</TableCell>
+                      <TableCell>{item.format || 'Unknown'}</TableCell>
                       <TableCell>
                         {item.created_at 
                           ? new Date(item.created_at).toLocaleDateString() 
@@ -285,16 +285,12 @@ export default function ContentReportsPage() {
         <div className="lg:col-span-1 space-y-6">
           {/* Use our new ContentPreview component */}
           <ContentPreview
-            imageSrc={contentDetails?.metadata && typeof contentDetails.metadata === 'object' 
-              ? (contentDetails.metadata as Record<string, any>)?.imageUrl || null 
-              : null}
-            title={contentDetails?.title || 'Untitled Content'}
-            contentType={contentDetails?.format_type}
+            imageSrc={undefined}
+            title={contentDetails?.content_name || 'Untitled Content'}
+            contentType={contentDetails?.format}
             datePublished={contentDetails?.created_at ? new Date(contentDetails.created_at).toLocaleDateString() : null}
-            duration={contentDetails?.metadata && typeof contentDetails.metadata === 'object'
-              ? (contentDetails.metadata as Record<string, any>)?.duration || '6 weeks'
-              : '6 weeks'} 
-            audience={contentDetails?.audience_type}
+            duration={undefined}
+            audience={contentDetails?.audience}
           />
 
           {/* Overall Score Card - Updated with new styling */}
@@ -358,15 +354,7 @@ export default function ContentReportsPage() {
                 <CardContent className="p-6">
                   <div className="space-y-6">
                     {/* Content Overview */}
-                    {contentDetails?.body && (
-                      <div className="space-y-2">
-                        <h3 className="text-lg font-medium flex items-center gap-2">
-                          <span className="w-5 h-5 text-primary">📄</span>
-                          Content Overview
-                        </h3>
-                        <p className="text-muted-foreground">{contentDetails.body}</p>
-                      </div>
-                    )}
+                    {/* body no longer exists, so skip this section */}
                     
                     {/* Content Goals - Placeholder, replace with actual data if available */}
                     <div className="space-y-2">
@@ -403,7 +391,7 @@ export default function ContentReportsPage() {
                           <span className="w-4 h-4">⏱️</span>
                           <span>Format</span>
                         </div>
-                        <p className="font-medium">{contentDetails?.format_type || "Not specified"}</p>
+                        <p className="font-medium">{contentDetails?.format || "Not specified"}</p>
                       </div>
                       
                       <div className="flex flex-col p-4 rounded-lg border bg-muted/30">
@@ -411,7 +399,7 @@ export default function ContentReportsPage() {
                           <span className="w-4 h-4">👥</span>
                           <span>Target Audience</span>
                         </div>
-                        <p className="font-medium">{contentDetails?.audience_type || "Not specified"}</p>
+                        <p className="font-medium">{contentDetails?.audience || "Not specified"}</p>
                       </div>
                     </div>
                   </div>
