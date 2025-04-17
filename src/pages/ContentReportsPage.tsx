@@ -21,7 +21,8 @@ import { Badge } from "@/components/ui/badge";
 import { 
   Star, ArrowLeft, CalendarIcon, ClockIcon, UsersIcon, FileTextIcon,
   TypeIcon, TargetIcon, BriefcaseIcon, Building2Icon, BarChart3Icon,
-  InfoIcon, AlertCircleIcon
+  InfoIcon, AlertCircleIcon, Hash, Image as ImageIcon, Video, AlignLeft,
+  Thermometer, Smile
 } from "lucide-react";
 
 // Import our content report components
@@ -30,6 +31,7 @@ import { ScoreCard } from "../components/views/content-reports/ScoreCard";
 import { ImprovementArea } from "@/components/views/content-reports/ImprovementArea";
 import { CircularProgressIndicator } from "@/components/common/CircularProgressIndicator";
 import { DetailItem } from "@/components/views/content-reports/DetailItem";
+import { CharacteristicCard } from "@/components/views/content-reports/CharacteristicCard";
 
 // Define score type based on error messages
 type Score = {
@@ -72,6 +74,19 @@ const formatDate = (dateString: string | null | undefined): string => {
     return "Invalid Date";
   }
 };
+
+// --- Dummy Data for Characteristics ---
+const dummyCharacteristics = [
+  { id: 'headlines', label: 'Number of Headlines', value: 12, icon: <Hash className="w-4 h-4" /> },
+  { id: 'images', label: 'Number of Images', value: 8, icon: <ImageIcon className="w-4 h-4" /> },
+  { id: 'videos', label: 'Number of Videos', value: 2, icon: <Video className="w-4 h-4" /> },
+  { id: 'pages', label: 'Number of Pages', value: 5, icon: <FileTextIcon className="w-4 h-4" /> },
+  { id: 'words', label: 'Number of Words', value: 1850, icon: <AlignLeft className="w-4 h-4" /> },
+  { id: 'readingAge', label: 'Reading Age', value: '14-16 years', icon: <Thermometer className="w-4 h-4" /> },
+  { id: 'emotion', label: 'Emotional Strength', value: 'Moderate to Strong', icon: <Smile className="w-4 h-4" /> },
+  { id: 'cta', label: 'Number of Calls to Action', value: 6, icon: <TargetIcon className="w-4 h-4" /> },
+];
+// --- End Dummy Data ---
 
 export default function ContentReportsPage() {
   // --- State Management ---
@@ -366,9 +381,10 @@ export default function ContentReportsPage() {
         {/* 2.2 Right Column */}
         <div className="lg:col-span-2">
           <Tabs defaultValue="performance" className="w-full">
-            <TabsList className="grid grid-cols-3 mb-6">
+            <TabsList className="grid grid-cols-4 mb-6">
               <TabsTrigger value="performance">Performance Scores</TabsTrigger>
               <TabsTrigger value="details">Content Details</TabsTrigger>
+              <TabsTrigger value="characteristics">Characteristics</TabsTrigger>
               <TabsTrigger value="improvements">Areas to Improve</TabsTrigger>
             </TabsList>
             
@@ -498,6 +514,26 @@ export default function ContentReportsPage() {
                   </Card>
                 )}
               </div>
+            </TabsContent>
+
+            {/* Characteristics Tab Content */}
+            <TabsContent value="characteristics" className="mt-0 p-0 animate-in fade-in-50">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {dummyCharacteristics.map((char, index) => (
+                  <CharacteristicCard
+                    key={char.id}
+                    icon={char.icon}
+                    label={char.label}
+                    value={char.value}
+                    className="animate-in fade-in zoom-in-95"
+                    style={{ animationDelay: `${index * 0.05}s` }} // Stagger animation
+                  />
+                ))}
+              </div>
+              {/* Placeholder for future notes or summary related to characteristics */}
+              <p className="text-xs text-muted-foreground mt-4 text-center">
+                These characteristics are based on automated analysis of your content.
+              </p>
             </TabsContent>
           </Tabs>
         </div>

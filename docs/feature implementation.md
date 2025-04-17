@@ -1,50 +1,51 @@
-Okay, here's a step-by-step guide on how to implement the changes to display all relevant details from the `content` table within the "Content Details" tab of the `ContentReportsPage`.
+Okay, let's create a guide for implementing the new "Characteristics" tab in the `ContentReportsPage`, using dummy data for now.
 
-**Goal:** To dynamically display all fetched metadata fields (like format, type, audience, campaign, agency, dates, etc.) from the `content` database table on the Content Report page.
+**Goal:** Add a fourth tab, "Characteristics," to the Content Report page, displaying various content attributes in a card grid layout, populated with placeholder data.
 
 **Prerequisites:**
 
-1.  You have the `ContentReportsPage.tsx` component set up.
-2.  The `useContentDetail` hook (from `src/hooks/useContent.ts`) is correctly fetching the data for a specific content item using `getContentById` (from `src/services/contentService.ts`).
-3.  The `getContentById` service function is fetching *all* necessary columns from the `content` table (e.g., using `select('*')` or explicitly listing all required columns).
-4.  You have the necessary icons installed (e.g., from `lucide-react`).
+1.  You have the `ContentReportsPage.tsx` component with the existing three tabs ("Performance Scores," "Content Details," "Areas to Improve").
+2.  You have `shadcn/ui` components (`Tabs`, `Card`, etc.) available.
+3.  You have `lucide-react` installed for icons.
 
 ---
 
 **Implementation Steps:**
 
-**Step 1: Create the Reusable `DetailItem` Component**
+**Step 1: Create the Reusable `CharacteristicCard` Component**
 
-This component provides a consistent way to display each piece of metadata with a label and an icon.
+This component will display a single characteristic (icon, label, value) in a consistent card format.
 
-*   **Action:** Create a new file `src/components/views/content-reports/DetailItem.tsx`.
-*   **Content:** Add the following code to the new file:
+*   **Action:** Create a new file `src/components/views/content-reports/CharacteristicCard.tsx`.
+*   **Content:** Add the following code:
 
-    ```typescript name=src/components/views/content-reports/DetailItem.tsx
+    ```typescript name=src/components/views/content-reports/CharacteristicCard.tsx
     import React from 'react';
+    import { Card, CardContent } from "@/components/ui/card";
     import { cn } from "@/lib/utils";
 
-    interface DetailItemProps {
-      icon: React.ReactNode;
+    interface CharacteristicCardProps {
+      icon?: React.ReactNode; // Icon is optional
       label: string;
-      value: string | number | null | undefined;
+      value: string | number | React.ReactNode; // Value can be text, number, or even another component
       className?: string;
     }
 
-    export function DetailItem({ icon, label, value, className }: DetailItemProps) {
-      // Display 'N/A' if the value is null, undefined, or an empty string
+    export function CharacteristicCard({ icon, label, value, className }: CharacteristicCardProps) {
       const displayValue = value !== null && value !== undefined && value !== '' ? value : "N/A";
 
       return (
-        <div className={cn("flex flex-col p-3 rounded-lg border bg-muted/30", className)}>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
-            {icon}
-            <span>{label}</span>
-          </div>
-          <p className="font-medium text-sm break-words">
-            {displayValue} {/* Use the potentially modified display value */}
-          </p>
-        </div>
+        <Card className={cn("p-4", className)}> {/* Adjusted padding */}
+          <CardContent className="p-0 space-y-1"> {/* Remove default CardContent padding */}
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              {icon}
+              <span>{label}</span>
+            </div>
+            <div className="text-lg font-semibold">
+              {displayValue}
+            </div>
+          </CardContent>
+        </Card>
       );
     }
     ```
@@ -52,163 +53,117 @@ This component provides a consistent way to display each piece of metadata with 
 **Step 2: Prepare `ContentReportsPage.tsx`**
 
 *   **Action:** Open `src/pages/ContentReportsPage.tsx`.
-*   **Add Imports:** Ensure you import the new `DetailItem` component and any necessary icons from `lucide-react`.
+*   **Add Imports:**
+    *   Import the new `CharacteristicCard` component.
+    *   Import necessary icons from `lucide-react` for the characteristics.
 
     ```typescript name=src/pages/ContentReportsPage.tsx
     // ... other imports
-    import { DetailItem } from "@/components/views/content-reports/DetailItem";
+    import { CharacteristicCard } from "@/components/views/content-reports/CharacteristicCard"; // Import the new card
     import {
-      Star, ArrowLeft, CalendarIcon, ClockIcon, UsersIcon, FileTextIcon,
-      TypeIcon, TargetIcon, BriefcaseIcon, Building2Icon, BarChart3Icon,
-      InfoIcon, AlertCircleIcon // Add other icons as needed
+      Hash, // For Headlines
+      Image as ImageIcon, // For Images (rename to avoid conflict with React.Image)
+      Video, // For Videos
+      FileText as FileTextIcon, // For Pages (reuse or choose another)
+      AlignLeft, // For Words
+      Thermometer, // For Reading Age
+      Smile, // For Emotional Strength
+      Target as TargetIcon, // For Calls to Action (reuse or choose another)
+      // ... other existing icons
     } from "lucide-react";
     // ... rest of the component
     ```
-*   **Add `formatDate` Helper (if not already present):** Add this helper function inside or outside the component scope to format date strings nicely.
+*   **Define Dummy Data:** Add a constant array inside the `ContentReportsPage` component (or outside if preferred) to hold the dummy characteristic data.
 
     ```typescript name=src/pages/ContentReportsPage.tsx
-    // Helper function to format dates
-    const formatDate = (dateString: string | null | undefined): string => {
-      if (!dateString) return "N/A";
-      try {
-        // Example format: Jan 1, 2024
-        return new Date(dateString).toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'short',
-          day: 'numeric',
-        });
-      } catch (e) {
-        // Handle potential invalid date strings gracefully
-        console.error("Error formatting date:", dateString, e);
-        return "Invalid Date";
-      }
-    };
+    // --- Dummy Data for Characteristics ---
+    const dummyCharacteristics = [
+      { id: 'headlines', label: 'Number of Headlines', value: 12, icon: <Hash className="w-4 h-4" /> },
+      { id: 'images', label: 'Number of Images', value: 8, icon: <ImageIcon className="w-4 h-4" /> },
+      { id: 'videos', label: 'Number of Videos', value: 2, icon: <Video className="w-4 h-4" /> },
+      { id: 'pages', label: 'Number of Pages', value: 5, icon: <FileTextIcon className="w-4 h-4" /> },
+      { id: 'words', label: 'Number of Words', value: 1850, icon: <AlignLeft className="w-4 h-4" /> },
+      { id: 'readingAge', label: 'Reading Age', value: '14-16 years', icon: <Thermometer className="w-4 h-4" /> },
+      { id: 'emotion', label: 'Emotional Strength', value: 'Moderate to Strong', icon: <Smile className="w-4 h-4" /> },
+      { id: 'cta', label: 'Number of Calls to Action', value: 6, icon: <TargetIcon className="w-4 h-4" /> },
+    ];
+    // --- End Dummy Data ---
 
     export default function ContentReportsPage() {
-      // ... component logic
-    }
+      // ... existing hooks and logic
     ```
 
-**Step 3: Implement the "Content Details" Tab**
+**Step 3: Update the Tabs Structure**
 
-*   **Action:** Locate the `TabsContent` component with `value="details"`.
-*   **Replace Content:** Replace the existing content within this tab with the following structure, using the `DetailItem` component for each field you want to display from the `contentDetails` object.
+*   **Action:** Find the `<TabsList>` component within the detail view section.
+*   **Modify:**
+    *   Add a new `<TabsTrigger value="characteristics">Characteristics</TabsTrigger>`.
+    *   Update the `grid-cols-*` class on `<TabsList>` to accommodate the fourth tab (e.g., `grid-cols-4`).
 
     ```typescript name=src/pages/ContentReportsPage.tsx
-            {/* Content Details Tab Content - Updated */}
-            <TabsContent value="details" className="mt-0 p-0 animate-in fade-in-50">
-              <Card>
-                <CardContent className="p-6 space-y-6">
-                  {/* Content Objectives (Displayed separately for potentially longer text) */}
-                  <div className="space-y-2">
-                    <h3 className="text-lg font-medium flex items-center gap-2">
-                      <TargetIcon className="w-5 h-5 text-primary" />
-                      Content Objectives
-                    </h3>
-                    <p className="text-sm text-muted-foreground bg-muted/30 p-3 rounded-md border">
-                      {/* Access the objectives field from your contentDetails object */}
-                      {contentDetails?.content_objectives || "No objectives specified."}
-                    </p>
-                  </div>
+          <Tabs defaultValue="performance" className="w-full">
+            {/* Update grid-cols class here */}
+            <TabsList className="grid grid-cols-4 mb-6"> {/* Changed to grid-cols-4 */}
+              <TabsTrigger value="performance">Performance Scores</TabsTrigger>
+              <TabsTrigger value="details">Content Details</TabsTrigger>
+              {/* Add the new trigger */}
+              <TabsTrigger value="characteristics">Characteristics</TabsTrigger>
+              <TabsTrigger value="improvements">Areas to Improve</TabsTrigger>
+            </TabsList>
 
-                  {/* Metadata Grid using DetailItem */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                    {/* Map each field from contentDetails to a DetailItem */}
-                    <DetailItem
-                      icon={<FileTextIcon className="w-3.5 h-3.5" />}
-                      label="Format"
-                      value={contentDetails?.format} // Access the 'format' field
-                    />
-                    <DetailItem
-                      icon={<TypeIcon className="w-3.5 h-3.5" />}
-                      label="Type"
-                      value={contentDetails?.type} // Access the 'type' field
-                    />
-                     <DetailItem
-                      icon={<UsersIcon className="w-3.5 h-3.5" />}
-                      label="Audience"
-                      value={contentDetails?.audience} // Access the 'audience' field
-                    />
-                     <DetailItem
-                      icon={<InfoIcon className="w-3.5 h-3.5" />}
-                      label="Status"
-                      value={contentDetails?.status} // Access the 'status' field
-                    />
-                    <DetailItem
-                      icon={<BriefcaseIcon className="w-3.5 h-3.5" />}
-                      label="Campaign"
-                      value={contentDetails?.campaign_aligned_to} // Access the 'campaign_aligned_to' field
-                    />
-                     <DetailItem
-                      icon={<Building2Icon className="w-3.5 h-3.5" />}
-                      label="Agency"
-                      value={contentDetails?.agency} // Access the 'agency' field
-                    />
-                    <DetailItem
-                      icon={<TargetIcon className="w-3.5 h-3.5" />}
-                      label="Strategy Alignment"
-                      value={contentDetails?.strategy_aligned_to} // Access the 'strategy_aligned_to' field
-                    />
-                    <DetailItem
-                      icon={<BarChart3Icon className="w-3.5 h-3.5" />}
-                      label="Funnel Alignment"
-                      value={contentDetails?.funnel_alignment} // Access the 'funnel_alignment' field
-                    />
-                     <DetailItem
-                      icon={<CalendarIcon className="w-3.5 h-3.5" />}
-                      label="Created On"
-                      value={formatDate(contentDetails?.created_at)} // Format the date
-                    />
-                    <DetailItem
-                      icon={<ClockIcon className="w-3.5 h-3.5" />}
-                      label="Expiry Date"
-                      value={formatDate(contentDetails?.expiry_date)} // Format the date
-                    />
-                    <DetailItem
-                      icon={<AlertCircleIcon className="w-3.5 h-3.5" />}
-                      label="Last Updated"
-                      value={formatDate(contentDetails?.updated_at)} // Format the date
-                    />
-                    {/* Add more DetailItem components here for any other fields
-                        in your 'content' table that you want to display,
-                        e.g., client_id, bucket_id, file_storage_path if relevant */}
-                  </div>
-                </CardContent>
-              </Card>
+            {/* ... existing TabsContent for performance, details ... */}
+          </Tabs>
+    ```
+
+**Step 4: Add the New Tab Content**
+
+*   **Action:** Add a new `<TabsContent value="characteristics">...</TabsContent>` block after the "details" tab content.
+*   **Populate:** Inside this new tab, create a grid and map over the `dummyCharacteristics` array, rendering a `CharacteristicCard` for each item.
+
+    ```typescript name=src/pages/ContentReportsPage.tsx
+            {/* ... TabsContent for performance ... */}
+            {/* ... TabsContent for details ... */}
+
+            {/* Characteristics Tab Content */}
+            <TabsContent value="characteristics" className="mt-0 p-0 animate-in fade-in-50">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {dummyCharacteristics.map((char) => (
+                  <CharacteristicCard
+                    key={char.id}
+                    icon={char.icon}
+                    label={char.label}
+                    value={char.value}
+                    // Add animation classes if desired
+                    className="animate-in fade-in zoom-in-95"
+                    style={{ animationDelay: `${dummyCharacteristics.indexOf(char) * 0.05}s` }} // Stagger animation
+                  />
+                ))}
+              </div>
+              {/* Placeholder for future notes or summary related to characteristics */}
+              {/* <p className="text-xs text-muted-foreground mt-4 text-center">
+                These characteristics are based on automated analysis.
+              </p> */}
             </TabsContent>
-    ```
-    *   **Key:** Make sure the field names used (e.g., `contentDetails?.format`, `contentDetails?.type`) exactly match the column names returned by your `getContentById` service function (which should reflect your database schema).
 
-**Step 4: Update Page Header (Optional)**
-
-*   **Action:** Update the main `<h1>` tag at the top of the detail view section to dynamically display the content's name.
-*   **Code:**
-
-    ```typescript name=src/pages/ContentReportsPage.tsx
-      {/* 1. Header Area */}
-      <header className="mb-6">
-        {/* Update the h1 tag */}
-        <h1 className="text-3xl font-bold">{contentDetails?.content_name || 'Content Report'}</h1>
-        <p className="text-muted-foreground mt-1">
-          Comprehensive analysis of content performance and recommendations for optimization.
-        </p>
-      </header>
+            {/* ... TabsContent for improvements ... */}
+          </Tabs>
     ```
 
 **Step 5: Verification**
 
 1.  Run your development server (`yarn dev` or `npm run dev`).
-2.  Navigate to the `/content-reports` page.
-3.  Click "View Report" for a content item.
-4.  On the detail page, click the "Content Details" tab.
-5.  **Verify:**
-    *   All the fields you added using `<DetailItem>` are displayed.
-    *   The values shown match the data in your Supabase `content` table for that specific `contentId`.
-    *   Fields that are `null` or empty in the database correctly show "N/A".
-    *   Date fields are formatted correctly.
-    *   The icons appear next to the labels.
-    *   The main page title now shows the specific content's name.
+2.  Navigate to the detail view of a content report (e.g., `/content-reports/123`).
+3.  **Verify:**
+    *   A fourth tab labeled "Characteristics" appears in the tab list.
+    *   Clicking the "Characteristics" tab displays the content.
+    *   The content area shows a grid of cards (likely 2 columns on wider screens).
+    *   Each card displays the correct icon, label, and dummy value from the `dummyCharacteristics` array.
+    *   The layout and styling roughly match the target image.
 
 ---
 
-By following these steps, you will have successfully refactored the "Content Details" tab to display a comprehensive set of information directly fetched from your `content` table, using a reusable component for consistency.
+You have now successfully added the "Characteristics" tab using dummy data. When you have the real data source (presumably from the `content_analysis` table or similar in Supabase):
+
+1.  Fetch this data alongside the `contentDetails` and `scoresData` (perhaps using a new hook or modifying an existing one).
+2.  Replace the `dummyCharacteristics` array with logic to process the fetched analysis data into the same structure (`{ id, label, value, icon }`).
+3.  The rest of the rendering logic using `.map()` and `<CharacteristicCard>` will remain the same.
