@@ -33,6 +33,8 @@ export interface ProcessedContent {
     type: string;
     size: number;
     url: string;
+    bucket_id?: string;
+    storage_path?: string;
   }[];
   createdAt: string;
   status: 'processing' | 'analyzed' | 'error';
@@ -45,7 +47,7 @@ export interface ProcessedContent {
  * @param subpath - Optional subfolder within the client-content bucket (defaults to empty string)
  * @returns The URL of the uploaded file
  */
-export const uploadFile = async (file: File, subpath = ''): Promise<{ url: string, error: Error | null }> => {
+export const uploadFile = async (file: File, subpath = ''): Promise<{ url: string, bucket_id: string, storage_path: string, error: Error | null }> => {
   try {
     // Check if user is authenticated with more detailed logging
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
@@ -82,8 +84,11 @@ export const uploadFile = async (file: File, subpath = ''): Promise<{ url: strin
       upsert: false
     };
 
+    // Define the bucket name
+    const bucketName = 'client-content';
+
     const { data, error } = await supabase.storage
-      .from('client-content')
+      .from(bucketName)
       .upload(filePath, file, uploadOptions);
 
     if (error) {
@@ -101,14 +106,24 @@ export const uploadFile = async (file: File, subpath = ''): Promise<{ url: strin
     }
 
     const { data: urlData } = supabase.storage
-      .from('client-content')
+      .from(bucketName)
       .getPublicUrl(filePath);
 
     console.log('File uploaded successfully:', urlData.publicUrl);
-    return { url: urlData.publicUrl, error: null };
+    return { 
+      url: urlData.publicUrl, 
+      bucket_id: bucketName, 
+      storage_path: filePath, 
+      error: null 
+    };
   } catch (error) {
     console.error('Error uploading file:', error);
-    return { url: '', error: error as Error };
+    return { 
+      url: '', 
+      bucket_id: '', 
+      storage_path: '', 
+      error: error as Error 
+    };
   }
 };
 
@@ -121,7 +136,7 @@ export const uploadFile = async (file: File, subpath = ''): Promise<{ url: strin
  */
 export const storeContentMetadata = async (
   metadata: ContentMetadata,
-  files: { name: string; type: string; size: number; url: string }[]
+  files: { name: string; type: string; size: number; url: string; bucket_id?: string; storage_path?: string; }[]
 ): Promise<{ data: ProcessedContent | null, error: Error | null }> => {
   try {
     // Get the current user with more detailed logging
@@ -159,10 +174,14 @@ export const storeContentMetadata = async (
     const userId = user.id;
     console.log('Using user ID for client_id:', userId);
     
-    // Try a new approach: use a raw SQL query via function call (RPC)
-    // This can sometimes work when direct inserts fail due to RLS issues
+    // Use bucket information from the first file (if available)
+    const firstFile = files.length > 0 ? files[0] : null;
+    const bucketId = firstFile?.bucket_id || null;
+    const filePath = firstFile?.storage_path || null;
     
     console.log('Creating insert data with content_name:', metadata.title || 'Untitled Content');
+    console.log('Using bucket_id:', bucketId);
+    console.log('Using file_storage_path:', filePath);
     
     // First, let's try to directly access the table (this should fail if it's a pure RLS issue)
     const testResult = await supabase
@@ -172,9 +191,6 @@ export const storeContentMetadata = async (
     
     console.log('Test table access result:', testResult);
     
-    // Try different approach: create a stored function in Supabase that handles the insert
-    // For now, we'll use the direct method with lots of debugging
-    
     // Create insert data structure matching ONLY the actual database schema fields
     const insertData = {
       // Required fields
@@ -183,10 +199,12 @@ export const storeContentMetadata = async (
       // Optional fields
       agency: metadata.agency || null,
       audience: metadata.audience || null,
+      bucket_id: bucketId,
       campaign_aligned_to: metadata.campaign || null,
       client_id: userId, // Must match auth.uid()
       content_objectives: metadata.businessObjective || null,
       expiry_date: metadata.expiryDate || null,
+      file_storage_path: filePath,
       format: metadata.contentFormat || null,
       funnel_alignment: metadata.campaign || null,
       strategy_aligned_to: metadata.businessObjective || null,
@@ -275,7 +293,7 @@ export const storeContentMetadata = async (
  */
 function processContentData(
   data: any, 
-  files: { name: string; type: string; size: number; url: string }[]
+  files: { name: string; type: string; size: number; url: string; bucket_id?: string; storage_path?: string; }[]
 ): { data: ProcessedContent | null, error: Error | null } {
   // Transform the data to match our ProcessedContent interface
   const processedContent: ProcessedContent = {
@@ -302,7 +320,9 @@ function processContentData(
       name: file.name,
       type: file.type,
       size: file.size,
-      url: file.url
+      url: file.url,
+      bucket_id: file.bucket_id || data?.bucket_id,
+      storage_path: file.storage_path || data?.file_storage_path
     })),
     createdAt: data?.created_at || new Date().toISOString(),
     status: data?.status || 'processing'
@@ -338,7 +358,9 @@ export const uploadContent = async (
       name: file.name,
       type: file.type,
       size: file.size,
-      url: results[index].url
+      url: results[index].url,
+      bucket_id: results[index].bucket_id,
+      storage_path: results[index].storage_path
     }));
     
     // Store metadata and file references
@@ -438,7 +460,17 @@ export const getProcessedContent = async (
           contentType: item.type || undefined
         },
         // In a production app, you would fetch files from storage based on content ID
-        files: [], 
+        files: item.file_storage_path ? [
+          {
+            id: uuidv4(),
+            name: item.file_storage_path.split('/').pop() || 'file',
+            type: '', // Not known without fetching
+            size: 0, // Not known without fetching
+            url: item.file_storage_path ? supabase.storage.from(item.bucket_id || 'client-content').getPublicUrl(item.file_storage_path).data.publicUrl : '',
+            bucket_id: item.bucket_id || 'client-content',
+            storage_path: item.file_storage_path
+          }
+        ] : [], 
         createdAt: item.created_at || new Date().toISOString(),
         status: item.status || 'processing'
       };

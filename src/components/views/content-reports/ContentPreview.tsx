@@ -2,7 +2,7 @@ import React from 'react';
 import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
-import { CalendarIcon, ClockIcon, UsersIcon, GlobeIcon } from "lucide-react"; // Added GlobeIcon
+import { CalendarIcon, ClockIcon, UsersIcon, GlobeIcon, Image } from "lucide-react"; // Added Image icon
 import { Badge } from "@/components/ui/badge";
 
 // Interface matching the example, using optional props
@@ -26,8 +26,11 @@ export function ContentPreview({
   audience
 }: ContentPreviewProps) {
   
-  // Placeholder image if none provided
-  const displayImageSrc = imageSrc || 'https://gbzrparwhkacvfasltbe.supabase.co/storage/v1/object/sign/client-content/Test_Email_1.png?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1cmwiOiJjbGllbnQtY29udGVudC9UZXN0X0VtYWlsXzEucG5nIiwiaWF0IjoxNzQzNjQ5NTA5LCJleHAiOjE3NzUxODU1MDl9.wfzFu6fY3kTCbECLa26_gB-BwAWCUbQNaNdqAizTvB4';
+  // State to track if image failed to load
+  const [imageError, setImageError] = React.useState(false);
+  
+  // Using the image URL only if it's not null/undefined
+  const displayImageSrc = imageSrc || '';
   const displayTitle = title || 'Untitled Content';
 
   // Simple date formatting (can be improved with date-fns)
@@ -52,18 +55,26 @@ export function ContentPreview({
       <CardContent className="p-0">
         <div className="relative">
           <AspectRatio ratio={16 / 9}>
-            <img 
-              src={displayImageSrc} 
-              alt={displayTitle}
-              className="object-cover w-full h-full rounded-t-lg" 
-              loading="lazy"
-              onError={(e) => { 
-                // Handle broken images
-                const target = e.target as HTMLImageElement;
-                target.onerror = null; // Prevent infinite loop
-                target.src = 'https://via.placeholder.com/1600x900.png?text=Preview+Error';
-              }}
-            />
+            {!displayImageSrc || imageError ? (
+              // Placeholder for when no image is available or it fails to load
+              <div className="w-full h-full bg-gray-200 dark:bg-gray-800 flex items-center justify-center">
+                <div className="flex flex-col items-center text-gray-500 dark:text-gray-400">
+                  <Image className="w-12 h-12 mb-2 opacity-50" />
+                  <span className="text-sm">No preview available</span>
+                </div>
+              </div>
+            ) : (
+              <img 
+                src={displayImageSrc} 
+                alt={displayTitle}
+                className="object-cover w-full h-full rounded-t-lg" 
+                loading="lazy"
+                onError={(e) => {
+                  console.log(`Image failed to load: ${displayImageSrc}`);
+                  setImageError(true);
+                }}
+              />
+            )}
           </AspectRatio>
           {/* Gradient overlay as per example */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent rounded-t-lg"></div>

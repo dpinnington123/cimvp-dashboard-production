@@ -4,6 +4,7 @@ import ErrorDisplay from "@/components/common/ErrorDisplay";
 import { useParams, Link } from "react-router-dom";
 import { useScores } from "@/hooks/useScores";
 import React from "react";
+import { supabase } from "@/lib/supabaseClient"; // Import supabase client
 
 // Import Shared UI components
 import {
@@ -27,15 +28,15 @@ import { CircularProgressIndicator } from "@/components/common/CircularProgressI
 
 // Define score type based on error messages
 type Score = {
+  id: number;
+  content_review_id: number; // Changed from content_id to content_review_id
   check_id: number;
   check_name: string | null;
   client_id: string | null;
   comments: string | null;
   confidence: number | null;
-  content_id: number;
   created_at: string | null;
-  fix_recommendation: string | null;
-  id: number;
+  fix_recommendation: string | null; // Was previously fix_recommendation
   score_value: number | null; // Scores from database are on a scale of 0-5
   updated_at: string | null;
   check_description?: string | null; // Optional field that might be present
@@ -84,8 +85,23 @@ export default function ContentReportsPage() {
     error: errorScores,
   } = useScores(isValidId ? contentId : null, { enabled: isDetailView && isValidId });
 
-  // Access scores array directly
+  // Access scores array directly - the useScores hook now returns scores via content_reviews
   const contentScores = scoresData as Score[] | undefined;
+  
+  // Generate image URL from file_storage_path if available
+  const imageUrl = React.useMemo(() => {
+    if (contentDetails?.file_storage_path) {
+      console.log("Generating image URL for path:", contentDetails.file_storage_path);
+      const { data } = supabase.storage
+        .from('client-content') // Use the Supabase bucket name
+        .getPublicUrl(contentDetails.file_storage_path);
+      
+      console.log("Generated public URL:", data?.publicUrl);
+      return data?.publicUrl;
+    }
+    console.log("No file_storage_path found for content");
+    return null;
+  }, [contentDetails?.file_storage_path]);
 
   // --- Calculations & Helpers (Moved Up) ---
   // Calculate overall score (average of all scores) - MUST BE CALLED UNCONDITIONALLY
@@ -285,7 +301,7 @@ export default function ContentReportsPage() {
         <div className="lg:col-span-1 space-y-6">
           {/* Use our new ContentPreview component */}
           <ContentPreview
-            imageSrc={undefined}
+            imageSrc={imageUrl}
             title={contentDetails?.content_name || 'Untitled Content'}
             contentType={contentDetails?.format}
             datePublished={contentDetails?.created_at ? new Date(contentDetails.created_at).toLocaleDateString() : null}
@@ -339,7 +355,7 @@ export default function ContentReportsPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {contentScores && contentScores.map((score: Score, index: number) => (
                   <ScoreCard
-                    key={index}
+                    key={score.id}
                     title={score.check_name || `Score ${index + 1}`}
                     value={convertScoreToPercentage(score.score_value)}
                     description={score.check_description || score.comments || "This metric evaluates an aspect of your content's effectiveness."}
@@ -421,7 +437,7 @@ export default function ContentReportsPage() {
                     
                     return (
                       <ImprovementArea
-                        key={index}
+                        key={score.id}
                         title={score.check_name || `Improvement Area ${index + 1}`}
                         description={score.fix_recommendation || "No specific recommendation provided."}
                         priority={priority}

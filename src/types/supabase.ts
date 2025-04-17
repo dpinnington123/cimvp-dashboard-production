@@ -84,12 +84,14 @@ export type Database = {
         Row: {
           agency: string | null
           audience: string | null
+          bucket_id: string | null
           campaign_aligned_to: string | null
           client_id: string | null
           content_name: string
           content_objectives: string | null
           created_at: string | null
           expiry_date: string | null
+          file_storage_path: string | null
           format: string | null
           funnel_alignment: string | null
           id: number
@@ -101,12 +103,14 @@ export type Database = {
         Insert: {
           agency?: string | null
           audience?: string | null
+          bucket_id?: string | null
           campaign_aligned_to?: string | null
           client_id?: string | null
           content_name: string
           content_objectives?: string | null
           created_at?: string | null
           expiry_date?: string | null
+          file_storage_path?: string | null
           format?: string | null
           funnel_alignment?: string | null
           id?: number
@@ -118,12 +122,14 @@ export type Database = {
         Update: {
           agency?: string | null
           audience?: string | null
+          bucket_id?: string | null
           campaign_aligned_to?: string | null
           client_id?: string | null
           content_name?: string
           content_objectives?: string | null
           created_at?: string | null
           expiry_date?: string | null
+          file_storage_path?: string | null
           format?: string | null
           funnel_alignment?: string | null
           id?: number

@@ -6,6 +6,7 @@ const scoresByContentQueryKey = (contentId: number) => ['scores', 'byContent', c
 
 /**
  * Custom hook to fetch scores for a specific content item using React Query.
+ * This now works with the updated scoreService which joins scores through content_reviews.
  * Handles caching, refetching, loading, and error states.
  * @param contentId The ID of the content item for which to fetch scores.
  * @param options Optional query options, e.g., { enabled: false } to disable automatic fetching.
@@ -23,4 +24,5 @@ export const useScores = (contentId: number | null, options?: { enabled?: boolea
   });
 };
 
-// Potential future mutations for scores could be added here if needed 
+// Potential future hooks for working with content reviews could be added here
+// export const useContentReviews = (contentId: number | null, options?: { enabled?: boolean }) => { ... }; 

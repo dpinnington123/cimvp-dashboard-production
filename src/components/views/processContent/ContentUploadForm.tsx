@@ -89,8 +89,7 @@ const ContentUploadForm: React.FC = () => {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+    e.preventDefault();    
     if (files.length === 0) {
       toast({
         title: "No files selected",
