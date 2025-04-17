@@ -18,13 +18,18 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Star } from "lucide-react";
+import { 
+  Star, ArrowLeft, CalendarIcon, ClockIcon, UsersIcon, FileTextIcon,
+  TypeIcon, TargetIcon, BriefcaseIcon, Building2Icon, BarChart3Icon,
+  InfoIcon, AlertCircleIcon
+} from "lucide-react";
 
 // Import our content report components
 import { ContentPreview } from "@/components/views/content-reports/ContentPreview";
 import { ScoreCard } from "../components/views/content-reports/ScoreCard";
 import { ImprovementArea } from "@/components/views/content-reports/ImprovementArea";
 import { CircularProgressIndicator } from "@/components/common/CircularProgressIndicator";
+import { DetailItem } from "@/components/views/content-reports/DetailItem";
 
 // Define score type based on error messages
 type Score = {
@@ -49,6 +54,23 @@ const convertScoreToPercentage = (score: number | null): number => {
   const clampedScore = Math.max(0, Math.min(5, score));
   // Convert to percentage (0-100)
   return Math.round(clampedScore * 20);
+};
+
+// Helper function to format dates
+const formatDate = (dateString: string | null | undefined): string => {
+  if (!dateString) return "N/A";
+  try {
+    // Example format: Jan 1, 2024
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  } catch (e) {
+    // Handle potential invalid date strings gracefully
+    console.error("Error formatting date:", dateString, e);
+    return "Invalid Date";
+  }
 };
 
 export default function ContentReportsPage() {
@@ -281,7 +303,7 @@ export default function ContentReportsPage() {
 
       {/* 1. Header Area */}
       <header className="mb-6">
-        <h1 className="text-3xl font-bold">Content Report</h1>
+        <h1 className="text-3xl font-bold">{contentDetails?.content_name || 'Content Report'}</h1>
         <p className="text-muted-foreground mt-1">
           Comprehensive analysis of content performance and recommendations for optimization.
         </p>
@@ -367,57 +389,77 @@ export default function ContentReportsPage() {
             {/* Content Details Tab Content */}
             <TabsContent value="details" className="mt-0 p-0 animate-in fade-in-50">
               <Card>
-                <CardContent className="p-6">
-                  <div className="space-y-6">
-                    {/* Content Overview */}
-                    {/* body no longer exists, so skip this section */}
-                    
-                    {/* Content Goals - Placeholder, replace with actual data if available */}
-                    <div className="space-y-2">
-                      <h3 className="text-lg font-medium flex items-center gap-2">
-                        <span className="w-5 h-5 text-primary">🎯</span>
-                        Content Goals
-                      </h3>
-                      <ul className="space-y-2">
-                        <li className="flex items-start gap-2">
-                          <span className="text-muted-foreground mt-1 flex-shrink-0">→</span>
-                          <span className="text-muted-foreground">Drive engagement and signups</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <span className="text-muted-foreground mt-1 flex-shrink-0">→</span>
-                          <span className="text-muted-foreground">Explain product features clearly</span>
-                        </li>
-                      </ul>
-                    </div>
-                    
-                    {/* Metadata in a grid */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 pt-2">
-                      <div className="flex flex-col p-4 rounded-lg border bg-muted/30">
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-                          <span className="w-4 h-4">📅</span>
-                          <span>Published On</span>
-                        </div>
-                        <p className="font-medium">
-                          {contentDetails?.created_at ? new Date(contentDetails.created_at).toLocaleDateString() : "Not specified"}
-                        </p>
-                      </div>
-                      
-                      <div className="flex flex-col p-4 rounded-lg border bg-muted/30">
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-                          <span className="w-4 h-4">⏱️</span>
-                          <span>Format</span>
-                        </div>
-                        <p className="font-medium">{contentDetails?.format || "Not specified"}</p>
-                      </div>
-                      
-                      <div className="flex flex-col p-4 rounded-lg border bg-muted/30">
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-                          <span className="w-4 h-4">👥</span>
-                          <span>Target Audience</span>
-                        </div>
-                        <p className="font-medium">{contentDetails?.audience || "Not specified"}</p>
-                      </div>
-                    </div>
+                <CardContent className="p-6 space-y-6">
+                  {/* Content Objectives (Displayed separately for potentially longer text) */}
+                  <div className="space-y-2">
+                    <h3 className="text-lg font-medium flex items-center gap-2">
+                      <TargetIcon className="w-5 h-5 text-primary" />
+                      Content Objectives
+                    </h3>
+                    <p className="text-sm text-muted-foreground bg-muted/30 p-3 rounded-md border">
+                      {/* Access the objectives field from contentDetails object */}
+                      {contentDetails?.content_objectives || "No objectives specified."}
+                    </p>
+                  </div>
+
+                  {/* Metadata Grid using DetailItem */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                    {/* Map each field from contentDetails to a DetailItem */}
+                    <DetailItem
+                      icon={<FileTextIcon className="w-3.5 h-3.5" />}
+                      label="Format"
+                      value={contentDetails?.format} // Access the 'format' field
+                    />
+                    <DetailItem
+                      icon={<TypeIcon className="w-3.5 h-3.5" />}
+                      label="Type"
+                      value={contentDetails?.type} // Access the 'type' field
+                    />
+                     <DetailItem
+                      icon={<UsersIcon className="w-3.5 h-3.5" />}
+                      label="Audience"
+                      value={contentDetails?.audience} // Access the 'audience' field
+                    />
+                     <DetailItem
+                      icon={<InfoIcon className="w-3.5 h-3.5" />}
+                      label="Status"
+                      value={contentDetails?.status} // Access the 'status' field
+                    />
+                    <DetailItem
+                      icon={<BriefcaseIcon className="w-3.5 h-3.5" />}
+                      label="Campaign"
+                      value={contentDetails?.campaign_aligned_to} // Access the 'campaign_aligned_to' field
+                    />
+                     <DetailItem
+                      icon={<Building2Icon className="w-3.5 h-3.5" />}
+                      label="Agency"
+                      value={contentDetails?.agency} // Access the 'agency' field
+                    />
+                    <DetailItem
+                      icon={<TargetIcon className="w-3.5 h-3.5" />}
+                      label="Strategy Alignment"
+                      value={contentDetails?.strategy_aligned_to} // Access the 'strategy_aligned_to' field
+                    />
+                    <DetailItem
+                      icon={<BarChart3Icon className="w-3.5 h-3.5" />}
+                      label="Funnel Alignment"
+                      value={contentDetails?.funnel_alignment} // Access the 'funnel_alignment' field
+                    />
+                     <DetailItem
+                      icon={<CalendarIcon className="w-3.5 h-3.5" />}
+                      label="Created On"
+                      value={formatDate(contentDetails?.created_at)} // Format the date
+                    />
+                    <DetailItem
+                      icon={<ClockIcon className="w-3.5 h-3.5" />}
+                      label="Expiry Date"
+                      value={formatDate(contentDetails?.expiry_date)} // Format the date
+                    />
+                    <DetailItem
+                      icon={<AlertCircleIcon className="w-3.5 h-3.5" />}
+                      label="Last Updated"
+                      value={formatDate(contentDetails?.updated_at)} // Format the date
+                    />
                   </div>
                 </CardContent>
               </Card>
