@@ -150,7 +150,7 @@ const ContentUploadForm: React.FC = () => {
         description: "Your content has been uploaded and is being processed for analysis."
       });
       
-      // Reset form and go to next step for analysis
+      // Reset form state
       setFiles([]);
       setMetadata({
         content_name: '',
@@ -166,17 +166,11 @@ const ContentUploadForm: React.FC = () => {
         type: '',
       });
       
-      // Move to the next step (analysis)
-      setCurrentStep(3);
+      // Reset step to beginning
+      setCurrentStep(1);
       
-      // After 2 seconds, navigate to view the content
-      setTimeout(() => {
-        if (result.data) {
-          navigate(`/content/${result.data.id}`);
-        } else {
-          navigate('/dashboard');
-        }
-      }, 2000);
+      // Navigate to the processing page immediately
+      navigate('/content-processing');
       
     } catch (error) {
       console.error('Upload error:', error);

@@ -9,6 +9,7 @@ import BrandStrategyPage from './pages/BrandStrategyPage';
 import LoginPage from './pages/LoginPage';
 import NotFound from './pages/NotFound';
 import ProcessContentPage from './pages/ProcessContentPage';
+import ContentProcessingPage from './pages/ContentProcessingPage';
 import { Toaster } from "@/components/ui/sonner";
 import AuthProvider, { useAuth } from './hooks/useAuth';
 
@@ -56,6 +57,7 @@ function AppRoutes() {
         <Route path="brand-dashboard" element={<BrandDashboardPage />} />
         <Route path="strategic-dashboard" element={<StrategicDashboardPage />} />
         <Route path="process-content" element={<ProcessContentPage />} />
+        <Route path="content-processing" element={<ContentProcessingPage />} />
         <Route path="brand-strategy" element={<BrandStrategyPage />} />
       </Route>
       <Route path="*" element={<NotFound />} />
