@@ -9,9 +9,10 @@ export interface ImprovementAreaProps {
   description: string;
   priority: 'high' | 'medium' | 'low'; // Type for priority
   className?: string;
+  style?: React.CSSProperties; // Add style prop
 }
 
-export function ImprovementArea({ title, description, priority, className }: ImprovementAreaProps) {
+export function ImprovementArea({ title, description, priority, className, style }: ImprovementAreaProps) {
   const getPriorityConfig = (priority: 'high' | 'medium' | 'low') => {
     switch (priority) {
       case 'high':
@@ -43,7 +44,7 @@ export function ImprovementArea({ title, description, priority, className }: Imp
   const Icon = config.icon;
 
   return (
-    <Card className={cn("border animate-in slide-in-from-bottom-2", config.borderColor, className)}> 
+    <Card className={cn("border animate-in slide-in-from-bottom-2", config.borderColor, className)} style={style}> 
       {/* Adjusted animation */}
       <CardHeader className={cn("flex flex-row items-center gap-4 py-4", config.bgColor)}> 
         {/* Icon wrapper */}

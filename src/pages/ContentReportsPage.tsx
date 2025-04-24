@@ -4,8 +4,9 @@ import ErrorDisplay from "@/components/common/ErrorDisplay";
 import { useParams, Link } from "react-router-dom";
 import { useScores, useCategoryReviewSummaries } from "@/hooks/useScores";
 import { type CategoryReviewSummary } from "@/services/scoreService";
-import React from "react";
+import React, { useState } from "react";
 import { supabase } from "@/lib/supabaseClient"; // Import supabase client
+import eyeTrackingImage from "../assets/eyetracking.png"; // Import the eye tracking image
 
 // Import Shared UI components
 import {
@@ -23,7 +24,7 @@ import {
   Star, ArrowLeft, CalendarIcon, ClockIcon, UsersIcon, FileTextIcon,
   TypeIcon, TargetIcon, BriefcaseIcon, Building2Icon, BarChart3Icon,
   InfoIcon, AlertCircleIcon, Hash, Image as ImageIcon, Video, AlignLeft,
-  Thermometer, Smile
+  Thermometer, Smile, ChevronDown
 } from "lucide-react";
 
 // Import our content report components
@@ -33,6 +34,7 @@ import { ImprovementArea } from "@/components/views/content-reports/ImprovementA
 import { CircularProgressIndicator } from "@/components/common/CircularProgressIndicator";
 import { DetailItem } from "@/components/views/content-reports/DetailItem";
 import { CharacteristicCard } from "@/components/views/content-reports/CharacteristicCard";
+import { Button } from "@/components/ui/button";
 
 // Define score type based on error messages
 type Score = {
@@ -129,6 +131,9 @@ export default function ContentReportsPage() {
   const contentId = contentIdParam ? parseInt(contentIdParam, 10) : null;
   // Optional: Add check if parsing failed (result is NaN)
   const isValidId = contentId !== null && !isNaN(contentId);
+
+  // State to control how many improvement cards to show
+  const [improvementsToShow, setImprovementsToShow] = useState(4);
 
   // --- Data Fetching ---
   // For list view: fetch the list of content items
@@ -725,6 +730,13 @@ export default function ContentReportsPage() {
               <div className="grid grid-cols-1 gap-4">
                 {contentScores && contentScores
                   .filter((score: Score) => score.fix_recommendation && convertScoreToPercentage(score.score_value) < 80)
+                  // Sort by priority: high (lowest scores) to low (highest scores)
+                  .sort((a, b) => {
+                    const scoreA = convertScoreToPercentage(a.score_value);
+                    const scoreB = convertScoreToPercentage(b.score_value);
+                    return scoreA - scoreB; // Lowest scores (high priority) first
+                  })
+                  .slice(0, improvementsToShow)
                   .map((score: Score, index: number) => {
                     // Determine priority based on converted percentage score
                     const percentageScore = convertScoreToPercentage(score.score_value);
@@ -738,6 +750,8 @@ export default function ContentReportsPage() {
                         title={score.check_name || `Improvement Area ${index + 1}`}
                         description={score.fix_recommendation || "No specific recommendation provided."}
                         priority={priority}
+                        className="animate-in fade-in-up"
+                        style={{ animationDelay: `${index * 0.1}s` }}
                       />
                     );
                   })}
@@ -753,6 +767,19 @@ export default function ContentReportsPage() {
                   </Card>
                 )}
               </div>
+              
+              {/* Load More button */}
+              {contentScores && 
+               contentScores.filter((score: Score) => score.fix_recommendation && convertScoreToPercentage(score.score_value) < 80).length > improvementsToShow && (
+                <Button
+                  variant="outline"
+                  className="w-full mt-4 border-dashed"
+                  onClick={() => setImprovementsToShow(prev => prev + 4)}
+                >
+                  <ChevronDown className="mr-2 h-4 w-4" />
+                  Load More Improvements
+                </Button>
+              )}
             </TabsContent>
 
             {/* Characteristics Tab Content */}
@@ -779,6 +806,43 @@ export default function ContentReportsPage() {
                   </Card>
                 )}
               </div>
+              
+              {/* Eye Tracking Visualization Section */}
+              <div className="mt-8">
+                <Card className="col-span-full border-dashed border-2 border-primary/20">
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Smile className="w-5 h-5 text-primary" />
+                      Content Attention Analysis
+                    </CardTitle>
+                    <CardDescription>
+                      Heatmap visualization showing where users focus their attention
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="relative">
+                    {/* Coming Soon Sash Overlay */}
+                    <div className="absolute top-0 right-0 w-full h-full overflow-hidden pointer-events-none z-10">
+                      <div className="absolute top-[20px] right-[-70px] bg-orange-500 text-white py-2 px-20 font-bold text-sm transform rotate-45 shadow-md z-10">
+                        COMING SOON
+                      </div>
+                    </div>
+                    
+                    {/* Eye Tracking Image */}
+                    <div className="rounded-md overflow-hidden bg-muted/30 border">
+                      <img 
+                        src={eyeTrackingImage} 
+                        alt="Eye tracking heatmap visualization" 
+                        className="w-full h-auto object-cover rounded" 
+                        style={{ maxHeight: '400px' }}
+                      />
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-4">
+                      Eye tracking analysis shows where readers spend the most time and what elements catch their attention first.
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+              
               {/* Placeholder for future notes or summary related to characteristics */}
               <p className="text-xs text-muted-foreground mt-4 text-center">
                 These characteristics are based on automated analysis of your content.
