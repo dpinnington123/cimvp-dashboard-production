@@ -47,7 +47,7 @@ const ContentUploadForm: React.FC = () => {
     format: '',
     funnel_alignment: '',
     strategy_aligned_to: '',
-    status: '',
+    status: 'draft',
     type: '',
   });
   const [currentStep, setCurrentStep] = useState(1);
@@ -162,7 +162,7 @@ const ContentUploadForm: React.FC = () => {
         format: '',
         funnel_alignment: '',
         strategy_aligned_to: '',
-        status: '',
+        status: 'draft',
         type: '',
       });
       
@@ -426,13 +426,18 @@ const ContentUploadForm: React.FC = () => {
                   <Label htmlFor="status" className="flex items-center gap-2">
                     <Info className="h-4 w-4" /> Status
                   </Label>
-                  <Input 
-                    id="status" 
-                    placeholder="Enter status (e.g., draft, published)" 
+                  <Select 
                     value={metadata.status} 
-                    onChange={e => handleMetadataChange('status', e.target.value)} 
-                    className="focus-ring" 
-                  />
+                    onValueChange={value => handleMetadataChange('status', value)}
+                  >
+                    <SelectTrigger className="focus-ring">
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="draft">Draft</SelectItem>
+                      <SelectItem value="live">Live</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </div>

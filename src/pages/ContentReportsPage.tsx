@@ -39,6 +39,7 @@ type Score = {
   content_review_id: number; // Changed from content_id to content_review_id
   check_id: number;
   check_name: string | null;
+  check_sub_category: string | null; // Added check_sub_category field
   client_id: string | null;
   comments: string | null;
   confidence: number | null;
@@ -47,6 +48,15 @@ type Score = {
   score_value: number | null; // Scores from database are on a scale of 0-5
   updated_at: string | null;
   check_description?: string | null; // Optional field that might be present
+};
+
+// Define type for processed characteristic data
+type CharacteristicData = {
+  id: number;
+  label: string;
+  value: string | number;
+  comments: string | null;
+  icon: React.ReactNode;
 };
 
 // Helper function to convert score from 0-5 scale to 0-100 percentage
@@ -75,18 +85,27 @@ const formatDate = (dateString: string | null | undefined): string => {
   }
 };
 
-// --- Dummy Data for Characteristics ---
-const dummyCharacteristics = [
-  { id: 'headlines', label: 'Number of Headlines', value: 12, icon: <Hash className="w-4 h-4" /> },
-  { id: 'images', label: 'Number of Images', value: 8, icon: <ImageIcon className="w-4 h-4" /> },
-  { id: 'videos', label: 'Number of Videos', value: 2, icon: <Video className="w-4 h-4" /> },
-  { id: 'pages', label: 'Number of Pages', value: 5, icon: <FileTextIcon className="w-4 h-4" /> },
-  { id: 'words', label: 'Number of Words', value: 1850, icon: <AlignLeft className="w-4 h-4" /> },
-  { id: 'readingAge', label: 'Reading Age', value: '14-16 years', icon: <Thermometer className="w-4 h-4" /> },
-  { id: 'emotion', label: 'Emotional Strength', value: 'Moderate to Strong', icon: <Smile className="w-4 h-4" /> },
-  { id: 'cta', label: 'Number of Calls to Action', value: 6, icon: <TargetIcon className="w-4 h-4" /> },
-];
-// --- End Dummy Data ---
+// Helper function to get characteristic icon based on check_name
+const getCharacteristicIcon = (checkName: string | null): React.ReactNode => {
+  switch (checkName) {
+    case 'Number of Headlines':
+      return <Hash className="w-4 h-4" />;
+    case 'Number of Images':
+      return <ImageIcon className="w-4 h-4" />;
+    case 'Number of Videos':
+      return <Video className="w-4 h-4" />;
+    case 'Number of Pages':
+      return <FileTextIcon className="w-4 h-4" />;
+    case 'Number of Words':
+      return <AlignLeft className="w-4 h-4" />;
+    case 'Reading Age':
+      return <Thermometer className="w-4 h-4" />;
+    case 'CTA Effectiveness':
+      return <TargetIcon className="w-4 h-4" />;
+    default:
+      return <InfoIcon className="w-4 h-4" />; // Default icon
+  }
+};
 
 export default function ContentReportsPage() {
   // --- State Management ---
@@ -139,6 +158,22 @@ export default function ContentReportsPage() {
     console.log("No file_storage_path found for content");
     return null;
   }, [contentDetails?.file_storage_path]);
+
+  // Generate characteristics data from scores where check_sub_category is 'Characteristics'
+  const characteristicsData = React.useMemo((): CharacteristicData[] => {
+    if (!contentScores) return [];
+    
+    // Filter scores where check_sub_category is 'Characteristics'
+    return contentScores
+      .filter(score => score.check_sub_category === 'Characteristics')
+      .map(score => ({
+        id: score.id,
+        label: score.check_name || 'Unknown Characteristic',
+        value: score.score_value || 0, // Use the exact score_value without conversion
+        comments: score.comments, // Pass comments to be displayed on the back of the card
+        icon: getCharacteristicIcon(score.check_name),
+      }));
+  }, [contentScores]);
 
   // --- Calculations & Helpers (Moved Up) ---
   // Calculate overall score (average of all scores) - MUST BE CALLED UNCONDITIONALLY
@@ -519,16 +554,26 @@ export default function ContentReportsPage() {
             {/* Characteristics Tab Content */}
             <TabsContent value="characteristics" className="mt-0 p-0 animate-in fade-in-50">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {dummyCharacteristics.map((char, index) => (
-                  <CharacteristicCard
-                    key={char.id}
-                    icon={char.icon}
-                    label={char.label}
-                    value={char.value}
-                    className="animate-in fade-in zoom-in-95"
-                    style={{ animationDelay: `${index * 0.05}s` }} // Stagger animation
-                  />
-                ))}
+                {characteristicsData.length > 0 ? (
+                  characteristicsData.map((characteristic: CharacteristicData) => (
+                    <CharacteristicCard
+                      key={characteristic.id}
+                      icon={characteristic.icon}
+                      label={characteristic.label}
+                      value={characteristic.value}
+                      comments={characteristic.comments}
+                      className="animate-in fade-in zoom-in-95"
+                      style={{ animationDelay: `${Math.random() * 0.2}s` }} // Random animation delay
+                    />
+                  ))
+                ) : (
+                  <Card className="col-span-full text-center py-6 bg-muted/50 border-border">
+                    <CardContent>
+                      <h3 className="text-foreground font-medium mb-1">No Characteristics Data</h3>
+                      <p className="text-sm text-muted-foreground">No content characteristics found in analysis results.</p>
+                    </CardContent>
+                  </Card>
+                )}
               </div>
               {/* Placeholder for future notes or summary related to characteristics */}
               <p className="text-xs text-muted-foreground mt-4 text-center">

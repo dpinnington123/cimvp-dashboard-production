@@ -11,7 +11,7 @@ const ContentProcessingPage: React.FC = () => {
     <div className="min-h-screen bg-background flex flex-col items-center py-12 px-4 sm:px-6 lg:px-8">
       {/* Header Section */}
       <div className="text-center mb-8">
-        <img src={logo} alt="Change Influence Logo" className="w-1/2 h-auto mb-6 mx-auto" />
+        {/*<img src={logo} alt="Change Influence Logo" className="w-1/2 h-auto mb-6 mx-auto" />*/}
         <div>
           <Badge variant="outline" className="py-1 px-3 text-xs border-blue-500 text-blue-700 mb-6">
             Content Analysis
