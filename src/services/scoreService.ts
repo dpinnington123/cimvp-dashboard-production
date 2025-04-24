@@ -4,6 +4,10 @@ import { Database } from '../types/supabase'; // Import the main Database type
 // Define type aliases using the generated Database type
 type Score = Database['public']['Tables']['scores']['Row'];
 type ContentReview = Database['public']['Tables']['content_reviews']['Row']; // Added type for content_reviews
+type CategoryReviewSummary = Database['public']['Tables']['category_review_summaries']['Row'];
+
+// Export the type so it can be used elsewhere
+export type { CategoryReviewSummary };
 
 /**
  * Fetches scores for a specific content item by joining through content_reviews table
@@ -79,6 +83,38 @@ export const getContentReviewsByContentId = async (contentId: number): Promise<C
     throw error;
   }
 
+  return data || [];
+};
+
+/**
+ * Fetches category review summaries for a specific content item
+ * These summaries contain pre-calculated average scores for each category
+ */
+export const getCategoryReviewSummaries = async (contentId: number): Promise<CategoryReviewSummary[]> => {
+  console.log(`Fetching category review summaries for content id: ${contentId}...`);
+
+  // Get content review IDs for this content
+  const contentReviews = await getContentReviewsByContentId(contentId);
+  if (!contentReviews.length) {
+    console.warn(`No content reviews found for content ${contentId}`);
+    return [];
+  }
+
+  // Extract the review IDs
+  const reviewIds = contentReviews.map(review => review.id);
+
+  // Get category review summaries for these reviews
+  const { data, error } = await supabase
+    .from('category_review_summaries')
+    .select('*')
+    .in('content_review_id', reviewIds);
+
+  if (error) {
+    console.error(`Error fetching category review summaries for content ${contentId}:`, error);
+    throw error;
+  }
+
+  console.log(`Found ${data?.length || 0} category review summaries for content id: ${contentId}.`);
   return data || [];
 };
 

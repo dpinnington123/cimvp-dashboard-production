@@ -30,6 +30,53 @@ export type Database = {
         }
         Relationships: []
       }
+      category_review_summaries: {
+        Row: {
+          id: number
+          content_review_id: number
+          category_name: string
+          category_score: number
+          num_checks: number
+          check_details: string | null
+          summary_comment: string | null
+          client_id: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: number
+          content_review_id: number
+          category_name: string
+          category_score: number
+          num_checks: number
+          check_details?: string | null
+          summary_comment?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: number
+          content_review_id?: number
+          category_name?: string
+          category_score?: number
+          num_checks?: number
+          check_details?: string | null
+          summary_comment?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "category_review_summaries_content_review_id_fkey"
+            columns: ["content_review_id"]
+            isOneToOne: false
+            referencedRelation: "content_reviews"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       checks: {
         Row: {
           bad_score: string

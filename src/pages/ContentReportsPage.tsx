@@ -2,7 +2,8 @@ import { useContentList, useContentDetail } from "@/hooks/useContent";
 import LoadingSpinner from "@/components/common/LoadingSpinner";
 import ErrorDisplay from "@/components/common/ErrorDisplay";
 import { useParams, Link } from "react-router-dom";
-import { useScores } from "@/hooks/useScores";
+import { useScores, useCategoryReviewSummaries } from "@/hooks/useScores";
+import { type CategoryReviewSummary } from "@/services/scoreService";
 import React from "react";
 import { supabase } from "@/lib/supabaseClient"; // Import supabase client
 
@@ -59,13 +60,23 @@ type CharacteristicData = {
   icon: React.ReactNode;
 };
 
-// Helper function to convert score from 0-5 scale to 0-100 percentage
+// Define types for the category scores data structure
+type CategoryData = {
+  checks: Score[];
+  average: number;
+};
+
+type CategoryScores = {
+  [key: string]: CategoryData;
+} | null;
+
+// Helper function to convert score from 0-10   scale to 0-100 percentage
 const convertScoreToPercentage = (score: number | null): number => {
   if (score === null) return 0;
-  // Ensure score is in range 0-5 before converting
-  const clampedScore = Math.max(0, Math.min(5, score));
+  // Ensure score is in range 0-10 before converting
+  const clampedScore = Math.max(0, Math.min(10, score));
   // Convert to percentage (0-100)
-  return Math.round(clampedScore * 20);
+  return Math.round(clampedScore * 10);
 };
 
 // Helper function to format dates
@@ -141,6 +152,13 @@ export default function ContentReportsPage() {
     error: errorScores,
   } = useScores(isValidId ? contentId : null, { enabled: isDetailView && isValidId });
 
+  // For detail view: fetch category review summaries for the specific content item
+  const {
+    data: categoryReviewSummaries,
+    isLoading: isLoadingCategorySummaries,
+    error: errorCategorySummaries,
+  } = useCategoryReviewSummaries(isValidId ? contentId : null, { enabled: isDetailView && isValidId });
+
   // Access scores array directly - the useScores hook now returns scores via content_reviews
   const contentScores = scoresData as Score[] | undefined;
   
@@ -174,6 +192,111 @@ export default function ContentReportsPage() {
         icon: getCharacteristicIcon(score.check_name),
       }));
   }, [contentScores]);
+
+  // Define a mapping between database category names and display names
+  const categoryDisplayMap: Record<string, string> = {
+    "Strategic alignment": "Strategic Alignment",
+    "Customer alignment": "Customer Alignment",
+    "Execution effectiveness": "Execution Effectiveness", 
+    "Format effectiveness": "Format Effectiveness",
+    // Add fallbacks for possible variations in the database
+    "strategic alignment": "Strategic Alignment",
+    "customer alignment": "Customer Alignment",
+    "execution effectiveness": "Execution Effectiveness", 
+    "format effectiveness": "Format Effectiveness"
+  };
+  
+  // Define the category descriptions
+  const categoryDescriptions: Record<string, string> = {
+    "Strategic Alignment": "Alignment with business priorities",
+    "Customer Alignment": "Customer focus and relevance",
+    "Execution Effectiveness": "Relevance to customer needs",
+    "Format Effectiveness": "Quality of implementation"
+  };
+
+  // Group scores by category and calculate averages for Performance Scores tab
+  const categoryScores = React.useMemo<CategoryScores>(() => {
+    // If we have category review summaries from the database, use those instead of calculating
+    if (categoryReviewSummaries && categoryReviewSummaries.length > 0) {
+      const result: CategoryScores = {};
+      
+      // Initialize our target categories with empty data
+      const targetCategories = ["Strategic Alignment", "Execution Effectiveness", "Format Effectiveness"];
+      targetCategories.forEach(category => {
+        result[category] = { checks: [], average: 0 };
+      });
+      
+      // Process each summary from the database
+      categoryReviewSummaries.forEach((summary) => {
+        // Map database category name to display name
+        const displayName = categoryDisplayMap[summary.category_name] || summary.category_name;
+        
+        // Only process categories we're interested in
+        if (targetCategories.includes(displayName) && contentScores) {
+          // Find the scores that belong to this category
+          const categoryChecks = contentScores.filter(
+            (score) => 
+              score.check_sub_category && 
+              score.check_sub_category.toLowerCase() === summary.category_name.toLowerCase()
+          );
+          
+          // Get average score as percentage (convert from 0-5 scale to 0-100)
+          // Handle potential null/NaN values
+          const averageScore = summary.category_score !== null && !isNaN(summary.category_score)
+            ? Math.round(summary.category_score)
+            : 0;
+          
+          // Store the data
+          result[displayName] = {
+            checks: categoryChecks,
+            average: averageScore
+          };
+        }
+      });
+      
+      return result;
+    }
+    
+    // Fallback to client-side calculation if no summaries are available
+    if (!contentScores) return null;
+    
+    // Define our target categories
+    const categories = ["Strategic Alignment", "Execution Effectiveness", "Format Effectiveness"];
+    
+    // Initialize our result structure
+    const result: CategoryScores = {};
+    categories.forEach(category => {
+      result[category] = { checks: [], average: 0 };
+    });
+    
+    // Filter and group scores by check_sub_category
+    categories.forEach(category => {
+      // For client-side filtering, we need to handle case variations
+      const categoryChecks = contentScores.filter(
+        (score) => {
+          const subCategory = score.check_sub_category;
+          if (!subCategory) return false;
+          
+          // Try to match regardless of case and normalize spaces/dashes
+          return subCategory.toLowerCase().replace(/[-_\s]+/g, ' ') === 
+                 category.toLowerCase().replace(/[-_\s]+/g, ' ');
+        }
+      );
+      
+      // Calculate average percentage score for this category
+      let sum = 0;
+      categoryChecks.forEach(check => {
+        sum += convertScoreToPercentage(check.score_value);
+      });
+      const average = categoryChecks.length > 0 ? Math.round(sum / categoryChecks.length) : 0;
+      
+      // Store the results
+      result[category].checks = categoryChecks;
+      result[category].average = average;
+    });
+    
+    return result;
+  }, [contentScores, categoryReviewSummaries, categoryDisplayMap]);
 
   // --- Calculations & Helpers (Moved Up) ---
   // Calculate overall score (average of all scores) - MUST BE CALLED UNCONDITIONALLY
@@ -214,11 +337,11 @@ export default function ContentReportsPage() {
 
   // --- Loading and Error Handling ---
   const isLoading = isDetailView 
-    ? (isLoadingDetails || isLoadingScores) 
+    ? (isLoadingDetails || isLoadingScores || isLoadingCategorySummaries) 
     : isLoadingList;
   
   const error = isDetailView 
-    ? (errorDetails || errorScores)
+    ? (errorDetails || errorScores || errorCategorySummaries)
     : errorList;
 
   // Show loader while fetching data
@@ -425,14 +548,86 @@ export default function ContentReportsPage() {
             
             {/* Performance Scores Tab Content */}
             <TabsContent value="performance" className="mt-0 p-0 animate-in fade-in-50">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {contentScores && contentScores.map((score: Score, index: number) => (
-                  <ScoreCard
-                    key={score.id}
-                    title={score.check_name || `Score ${index + 1}`}
-                    value={convertScoreToPercentage(score.score_value)}
-                    description={score.check_description || score.comments || "This metric evaluates an aspect of your content's effectiveness."}
-                  />
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {categoryScores && Object.entries(categoryScores).map(([category, data]) => (
+                  <div key={category} className="flex flex-col gap-4">
+                    {/* Category Summary Card */}
+                    <Card className="animate-in fade-in">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-base font-medium tracking-wide text-center">
+                          {category.toUpperCase()}
+                        </CardTitle>
+                        <CardDescription className="text-center text-xs">
+                          {categoryDescriptions[category] || "Performance metrics"}
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="pt-2 pb-6 flex flex-col items-center">
+                        <div className="mb-4">
+                          <CircularProgressIndicator 
+                            value={data.average || 0} 
+                            size={96} 
+                            strokeWidth={8}
+                          />
+                        </div>
+                        <div className="text-3xl font-bold">
+                          {data.average !== undefined && !isNaN(data.average) 
+                            ? `${data.average}%` 
+                            : "N/A"}
+                        </div>
+                        
+                        {/* Progress bar for context (low/average/high) */}
+                        <div className="w-full mt-6 relative">
+                          {/* Progress bar background */}
+                          <div className="h-2 w-full bg-gradient-to-r from-red-500 via-amber-500 to-emerald-500 rounded-full" />
+                          
+                          {/* Marker for the score - only show if we have a valid score */}
+                          {data.average !== undefined && !isNaN(data.average) && (
+                            <div 
+                              className="absolute top-0 transform -translate-x-1/2" 
+                              style={{ 
+                                left: `${Math.max(0, Math.min(100, data.average))}%`,
+                                marginTop: '-8px' 
+                              }}
+                            >
+                              <div className="w-0 h-0 border-l-[8px] border-r-[8px] border-b-[8px] border-l-transparent border-r-transparent border-b-amber-500" />
+                            </div>
+                          )}
+                          
+                          {/* Labels */}
+                          <div className="flex justify-between mt-1 text-xs text-muted-foreground">
+                            <span>Low</span>
+                            <span>
+                              Average ({data.average >= 60 
+                                ? (data.average >= 80 ? '35%' : '48%') 
+                                : '49%'})
+                            </span>
+                            <span>High</span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    
+                    {/* Individual Score Cards for this category */}
+                    {data.checks.map((score) => (
+                      <ScoreCard
+                        key={score.id}
+                        title={score.check_name || `Score`}
+                        value={convertScoreToPercentage(score.score_value)}
+                        description={score.check_description || score.comments || "This metric evaluates an aspect of your content's effectiveness."}
+                      />
+                    ))}
+
+                    {/* Message when no checks are available for this category */}
+                    {data.checks.length === 0 && (
+                      <Card className="py-4 px-3 text-center bg-muted/30">
+                        <CardContent className="p-0">
+                          <p className="text-sm text-muted-foreground">
+                            No detailed metrics available for this category.
+                          </p>
+                        </CardContent>
+                      </Card>
+                    )}
+                  </div>
                 ))}
               </div>
             </TabsContent>
