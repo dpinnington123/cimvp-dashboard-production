@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -17,7 +17,7 @@ interface CharacteristicCardProps {
 const cardFlipStyles = {
   cardContainer: {
     perspective: '1000px',
-    height: '160px',
+    minHeight: '160px', // Changed from fixed height to minHeight
   },
   cardInner: {
     position: 'relative' as const,
@@ -51,15 +51,37 @@ export function CharacteristicCard({
   const [isFlipped, setIsFlipped] = useState(false);
   const displayValue = value !== null && value !== undefined && value !== '' ? value : "N/A";
   const displayComments = comments || "No additional information available.";
+  
+  // Add ref for content height measurement
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [backCardHeight, setBackCardHeight] = useState<number | null>(null);
 
   const toggleFlip = () => {
+    // When flipping to the back, calculate the required height
+    if (!isFlipped && contentRef.current) {
+      // Add extra space for header and button (approximately 100px)
+      const requiredHeight = contentRef.current.scrollHeight + 100;
+      setBackCardHeight(Math.max(160, requiredHeight)); // Ensure minimum height
+    }
     setIsFlipped(!isFlipped);
+  };
+
+  // Get container style with dynamic height when flipped
+  const getContainerStyle = () => {
+    const baseStyle = {...cardFlipStyles.cardContainer, ...style};
+    if (isFlipped && backCardHeight) {
+      return {
+        ...baseStyle,
+        height: `${backCardHeight}px`
+      };
+    }
+    return baseStyle;
   };
 
   return (
     <div 
       className={cn("relative w-full", className)} 
-      style={{...cardFlipStyles.cardContainer, ...style}}
+      style={getContainerStyle()}
     >
       <div 
         style={{
@@ -95,20 +117,23 @@ export function CharacteristicCard({
 
         {/* Back of card */}
         <Card 
-          className="overflow-hidden"
+          className="overflow-visible"
           style={{...cardFlipStyles.cardFace, ...cardFlipStyles.cardBack}}
         >
-          <CardContent className="p-4 h-full flex flex-col justify-between">
+          <CardContent className="p-4 h-full flex flex-col justify-between gap-2">
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium">{label} Details</span>
             </div>
-            <div className="text-sm py-2 overflow-auto max-h-[80px]">
+            <div 
+              ref={contentRef}
+              className="text-sm px-1"
+            >
               {displayComments}
             </div>
             <Button 
-              variant="ghost" 
+              variant="outline" 
               size="sm" 
-              className="mt-auto self-end"
+              className="mt-auto self-end z-10 bg-orange-500 text-white"
               onClick={toggleFlip}
               aria-label="Show front"
             >

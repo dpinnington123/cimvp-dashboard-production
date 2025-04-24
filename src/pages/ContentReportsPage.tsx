@@ -608,14 +608,23 @@ export default function ContentReportsPage() {
                     </Card>
                     
                     {/* Individual Score Cards for this category */}
-                    {data.checks.map((score) => (
-                      <ScoreCard
-                        key={score.id}
-                        title={score.check_name || `Score`}
-                        value={convertScoreToPercentage(score.score_value)}
-                        description={score.check_description || score.comments || "This metric evaluates an aspect of your content's effectiveness."}
-                      />
-                    ))}
+                    {data.checks
+                      // Sort by score_value in ascending order (lowest first)
+                      .sort((a, b) => {
+                        const scoreA = convertScoreToPercentage(a.score_value);
+                        const scoreB = convertScoreToPercentage(b.score_value);
+                        return scoreA - scoreB;
+                      })
+                      .map((score) => (
+                        <ScoreCard
+                          key={score.id}
+                          title={score.check_name || `Score`}
+                          value={convertScoreToPercentage(score.score_value)}
+                          description={score.check_description || score.comments || "This metric evaluates an aspect of your content's effectiveness."}
+                          className="animate-in fade-in zoom-in-95"
+                          style={{ animationDelay: `${Math.random() * 0.2}s` }} // Random animation delay
+                        />
+                      ))}
 
                     {/* Message when no checks are available for this category */}
                     {data.checks.length === 0 && (

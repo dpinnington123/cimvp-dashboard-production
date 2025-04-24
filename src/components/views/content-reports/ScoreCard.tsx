@@ -1,6 +1,10 @@
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CircularProgressIndicator } from '@/components/common/CircularProgressIndicator';
+import { Button } from "@/components/ui/button";
+import { InfoIcon, RotateCcw } from "lucide-react";
+import { useState } from "react";
+import React from "react";
 
 // Interface matching the example structure
 export interface ScoreCardProps {
@@ -8,34 +12,142 @@ export interface ScoreCardProps {
   value: number; // Score value (0-100)
   description: string;
   className?: string;
+  style?: React.CSSProperties;
 }
 
-export function ScoreCard({ title, value, description, className }: ScoreCardProps) {
-  // Basic color logic based on score (can be refined)
+// Card flip styles (matching CharacteristicCard but with improvements)
+const cardFlipStyles = {
+  cardContainer: {
+    perspective: '1000px',
+    minHeight: '180px', // Changed from fixed height to minHeight
+  },
+  cardInner: {
+    position: 'relative' as const,
+    width: '100%',
+    height: '100%',
+    transition: 'transform 0.5s',
+    transformStyle: 'preserve-3d' as const,
+  },
+  cardInnerFlipped: {
+    transform: 'rotateY(180deg)',
+  },
+  cardFace: {
+    position: 'absolute' as const,
+    width: '100%',
+    height: '100%',
+    backfaceVisibility: 'hidden' as const,
+  },
+  cardBack: {
+    transform: 'rotateY(180deg)',
+  },
+};
+
+export function ScoreCard({ title, value, description, className, style }: ScoreCardProps) {
+  const [isFlipped, setIsFlipped] = useState(false);
+  // We need a ref to measure the content height
+  const contentRef = React.useRef<HTMLDivElement>(null);
+  const [backCardHeight, setBackCardHeight] = useState<number | null>(null);
+
+  // Basic color logic based on score
   const getScoreColorClass = (score: number) => {
     if (score >= 80) return "text-emerald-600"; 
     if (score >= 60) return "text-amber-600";
     return "text-rose-600";
   };
 
+  const toggleFlip = () => {
+    // When flipping to the back, calculate the required height
+    if (!isFlipped && contentRef.current) {
+      // Add extra space for the header and button (approximately 100px)
+      const requiredHeight = contentRef.current.scrollHeight + 100;
+      setBackCardHeight(Math.max(180, requiredHeight)); // Ensure minimum height
+    }
+    setIsFlipped(!isFlipped);
+  };
+
+  // Get container style with dynamic height when flipped
+  const getContainerStyle = () => {
+    const baseStyle = {...cardFlipStyles.cardContainer, ...style};
+    if (isFlipped && backCardHeight) {
+      return {
+        ...baseStyle,
+        height: `${backCardHeight}px`
+      };
+    }
+    return baseStyle;
+  };
+
   return (
-    <Card className={cn("animate-in fade-in", className)}> 
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
-          {title}
-        </CardTitle>
-        {/* Placeholder for the indicator icon if needed */}
-      </CardHeader>
-      <CardContent className="flex items-end justify-between gap-4">
-        <div>
-          <div className={cn("text-3xl font-bold", getScoreColorClass(value))}>{value}%</div>
-          <CardDescription className="text-xs mt-1">
-            {description}
-          </CardDescription>
-        </div>
-        {/* Add the Circular Progress Indicator here */}
-        <CircularProgressIndicator value={value} size={48} strokeWidth={5} />
-      </CardContent>
-    </Card>
+    <div 
+      className={cn("relative w-full", className)} 
+      style={getContainerStyle()}
+    >
+      <div 
+        style={{
+          ...cardFlipStyles.cardInner,
+          ...(isFlipped ? cardFlipStyles.cardInnerFlipped : {})
+        }}
+      >
+        {/* Front of card */}
+        <Card 
+          className="overflow-hidden"
+          style={cardFlipStyles.cardFace}
+        >
+          <CardHeader className="pb-2 flex flex-row items-start h-[60px] overflow-hidden">
+            <CardTitle className="text-sm font-medium uppercase tracking-wider text-muted-foreground line-clamp-2">
+              {title}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col justify-between" style={{ height: 'calc(100% - 60px)' }}>
+            <div className="flex items-end justify-between gap-4">
+              <div className={cn("text-3xl font-bold", getScoreColorClass(value))}>
+                {value}%
+              </div>
+              <CircularProgressIndicator value={value} size={48} strokeWidth={5} />
+            </div>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="self-end mt-2" 
+              onClick={toggleFlip}
+              aria-label="Show details"
+            >
+              <InfoIcon className="w-4 h-4 mr-1" />
+              Details
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Back of card */}
+        <Card 
+          className="overflow-visible"
+          style={{...cardFlipStyles.cardFace, ...cardFlipStyles.cardBack}}
+        >
+          <CardHeader className="pb-1">
+            <CardTitle className="text-sm font-medium">
+              {title} Details
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col mt-[-20px]">
+            <div 
+              ref={contentRef}
+              className="text-sm px-1"
+            >
+              {description}
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="self-end z-10 bg-orange-500 text-white" 
+              onClick={toggleFlip}
+              aria-label="Show front"
+            >
+              <RotateCcw className="w-4 h-4 mr-1" />
+              Back
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
   );
 } 
