@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import React from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import DashboardLayout from './components/layout/DashboardLayout';
 import DashboardOverview from './pages/DashboardOverview';
@@ -7,11 +8,16 @@ import BrandDashboardPage from './pages/BrandDashboardPage';
 import StrategicDashboardPage from './pages/StrategicDashboardPage';
 import BrandStrategyPage from './pages/BrandStrategyPage';
 import LoginPage from './pages/LoginPage';
+import SignUpPage from './pages/SignUpPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
+import CheckEmailPage from './pages/CheckEmailPage';
 import NotFound from './pages/NotFound';
 import ProcessContentPage from './pages/ProcessContentPage';
 import ContentProcessingPage from './pages/ContentProcessingPage';
 import { Toaster } from "@/components/ui/sonner";
 import AuthProvider, { useAuth } from './hooks/useAuth';
+import LoadingSpinner from './components/common/LoadingSpinner';
 
 const queryClient = new QueryClient();
 
@@ -28,25 +34,44 @@ function App() {
   );
 }
 
+// Helper component for protected routes
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { session, loading, emailVerified } = useAuth();
+  const location = useLocation();
+
+  if (loading) {
+    return <LoadingSpinner />;
+  }
+
+  if (!session) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  // Note: We no longer use this condition for the check-email page since it's directly rendered in SignUpPage
+  if (!emailVerified) {
+    return <Navigate to="/check-email" replace />;
+  }
+
+  return <>{children}</>;
+}
+
 function AppRoutes() {
-  const { session, loading } = useAuth();
-
-  console.log('AppRoutes rendering. Loading:', loading, 'Session:', session);
-
-  if (!loading && !session) {
-    console.log('AppRoutes: No session and not loading, navigating to /login');
-  }
-  if (session) {
-    console.log('AppRoutes: Session found, rendering DashboardLayout');
-  }
-
   return (
     <Routes>
+      {/* Public Routes */}
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/signup" element={<SignUpPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
+      <Route path="/check-email" element={<CheckEmailPage />} />
+
+      {/* Protected Routes */}
       <Route
         path="/"
         element={
-          session ? <DashboardLayout /> : <Navigate to="/login" replace />
+          <ProtectedRoute>
+            <DashboardLayout />
+          </ProtectedRoute>
         }
       >
         <Route index element={<DashboardOverview />} />
@@ -60,6 +85,8 @@ function AppRoutes() {
         <Route path="content-processing" element={<ContentProcessingPage />} />
         <Route path="brand-strategy" element={<BrandStrategyPage />} />
       </Route>
+
+      {/* Not Found Route */}
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

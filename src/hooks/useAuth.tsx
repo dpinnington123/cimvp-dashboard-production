@@ -7,9 +7,12 @@ interface AuthContextType {
   session: Session | null;
   user: User | null;
   loading: boolean;
+  emailVerified: boolean;
   signOut: () => Promise<{ error: AuthError | null }>;
   signInWithPassword: (credentials: SignInWithPasswordCredentials) => Promise<{ error: AuthError | null }>;
-  // Add signUp function placeholder if needed later
+  signUp: (email: string, password: string) => Promise<{ error: AuthError | null, data: any }>;
+  resetPassword: (email: string) => Promise<{ error: AuthError | null }>;
+  updatePassword: (password: string) => Promise<{ error: AuthError | null }>;
 }
 
 const AuthContext = React.createContext<AuthContextType | undefined>(undefined);
@@ -22,22 +25,30 @@ export default function AuthProvider({ children }: AuthProviderProps) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [emailVerified, setEmailVerified] = useState(false);
 
   useEffect(() => {
     const setData = async (sessionData: Session | null) => {
       setSession(sessionData);
       setUser(sessionData?.user ?? null);
+
+      // Check email verification status if user exists
+      let isVerified = false;
+      if (sessionData?.user) {
+        isVerified = sessionData.user.email_confirmed_at !== null;
+      }
+      setEmailVerified(isVerified);
+
       setLoading(false);
     };
 
     // Initial check on component mount
     supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
-        setData(initialSession);
+      setData(initialSession);
     });
 
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, sessionData) => {
-      console.log("Auth State Change:", _event, sessionData); // Log auth changes
       setData(sessionData);
     });
 
@@ -50,41 +61,79 @@ export default function AuthProvider({ children }: AuthProviderProps) {
   const signInWithPassword = async (credentials: SignInWithPasswordCredentials) => {
       setLoading(true);
       const { error } = await supabase.auth.signInWithPassword(credentials);
-      // State updates (session, user, loading) handled by onAuthStateChange listener
-      // We set loading back to false inside the listener (setData)
-      // Return the error object so the calling component can handle UI feedback
       if (error) {
           console.error('Sign in error:', error);
-          setLoading(false); // Ensure loading is false if there's an immediate error
+          setLoading(false);
       }
       return { error };
   };
 
   const signOut = async () => {
-    setLoading(true); // Optional: show loading state during sign out
+    setLoading(true);
     const { error } = await supabase.auth.signOut();
-    // State updates handled by onAuthStateChange
     if(error) {
         console.error('Sign out error:', error);
-        setLoading(false); // Ensure loading is false if there's an error
+        setLoading(false);
     }
     return { error };
   };
 
-  // Add signUp implementation here later if needed
+  const signUp = async (email: string, password: string) => {
+    setLoading(true);
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: window.location.origin + '/login'
+      }
+    });
+
+    if (error) {
+      console.error('Sign up error:', error);
+      setLoading(false);
+    }
+
+    return { data, error };
+  };
+
+  const resetPassword = async (email: string) => {
+    setLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + '/reset-password',
+    });
+    
+    setLoading(false);
+    
+    return { error };
+  };
+
+  const updatePassword = async (password: string) => {
+    setLoading(true);
+    const { error } = await supabase.auth.updateUser({
+      password,
+    });
+    
+    setLoading(false);
+    
+    return { error };
+  };
 
   const value = {
     session,
     user,
     loading,
+    emailVerified,
     signInWithPassword,
     signOut,
+    signUp,
+    resetPassword,
+    updatePassword,
   };
 
-  // Render children only when the initial auth check is complete
+  // Always render children
   return (
     <AuthContext.Provider value={value}>
-      {!loading || session ? children : null}
+      {children}
     </AuthContext.Provider>
   );
 }
