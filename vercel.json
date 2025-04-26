@@ -3,5 +3,6 @@
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "buildCommand": "yarn build",
+  "installCommand": "yarn install",
   "outputDirectory": "dist"
 } 
