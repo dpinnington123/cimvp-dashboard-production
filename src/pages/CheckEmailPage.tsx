@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Mail } from "lucide-react";
+import { Mail, MailCheck } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import { supabase } from "../lib/supabaseClient";
 import { toast } from "sonner";
@@ -10,6 +10,7 @@ import { toast } from "sonner";
 export default function CheckEmailPage() {
   const { user } = useAuth();
   const [resending, setResending] = useState(false);
+  const location = useLocation();
 
   const handleResendVerification = async () => {
     if (!user?.email) return;
@@ -42,7 +43,8 @@ export default function CheckEmailPage() {
   const userEmail = user?.email || "your email address";
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900 p-4">
+      <img src="/change_influence_logo.png" alt="Change Influence Logo" className="mb-8 h-16" />
       <Card className="w-full max-w-md text-center">
         <CardHeader>
           <div className="flex justify-center mb-4">
