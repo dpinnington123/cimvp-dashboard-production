@@ -7,24 +7,59 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from '../hooks/useAuth';
 import { toast } from "sonner";
 import LoadingSpinner from '../components/common/LoadingSpinner';
+import { supabase } from '../lib/supabaseClient';
 
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [localLoading, setLocalLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [tokenError, setTokenError] = useState(false);
   const { updatePassword, user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
-    // Only check for invalid link *after* the initial auth check is done
-    if (!authLoading && !user) {
-      toast.error("Invalid or expired reset link", {
-        description: "Please request a new password reset link"
-      });
-      navigate('/forgot-password');
-    }
-  }, [user, authLoading, navigate]);
+    const handlePasswordReset = async () => {
+      // Get the hash fragment from the URL
+      const hash = location.hash;
+      
+      // Extract the access token and refresh token from the hash
+      if (hash && hash.includes('access_token')) {
+        try {
+          setLocalLoading(true);
+          // Use Supabase to set the session with the provided tokens
+          // This will establish a session that allows the password reset to work
+          const { error } = await supabase.auth.getSession();
+          
+          if (error) {
+            throw error;
+          }
+        } catch (error) {
+          console.error('Error setting up session from URL:', error);
+          setTokenError(true);
+          toast.error("Invalid or expired reset link", {
+            description: "Please request a new password reset link"
+          });
+          // Navigate after a short delay to allow the toast to be seen
+          setTimeout(() => navigate('/forgot-password'), 2000);
+        } finally {
+          setLocalLoading(false);
+        }
+      } else if (!user && !authLoading) {
+        // If we don't have a hash with tokens and no user is authenticated
+        // We're likely accessing this page directly without a valid reset link
+        setTokenError(true);
+        toast.error("Invalid or expired reset link", {
+          description: "Please request a new password reset link"
+        });
+        // Navigate after a short delay to allow the toast to be seen
+        setTimeout(() => navigate('/forgot-password'), 2000);
+      }
+    };
+    
+    handlePasswordReset();
+  }, [location, navigate, authLoading, user]);
 
   const handlePasswordReset = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -65,10 +100,33 @@ export default function ResetPasswordPage() {
   };
 
   // Show loading spinner while the initial auth check is happening
-  if (authLoading) {
+  if (authLoading || localLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <LoadingSpinner />
+      </div>
+    );
+  }
+  
+  if (tokenError) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900">
+        <Card className="w-full max-w-sm text-center">
+          <CardHeader>
+            <CardTitle className="text-2xl">Invalid Reset Link</CardTitle>
+            <CardDescription>
+              Your password reset link is invalid or has expired.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-4">
+            <p>Please request a new password reset link.</p>
+          </CardContent>
+          <CardFooter>
+            <Button onClick={() => navigate('/forgot-password')} className="w-full">
+              Request New Link
+            </Button>
+          </CardFooter>
+        </Card>
       </div>
     );
   }
