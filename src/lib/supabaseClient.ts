@@ -9,5 +9,12 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Supabase URL and Anon Key must be defined in .env.local');
 }
 
-// Create and export the Supabase client
-export const supabase = createClient(supabaseUrl, supabaseAnonKey); 
+// Create and export the Supabase client with explicit session persistence
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: true,
+    storageKey: 'change-influence-auth',
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+  }
+}); 

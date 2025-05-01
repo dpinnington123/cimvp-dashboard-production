@@ -70,12 +70,43 @@ export default function AuthProvider({ children }: AuthProviderProps) {
 
   const signOut = async () => {
     setLoading(true);
-    const { error } = await supabase.auth.signOut();
-    if(error) {
-        console.error('Sign out error:', error);
+    
+    try {
+      // Force a new session check before attempting to sign out
+      const { data } = await supabase.auth.getSession();
+      
+      // If we have no session, consider the user already signed out
+      if (!data.session) {
+        console.log('No active session found, user already signed out');
+        // Clear any local state regardless
+        setSession(null);
+        setUser(null);
         setLoading(false);
+        return { error: null };
+      }
+      
+      // Proceed with sign out since we have a session
+      const { error } = await supabase.auth.signOut();
+      
+      if(error) {
+        console.error('Sign out error:', error);
+      } else {
+        // Ensure local state is cleared even if there was an error
+        setSession(null);
+        setUser(null);
+      }
+      
+      setLoading(false);
+      return { error };
+    } catch (err) {
+      console.error('Sign out exception:', err);
+      // Clear local state on error too
+      setSession(null);
+      setUser(null);
+      setLoading(false);
+      // Return the caught error
+      return { error: err as AuthError };
     }
-    return { error };
   };
 
   const signUp = async (email: string, password: string) => {

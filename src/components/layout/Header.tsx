@@ -2,19 +2,38 @@
 import { useAuth } from '../../hooks/useAuth'; // Relative path
 import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { useNavigate } from 'react-router-dom';
+import { toast } from "sonner";
 // We'll add page title logic and user menu later
 
 export default function Header() {
   const { signOut, user } = useAuth(); // Get signOut and user
+  const navigate = useNavigate();
 
   const handleLogout = async () => {
     console.log("Signing out...");
-    const { error } = await signOut();
-    if (error) {
-      console.error("Logout failed:", error);
-      // Optional: Add toast notification for logout failure
+    try {
+      const { error } = await signOut();
+      if (error) {
+        console.error("Logout failed:", error);
+        toast.error("Logout failed", { description: error.message });
+        
+        // If we have an auth session error, force navigation to login anyway
+        if (error.message?.includes('Auth session missing')) {
+          console.log("Auth session missing, forcing navigation to login page");
+          navigate('/login', { replace: true });
+        }
+      } else {
+        // On successful logout
+        toast.success("Logged out successfully");
+        navigate('/login', { replace: true });
+      }
+    } catch (e) {
+      console.error("Unexpected logout error:", e);
+      toast.error("Unexpected error during logout");
+      // Force navigation to login as a fallback
+      navigate('/login', { replace: true });
     }
-    // Redirect is handled by AppRoutes/useAuth listener
   };
 
   return (
