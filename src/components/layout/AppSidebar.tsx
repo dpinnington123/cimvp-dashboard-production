@@ -1,5 +1,12 @@
 import { Link } from 'react-router-dom';
-import { BarChart3, FileDigit, PieChart, HomeIcon, Settings } from "lucide-react";
+import { 
+  HomeIcon, 
+  FileText, 
+  ClipboardList, 
+  Target, 
+  LayoutDashboard, 
+  PieChart 
+} from "lucide-react";
 import logo from '@/assets/change_influence_logo.png';
 import {
   Sidebar,
@@ -22,22 +29,22 @@ const navigationItems = [
   },
   {
     title: "Process Content",
-    icon: FileDigit,
+    icon: FileText,
     path: "/process-content",
   },
   {
     title: "Content Reports",
-    icon: FileDigit,
+    icon: ClipboardList,
     path: "/content-reports",
   },
   {
     title: "Brand Strategy",
-    icon: BarChart3,
+    icon: Target,
     path: "/brand-strategy",
   },
   {
     title: "Brand Dashboard",
-    icon: BarChart3,
+    icon: LayoutDashboard,
     path: "/brand-dashboard",
   },
   {
