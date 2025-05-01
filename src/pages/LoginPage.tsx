@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from '../hooks/useAuth'; // Changed path alias to relative
 import { toast } from "sonner"; // Assuming this alias works despite linter
+import ChangeInfluenceLogo from "@/assets/ChangeInfluence-logo.png";
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -35,7 +36,7 @@ export default function LoginPage() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900 p-4">
-      <img src="/ChangeInfluence-logo.png" alt="Change Influence Logo" className="mb-8 h-16" />
+      <img src={ChangeInfluenceLogo} alt="Change Influence Logo" className="mb-20 h-16" />
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle className="text-2xl">Login</CardTitle>
