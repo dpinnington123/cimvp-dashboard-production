@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Clock, Home, UploadCloud, BarChart3, Hourglass } from 'lucide-react';
-import logo from '@/assets/change_influence_logo.png';
+import logo from '@/assets/ChangeInfluence-logo.png';
 import { Badge } from "@/components/ui/badge";
 
 const ContentProcessingPage: React.FC = () => {

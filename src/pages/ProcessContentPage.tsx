@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import ContentUploadForm from '@/components/views/processContent/ContentUploadForm';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import logo from '@/assets/change_influence_logo.png';
+import logo from '@/assets/ChangeInfluence-logo.png';
 import { ArrowLeftIcon, ArrowRightIcon } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";

@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { 
   HomeIcon, 
   FileText, 
@@ -7,7 +7,7 @@ import {
   LayoutDashboard, 
   PieChart 
 } from "lucide-react";
-import logo from '@/assets/change_influence_logo.png';
+import logo from '@/assets/ChangeInfluence-logo.png';
 import {
   Sidebar,
   SidebarContent,
@@ -19,6 +19,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { cn } from "@/lib/utils";
 
 // Navigation items
 const navigationItems = [
@@ -55,26 +56,54 @@ const navigationItems = [
 ];
 
 export function AppSidebar() {
+  const location = useLocation();
+  
   return (
     <Sidebar>
       <SidebarHeader className="px-4 py-3">
-        <img src={logo} alt="Change Influence Logo" className="w-1/2 h-auto mb-2 mx-auto" />
+        <img src={logo} alt="Change Influence Logo" className="w-10rem h-auto m-3 mx-auto" />
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel></SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navigationItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <Link to={item.path} className="flex items-center">
-                      <item.icon className="w-4 h-4 mr-2" />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {navigationItems.map((item) => {
+                // Check if current path matches this item's path
+                // For home path, only highlight if exact match
+                const isActive = item.path === '/' 
+                  ? location.pathname === '/'
+                  : location.pathname.startsWith(item.path);
+                
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild isActive={isActive}>
+                      <Link 
+                        to={item.path} 
+                        className={cn(
+                          "flex items-center",
+                          isActive && "font-bold"
+                        )}
+                      >
+                        <item.icon 
+                          className={cn(
+                            "w-4 h-4 mr-2",
+                            isActive && "text-primary stroke-[2.5px]"
+                          )} 
+                        />
+                        <span className={cn(
+                          isActive && "text-primary tracking-wide"
+                        )}>
+                          {item.title}
+                        </span>
+                        {isActive && (
+                          <div className="ml-auto w-1.5 h-5 bg-blue-500 rounded-full" />
+                        )}
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

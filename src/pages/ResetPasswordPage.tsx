@@ -156,7 +156,7 @@ export default function ResetPasswordPage() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900 p-4">
-      <img src="/change_influence_logo.png" alt="Change Influence Logo" className="mb-8 h-16" />
+      <img src="/ChangeInfluence-logo.png" alt="Change Influence Logo" className="mb-8 h-16" />
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle className="text-2xl">Reset Your Password</CardTitle>
