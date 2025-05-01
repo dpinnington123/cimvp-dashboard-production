@@ -74,7 +74,7 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       >
-        <Route index element={<DashboardOverview />} />
+        <Route index element={<BrandDashboardPage />} />
         <Route path="content-reports">
           <Route index element={<ContentReportsPage />} />
           <Route path=":contentId" element={<ContentReportsPage />} />

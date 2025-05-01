@@ -22,7 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-interface ContentItem {
+interface ContentPerformanceItem {
   id: string;
   name: string;
   campaign: string;
@@ -37,26 +37,31 @@ interface ContentItem {
   };
 }
 
-interface ContentTableProps {
-  items: ContentItem[];
+interface ContentPerformanceTableProps {
+  items: ContentPerformanceItem[];
   campaignFilter?: string;
 }
 
-export function ContentTable({ items, campaignFilter }: ContentTableProps) {
+export function ContentPerformanceTable({ items, campaignFilter }: ContentPerformanceTableProps) {
   const [filter, setFilter] = useState(campaignFilter || "all-campaigns");
   const [formatFilter, setFormatFilter] = useState("all-formats");
   const [typeFilter, setTypeFilter] = useState("all-types");
   const [statusFilter, setStatusFilter] = useState("all-statuses");
   const [search, setSearch] = useState("");
-  const [selectedContent, setSelectedContent] = useState<ContentItem | null>(null);
+  const [selectedContent, setSelectedContent] = useState<ContentPerformanceItem | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const { toast } = useToast();
 
   const getScoreClass = (score: number) => {
+    if (score >= 95) return "text-score-exceptional";
     if (score >= 85) return "text-score-excellent";
-    if (score >= 70) return "text-score-good";
-    if (score >= 50) return "text-score-average";
-    return "text-score-poor";
+    if (score >= 80) return "text-score-very-good";
+    if (score >= 75) return "text-score-good";
+    if (score >= 70) return "text-score-above-average";
+    if (score >= 60) return "text-score-average";
+    if (score >= 50) return "text-score-below-average";
+    if (score >= 40) return "text-score-poor";
+    return "text-score-very-poor";
   };
 
   const filteredItems = items.filter((item) => {
@@ -75,7 +80,7 @@ export function ContentTable({ items, campaignFilter }: ContentTableProps) {
   const campaigns = Array.from(new Set(items.map((item) => item.campaign)));
   const formats = Array.from(new Set(items.map((item) => item.format)));
 
-  const handleRowClick = (item: ContentItem) => {
+  const handleRowClick = (item: ContentPerformanceItem) => {
     setSelectedContent(item);
     setIsDetailOpen(true);
   };
@@ -84,7 +89,7 @@ export function ContentTable({ items, campaignFilter }: ContentTableProps) {
     setIsDetailOpen(false);
   };
 
-  const handleCreateNewVersion = (item: ContentItem, e: React.MouseEvent) => {
+  const handleCreateNewVersion = (item: ContentPerformanceItem, e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent row click event
     toast({
       title: "New Version",
@@ -214,22 +219,22 @@ export function ContentTable({ items, campaignFilter }: ContentTableProps) {
                     </span>
                   </TableCell>
                   <TableCell className="text-center" onClick={() => handleRowClick(item)}>
-                    <span className={getScoreClass(item.scores.overall)}>
+                    <span className={cn("font-bold", getScoreClass(item.scores.overall))}>
                       {item.scores.overall}
                     </span>
                   </TableCell>
                   <TableCell className="text-center" onClick={() => handleRowClick(item)}>
-                    <span className={getScoreClass(item.scores.strategic)}>
+                    <span className={cn("font-medium", getScoreClass(item.scores.strategic))}>
                       {item.scores.strategic}
                     </span>
                   </TableCell>
                   <TableCell className="text-center" onClick={() => handleRowClick(item)}>
-                    <span className={getScoreClass(item.scores.customer)}>
+                    <span className={cn("font-medium", getScoreClass(item.scores.customer))}>
                       {item.scores.customer}
                     </span>
                   </TableCell>
                   <TableCell className="text-center" onClick={() => handleRowClick(item)}>
-                    <span className={getScoreClass(item.scores.execution)}>
+                    <span className={cn("font-medium", getScoreClass(item.scores.execution))}>
                       {item.scores.execution}
                     </span>
                   </TableCell>

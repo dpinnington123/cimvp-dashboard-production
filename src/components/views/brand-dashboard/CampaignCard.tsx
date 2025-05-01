@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -45,11 +44,28 @@ export function CampaignCard({
     }
   };
 
+  const getScoreClass = (score: number) => {
+    if (score >= 95) return "text-score-exceptional";
+    if (score >= 85) return "text-score-excellent";
+    if (score >= 80) return "text-score-very-good";
+    if (score >= 75) return "text-score-good";
+    if (score >= 70) return "text-score-above-average";
+    if (score >= 60) return "text-score-average";
+    if (score >= 50) return "text-score-below-average";
+    if (score >= 40) return "text-score-poor";
+    return "text-score-very-poor";
+  };
+
   const getScoreColor = (score: number) => {
+    if (score >= 95) return "bg-score-exceptional";
     if (score >= 85) return "bg-score-excellent";
-    if (score >= 70) return "bg-score-good";
-    if (score >= 50) return "bg-score-average";
-    return "bg-score-poor";
+    if (score >= 80) return "bg-score-very-good";
+    if (score >= 75) return "bg-score-good";
+    if (score >= 70) return "bg-score-above-average";
+    if (score >= 60) return "bg-score-average";
+    if (score >= 50) return "bg-score-below-average";
+    if (score >= 40) return "bg-score-poor";
+    return "bg-score-very-poor";
   };
 
   return (
@@ -77,11 +93,11 @@ export function CampaignCard({
               <Eye className="w-4 h-4 mr-1.5" />
               <span>Overall</span>
             </div>
-            <span className="font-medium">{scores.overall}/100</span>
+            <span className={cn("font-bold text-base", getScoreClass(scores.overall))}>{scores.overall}/100</span>
           </div>
           <Progress 
             value={scores.overall} 
-            className="h-1.5"
+            className="h-2"
             indicatorClassName={getScoreColor(scores.overall)}
           />
         </div>
@@ -92,12 +108,7 @@ export function CampaignCard({
               <Target className="w-3 h-3 mr-1" />
               <span>Strategic</span>
             </div>
-            <div className={cn("font-medium", 
-              scores.strategic >= 85 ? "text-score-excellent" :
-              scores.strategic >= 70 ? "text-score-good" :
-              scores.strategic >= 50 ? "text-score-average" :
-              "text-score-poor"
-            )}>
+            <div className={cn("font-medium text-sm", getScoreClass(scores.strategic))}>
               {scores.strategic}
             </div>
           </div>
@@ -107,12 +118,7 @@ export function CampaignCard({
               <Users className="w-3 h-3 mr-1" />
               <span>Customer</span>
             </div>
-            <div className={cn("font-medium", 
-              scores.customer >= 85 ? "text-score-excellent" :
-              scores.customer >= 70 ? "text-score-good" :
-              scores.customer >= 50 ? "text-score-average" :
-              "text-score-poor"
-            )}>
+            <div className={cn("font-medium text-sm", getScoreClass(scores.customer))}>
               {scores.customer}
             </div>
           </div>
@@ -122,12 +128,7 @@ export function CampaignCard({
               <BarChart3 className="w-3 h-3 mr-1" />
               <span>Execution</span>
             </div>
-            <div className={cn("font-medium", 
-              scores.execution >= 85 ? "text-score-excellent" :
-              scores.execution >= 70 ? "text-score-good" :
-              scores.execution >= 50 ? "text-score-average" :
-              "text-score-poor"
-            )}>
+            <div className={cn("font-medium text-sm", getScoreClass(scores.execution))}>
               {scores.execution}
             </div>
           </div>

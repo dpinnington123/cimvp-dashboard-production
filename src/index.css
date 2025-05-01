@@ -36,6 +36,17 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+  
+  /* Score colors - Expanded palette */
+  --color-score-exceptional: #15803d; /* Green-700 - 95+ */
+  --color-score-excellent: #22c55e; /* Green-500 - 85-94 */
+  --color-score-very-good: #4ade80; /* Green-400 - 80-84 */
+  --color-score-good: #facc15; /* Yellow-400 - 75-79 */
+  --color-score-above-average: #fbbf24; /* Amber-400 - 70-74 */
+  --color-score-average: #f97316; /* Orange-500 - 60-69 */
+  --color-score-below-average: #fb923c; /* Orange-400 - 50-59 */
+  --color-score-poor: #ef4444; /* Red-500 - 40-49 */
+  --color-score-very-poor: #b91c1c; /* Red-700 - below 40 */
 }
 
 .dark {
@@ -70,6 +81,17 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+  
+  /* Score colors for dark mode - Expanded palette */
+  --color-score-exceptional: #16a34a; /* Green-600 - 95+ */
+  --color-score-excellent: #4ade80; /* Green-400 - 85-94 */
+  --color-score-very-good: #86efac; /* Green-300 - 80-84 */
+  --color-score-good: #fde047; /* Yellow-300 - 75-79 */
+  --color-score-above-average: #fcd34d; /* Amber-300 - 70-74 */
+  --color-score-average: #fb923c; /* Orange-400 - 60-69 */
+  --color-score-below-average: #fdba74; /* Orange-300 - 50-59 */
+  --color-score-poor: #f87171; /* Red-400 - 40-49 */
+  --color-score-very-poor: #dc2626; /* Red-600 - below 40 */
 }
 
 @theme inline {
@@ -122,4 +144,91 @@
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
+}
+
+/* Score color classes for ScoreCard - Text variants */
+.text-score-exceptional {
+  color: var(--color-score-exceptional);
+}
+.text-score-excellent {
+  color: var(--color-score-excellent);
+}
+.text-score-very-good {
+  color: var(--color-score-very-good);
+}
+.text-score-good {
+  color: var(--color-score-good);
+}
+.text-score-above-average {
+  color: var(--color-score-above-average);
+}
+.text-score-average {
+  color: var(--color-score-average);
+}
+.text-score-below-average {
+  color: var(--color-score-below-average);
+}
+.text-score-poor {
+  color: var(--color-score-poor);
+}
+.text-score-very-poor {
+  color: var(--color-score-very-poor);
+}
+
+/* Background colors for progress bars - Background variants */
+.bg-score-exceptional {
+  background-color: var(--color-score-exceptional);
+}
+.bg-score-excellent {
+  background-color: var(--color-score-excellent);
+}
+.bg-score-very-good {
+  background-color: var(--color-score-very-good);
+}
+.bg-score-good {
+  background-color: var(--color-score-good);
+}
+.bg-score-above-average {
+  background-color: var(--color-score-above-average);
+}
+.bg-score-average {
+  background-color: var(--color-score-average);
+}
+.bg-score-below-average {
+  background-color: var(--color-score-below-average);
+}
+.bg-score-poor {
+  background-color: var(--color-score-poor);
+}
+.bg-score-very-poor {
+  background-color: var(--color-score-very-poor);
+}
+
+/* Badge styles */
+.score-badge-exceptional {
+  @apply text-green-800 px-2 py-0.5 rounded;
+}
+.score-badge-excellent {
+  @apply text-green-700 px-2 py-0.5 rounded;
+}
+.score-badge-very-good {
+  @apply text-green-600 px-2 py-0.5 rounded;
+}
+.score-badge-good {
+  @apply text-yellow-700 px-2 py-0.5 rounded;
+}
+.score-badge-above-average {
+  @apply text-amber-700 px-2 py-0.5 rounded;
+}
+.score-badge-average {
+  @apply text-orange-700 px-2 py-0.5 rounded;
+}
+.score-badge-below-average {
+  @apply text-orange-600 px-2 py-0.5 rounded;
+}
+.score-badge-poor {
+  @apply text-red-700 px-2 py-0.5 rounded;
+}
+.score-badge-very-poor {
+  @apply text-red-800 px-2 py-0.5 rounded;
 }

@@ -5,7 +5,7 @@ import { BrandDetails } from "@/components/views/brand-dashboard/BrandDetails";
 import { ScoreCard } from "@/components/views/brand-dashboard/ScoreCard";
 import { StrategyEffectiveness } from "@/components/views/brand-dashboard/StrategyEffectiveness";
 import { CampaignCard } from "@/components/views/brand-dashboard/CampaignCard";
-import { ContentTable } from "@/components/views/brand-dashboard/ContentTable";
+import { ContentPerformanceTable } from "@/components/views/brand-dashboard/ContentPerformanceTable";
 import { ChannelEffectiveness } from "@/components/views/brand-dashboard/ChannelEffectiveness";
 import { FunnelChart } from "@/components/views/brand-dashboard/FunnelChart";
 import { PerformanceChart } from "@/components/views/brand-dashboard/PerformanceChart";
@@ -17,7 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PlusIcon, BarChart2, PieChart, Star, Heart, Zap, AlertCircle } from "lucide-react";
 
 // Define interfaces to match component props
-interface ContentItemType {
+interface ContentPerformanceItem {
   id: string;
   name: string;
   campaign: string;
@@ -116,7 +116,7 @@ export default function BrandDashboardPage() {
     }
   ];
 
-  const contentItems: ContentItemType[] = [
+  const contentItems: ContentPerformanceItem[] = [
     {
       id: "content-1",
       name: "New Product Feature Video",
@@ -373,7 +373,7 @@ export default function BrandDashboardPage() {
             Add Content
           </Button>
         </div>
-        <ContentTable items={contentItems} />
+        <ContentPerformanceTable items={contentItems} />
       </div>
 
       {/* Channel Effectiveness */}
