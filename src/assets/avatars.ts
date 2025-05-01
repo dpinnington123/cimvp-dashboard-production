@@ -268,5 +268,16 @@ export const demoData = {
       { month: "May", growth: 550 },
       { month: "Jun", growth: 420 }
     ]
-  }
+  },
+  
+  // Performance data over time for line chart
+  performanceData: [
+    { month: "Jan", social: 65, email: 45, ads: 55 },
+    { month: "Feb", social: 68, email: 52, ads: 57 },
+    { month: "Mar", social: 70, email: 55, ads: 60 },
+    { month: "Apr", social: 75, email: 57, ads: 65 },
+    { month: "May", social: 82, email: 60, ads: 68 },
+    { month: "Jun", social: 85, email: 63, ads: 72 },
+    { month: "Jul", social: 88, email: 68, ads: 75 }
+  ]
 };
