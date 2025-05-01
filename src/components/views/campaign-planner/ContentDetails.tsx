@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { ContentItem } from '@/types/content';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -7,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { InfoIcon, DollarSign, Users, Calendar } from 'lucide-react';
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 
 interface ContentDetailsProps {
   item: ContentItem;
@@ -27,9 +26,8 @@ const ContentDetails: React.FC<ContentDetailsProps> = ({
   const handleSave = () => {
     // In a real app, this would update the data in a database
     console.log('Saving updated content:', editedItem);
-    toast({
-      title: "Content updated",
-      description: `${editedItem.name} has been updated successfully.`,
+    toast("Content updated", {
+      description: `${editedItem.name} has been updated successfully.`
     });
     setIsEditing(false);
   };

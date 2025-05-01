@@ -1,10 +1,9 @@
-
 import React from 'react';
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { sampleContentItems } from '@/data/sampleContent';
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 interface CampaignTabsProps {
   onCampaignChange: (campaign: string) => void;
@@ -17,14 +16,13 @@ const CampaignTabs: React.FC<CampaignTabsProps> = ({ onCampaignChange }) => {
     .filter(Boolean) as string[])];
 
   const handleNewCampaign = () => {
-    toast({
-      title: "Create New Campaign",
+    toast("Create New Campaign", {
       description: "This feature will be implemented soon."
     });
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6 mr-6">
       <div className="px-2">
         <Button 
           variant="outline" 

@@ -15,6 +15,7 @@ import CheckEmailPage from './pages/CheckEmailPage';
 import NotFound from './pages/NotFound';
 import ProcessContentPage from './pages/ProcessContentPage';
 import ContentProcessingPage from './pages/ContentProcessingPage';
+import CampaignPlannerPage from './pages/CampaignPlannerPage';
 import { Toaster } from "@/components/ui/sonner";
 import AuthProvider, { useAuth } from './hooks/useAuth';
 import LoadingSpinner from './components/common/LoadingSpinner';
@@ -84,6 +85,7 @@ function AppRoutes() {
         <Route path="process-content" element={<ProcessContentPage />} />
         <Route path="content-processing" element={<ContentProcessingPage />} />
         <Route path="brand-strategy" element={<BrandStrategyPage />} />
+        <Route path="campaign-planner" element={<CampaignPlannerPage />} />
       </Route>
 
       {/* Not Found Route */}

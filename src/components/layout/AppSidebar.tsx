@@ -34,6 +34,11 @@ const navigationItems = [
     path: "/process-content",
   },
   {
+    title: "Campaign Planner",
+    icon: LayoutDashboard,
+    path: "/campaign-planner",
+  },
+  {
     title: "Content Reports",
     icon: ClipboardList,
     path: "/content-reports",
@@ -74,6 +79,8 @@ export function AppSidebar() {
                 const isActive = item.path === '/' 
                   ? location.pathname === '/'
                   : location.pathname.startsWith(item.path);
+                
+                console.log("Processing sidebar item:", item.title);
                 
                 return (
                   <SidebarMenuItem key={item.title}>

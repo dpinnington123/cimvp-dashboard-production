@@ -58,12 +58,12 @@ const ContentTable: React.FC<ContentTableProps> = ({
     return 'bg-red-100 text-red-800';
   };
 
-  const getStatusVariant = (status: string) => {
+  const getStatusVariant = (status: string): "default" | "outline" | "destructive" | "secondary" => {
     switch (status) {
       case 'live':
-        return 'success';
+        return 'default';
       case 'draft':
-        return 'warning';
+        return 'destructive';
       case 'planned':
         return 'secondary';
       default:
@@ -74,15 +74,13 @@ const ContentTable: React.FC<ContentTableProps> = ({
   const handleAddContent = (newContent: ContentItem) => {
     setItems(prev => [...prev, newContent]);
     setAddContentOpen(false);
-    toast({
-      title: "Content Added",
+    toast("Content Added", {
       description: "New content has been added to the library.",
     });
   };
 
   const handleUpdateContent = (item: ContentItem) => {
-    toast({
-      title: "Coming Soon",
+    toast("Coming Soon", {
       description: "The update content feature will be available soon!",
     });
   };
@@ -146,7 +144,7 @@ const ContentTable: React.FC<ContentTableProps> = ({
                   </TableCell>
                   <TableCell className="text-right">
                     {item.status !== 'planned' ? (
-                      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getQualityColor(item.qualityScore)}`}>
+                      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getQualityColor(item.qualityScore ?? 0)}`}>
                         {item.qualityScore}
                       </span>
                     ) : (

@@ -59,9 +59,8 @@ const Canvas: React.FC<CanvasProps> = ({
   const handleTitleSave = () => {
     onTitleChange(titleValue);
     setEditingTitle(false);
-    toast({
-      title: "Title Updated",
-      description: "Your journey title has been updated",
+    toast("Title Updated", {
+      description: "Your journey title has been updated"
     });
   };
 
@@ -90,8 +89,7 @@ const Canvas: React.FC<CanvasProps> = ({
         contentData = JSON.parse(data);
       } catch (error) {
         console.error('Error parsing JSON data:', error);
-        toast({
-          title: "Error Adding Content",
+        toast("Error Adding Content", {
           description: "There was an issue adding the content to the canvas",
           variant: "destructive",
         });
@@ -217,9 +215,8 @@ const Canvas: React.FC<CanvasProps> = ({
       if (closestNode) {
         console.log("Creating connection from", connecting.nodeId, "to", closestNode.id);
         onConnect(connecting.nodeId, closestNode.id);
-        toast({
-          title: "Connection Created",
-          description: `Connected "${nodes.find(n => n.id === connecting.nodeId)?.content.name}" to "${closestNode.content.name}"`,
+        toast("Connection Created", {
+          description: `Connected "${nodes.find(n => n.id === connecting.nodeId)?.content.name}" to "${closestNode.content.name}"`
         });
       } else {
         console.log("No target found for connection");
@@ -262,9 +259,8 @@ const Canvas: React.FC<CanvasProps> = ({
     if (connecting && connecting.nodeId !== toNodeId) {
       console.log("Completing connection to", toNodeId, "at position", position);
       onConnect(connecting.nodeId, toNodeId);
-      toast({
-        title: "Connection Created",
-        description: `Connected "${nodes.find(n => n.id === connecting.nodeId)?.content.name}" to "${nodes.find(n => n.id === toNodeId)?.content.name}"`,
+      toast("Connection Created", {
+        description: `Connected "${nodes.find(n => n.id === connecting.nodeId)?.content.name}" to "${nodes.find(n => n.id === toNodeId)?.content.name}"`
       });
       setConnecting(null);
       setConnectingDot(null);
@@ -283,12 +279,12 @@ const Canvas: React.FC<CanvasProps> = ({
     }
   };
 
-  const getStatusVariant = (status: string) => {
+  const getStatusVariant = (status: string): "default" | "outline" | "destructive" | "secondary" => {
     switch (status) {
       case 'live':
-        return 'success';
+        return 'default';
       case 'draft':
-        return 'warning';
+        return 'destructive';
       case 'planned':
         return 'secondary';
       default:

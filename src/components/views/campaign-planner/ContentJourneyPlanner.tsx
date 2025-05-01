@@ -8,7 +8,7 @@ import { sampleContentItems } from '@/data/sampleContent';
 import { CanvasNode, Connection, ContentItem, JourneyMap, Position } from '@/types/content';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { Download, Save, Trash2, HelpCircle } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 const ContentJourneyPlanner: React.FC = () => {
@@ -64,8 +64,7 @@ const ContentJourneyPlanner: React.FC = () => {
     if (!addedContentIds.includes(content.id)) {
       setAddedContentIds(prev => [...prev, content.id]);
     }
-    toast({
-      title: "Content Added",
+    toast("Content Added", {
       description: `Added "${content.name}" to your journey`
     });
   };
@@ -108,18 +107,16 @@ const ContentJourneyPlanner: React.FC = () => {
         setAddedContentIds(prev => prev.filter(id => id !== contentId));
       }
     }
-    toast({
-      title: "Content Removed",
+    toast("Content Removed", {
       description: "The content item has been removed from your journey"
     });
   };
   const handleConnect = (fromId: string, toId: string) => {
     const connectionExists = journeyMap.connections.some(conn => conn.from === fromId && conn.to === toId);
     if (connectionExists) {
-      toast({
-        title: "Connection Already Exists",
+      toast("Connection Already Exists", {
         description: "These two content items are already connected",
-        variant: "destructive"
+        className: "destructive"
       });
       return;
     }
@@ -132,8 +129,7 @@ const ContentJourneyPlanner: React.FC = () => {
       ...prev,
       connections: [...prev.connections, newConnection]
     }));
-    toast({
-      title: "Connection Created",
+    toast("Connection Created", {
       description: "Content items have been connected in your journey"
     });
   };
@@ -142,8 +138,7 @@ const ContentJourneyPlanner: React.FC = () => {
       ...prev,
       connections: prev.connections.filter(conn => conn.id !== id)
     }));
-    toast({
-      title: "Connection Removed",
+    toast("Connection Removed", {
       description: "The connection has been removed from your journey"
     });
   };
@@ -154,15 +149,13 @@ const ContentJourneyPlanner: React.FC = () => {
       title: selectedCampaign === 'All Campaigns' ? 'Campaign Journey' : `${selectedCampaign} Journey`
     });
     setAddedContentIds([]);
-    toast({
-      title: "Canvas Cleared",
+    toast("Canvas Cleared", {
       description: "All content and connections have been removed"
     });
   };
   const handleSaveJourney = () => {
     localStorage.setItem(`journey-${selectedCampaign}`, JSON.stringify(journeyMap));
-    toast({
-      title: "Journey Saved",
+    toast("Journey Saved", {
       description: "Your content journey has been saved successfully"
     });
   };
@@ -174,8 +167,7 @@ const ContentJourneyPlanner: React.FC = () => {
     document.body.appendChild(downloadAnchorNode);
     downloadAnchorNode.click();
     downloadAnchorNode.remove();
-    toast({
-      title: "Journey Exported",
+    toast("Journey Exported", {
       description: "Your content journey has been exported as JSON"
     });
   };

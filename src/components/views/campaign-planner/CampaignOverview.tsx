@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Target, Flag, Handshake, Users, Activity, FileText, Edit2, Save, Calendar } from 'lucide-react';
@@ -7,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useForm } from 'react-hook-form';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -34,7 +33,6 @@ interface CampaignData {
 }
 
 const CampaignOverview: React.FC<CampaignOverviewProps> = ({ items, selectedCampaign }) => {
-  const { toast } = useToast();
   const [isEditing, setIsEditing] = React.useState(false);
   const [startDate, setStartDate] = React.useState<Date>();
   const [endDate, setEndDate] = React.useState<Date>();
@@ -166,8 +164,7 @@ const CampaignOverview: React.FC<CampaignOverviewProps> = ({ items, selectedCamp
   }, {});
 
   const onSubmit = (data: CampaignData) => {
-    toast({
-      title: "Campaign Updated",
+    toast("Campaign Updated", {
       description: "Campaign information has been saved successfully."
     });
     console.log('Campaign data:', data);
