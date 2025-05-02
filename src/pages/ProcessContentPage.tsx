@@ -13,23 +13,16 @@ const ProcessContentPage: React.FC = () => {
   const { data: recentContentData, isLoading } = useProcessedContentQuery(5);
   
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col items-center py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-background text-foreground flex flex-col py-12 px-4 sm:px-6 lg:px-8">
       {/* Header Section */}
-      <div className="text-center mb-8">
-        <img src={logo} alt="Change Influence Logo" className="w-1/2 h-auto mb-6 mx-auto" />
-        <div>
-          <Badge variant="outline" className="py-1 px-3 text-xs border-blue-500 text-blue-700 mb-6">
-            Content Analysis
-          </Badge>  
-        </div>
+      <div className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight mb-1">Add Your Content</h1>
         <p className="text-muted-foreground text-sm">
           1. Upload your files &nbsp; 2. Add the context content &nbsp; 3. Analyse
         </p>
       </div>
-
-      {/* Main Content Area */}
-      <div className="w-full max-w-5xl">
+      {/* Main Content Area centered */}
+      <div className="w-full max-w-5xl mx-auto">
         <ContentUploadForm />
       </div>
       

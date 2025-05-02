@@ -69,7 +69,7 @@ export default function StrategicDashboardPage() {
   return (
     <div className="space-y-6 p-6" ref={dashboardRef}>
       <div className="flex flex-col">
-        <h1 className="text-3xl font-bold">Welcome Back, Alex</h1>
+        <h1 className="text-3xl font-bold">Strategic Dashboard</h1>
         <p className="text-muted-foreground mt-1">Here's how your marketing content is performing across markets and channels.</p>
         
         <div className="flex justify-end mt-4 gap-3">

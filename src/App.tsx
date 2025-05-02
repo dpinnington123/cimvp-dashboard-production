@@ -16,6 +16,7 @@ import NotFound from './pages/NotFound';
 import ProcessContentPage from './pages/ProcessContentPage';
 import ContentProcessingPage from './pages/ContentProcessingPage';
 import CampaignPlannerPage from './pages/CampaignPlannerPage';
+import HomePage from './pages/HomePage';
 import { Toaster } from "@/components/ui/sonner";
 import AuthProvider, { useAuth } from './hooks/useAuth';
 import LoadingSpinner from './components/common/LoadingSpinner';
@@ -71,6 +72,15 @@ function AppRoutes() {
         path="/"
         element={
           <ProtectedRoute>
+            <HomePage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute>
             <DashboardLayout />
           </ProtectedRoute>
         }
@@ -86,6 +96,75 @@ function AppRoutes() {
         <Route path="content-processing" element={<ContentProcessingPage />} />
         <Route path="brand-strategy" element={<BrandStrategyPage />} />
         <Route path="campaign-planner" element={<CampaignPlannerPage />} />
+      </Route>
+
+      {/* Application Pages with Direct Routes */}
+      <Route
+        path="/process-content"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<ProcessContentPage />} />
+      </Route>
+
+      <Route
+        path="/campaign-planner"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<CampaignPlannerPage />} />
+      </Route>
+
+      <Route
+        path="/brand-dashboard"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<BrandDashboardPage />} />
+      </Route>
+
+      {/* Additional Direct Routes for Sidebar Navigation */}
+      <Route
+        path="/strategic-dashboard"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<StrategicDashboardPage />} />
+      </Route>
+
+      <Route
+        path="/brand-strategy"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<BrandStrategyPage />} />
+      </Route>
+
+      <Route
+        path="/content-reports"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<ContentReportsPage />} />
+        <Route path=":contentId" element={<ContentReportsPage />} />
       </Route>
 
       {/* Not Found Route */}

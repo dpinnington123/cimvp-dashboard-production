@@ -1,37 +1,26 @@
-// src/components/layout/DashboardLayout.tsx (Basic Structure)
+// src/components/layout/DashboardLayout.tsx
 import { Outlet } from 'react-router-dom';
-import Header from './Header'; // Create Header.tsx
+import Header from './Header';
 import { AppSidebar } from './AppSidebar';
-import { SidebarProvider, useSidebar } from '@/components/ui/sidebar';
-
-// Width constants from sidebar.tsx
-const SIDEBAR_WIDTH = "16rem";
-const SIDEBAR_WIDTH_ICON = "3rem";
-
-function MainContent() {
-  const { state } = useSidebar();
-  
-  return (
-    <div 
-      className="flex-1 flex flex-col overflow-hidden transition-[margin] duration-200 ease-linear"
-      style={{ 
-        marginLeft: state === "expanded" ? SIDEBAR_WIDTH : SIDEBAR_WIDTH_ICON 
-      }}
-    >
-      <Header />
-      <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 dark:bg-gray-800 p-4 md:p-6">
-        <Outlet />
-      </main>
-    </div>
-  );
-}
+import { SidebarProvider } from '@/components/ui/sidebar';
 
 export default function DashboardLayout() {
   return (
     <SidebarProvider>
-      <div className="flex h-screen w-full bg-white dark:bg-gray-900">
+      <div className="flex min-h-screen w-full bg-white dark:bg-gray-900">
+        {/* Sidebar included but hidden on mobile */}
         <AppSidebar />
-        <MainContent />
+        
+        {/* Main Content */}
+        <div className="flex-1 flex flex-col">
+          {/* Header */}
+          <Header />
+          
+          {/* Main Content Area */}
+          <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 dark:bg-gray-800 p-4 md:p-6 ml-64">
+            <Outlet />
+          </main>
+        </div>
       </div>
     </SidebarProvider>
   );

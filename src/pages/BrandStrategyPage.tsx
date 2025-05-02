@@ -45,9 +45,9 @@ export default function BrandStrategyPage() {
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
       {/* Header with title and description */}
-      <div className="flex flex-col items-center justify-center py-8 text-center bg-white border-b border-gray-200">
-        <h1 className="text-3xl font-bold">Brand Strategy</h1>
-        <p className="text-muted-foreground mt-2">
+      <div className="flex flex-col py-8 bg-white border-b border-gray-200">
+        <h1 className="text-3xl font-bold ml-4">Brand Strategy</h1>
+        <p className="text-muted-foreground mt-2 mb-4 ml-4">
           A comprehensive visualization of our marketing plan and brand strategy
         </p>
       </div>
