@@ -6,6 +6,9 @@ import { X, ArrowRight, Pencil } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 
+// Add CSS styles for Canvas elements
+import './canvas.css';
+
 interface CanvasProps {
   nodes: CanvasNode[];
   connections: Connection[];
@@ -121,6 +124,7 @@ const Canvas: React.FC<CanvasProps> = ({
     const node = nodes.find(n => n.id === nodeId);
     if (!node) return;
     
+    console.log('[Canvas] Starting drag for node:', nodeId);
     setDraggingNode(nodeId);
     const rect = (e.target as HTMLElement).getBoundingClientRect();
     setDragOffset({
@@ -140,6 +144,7 @@ const Canvas: React.FC<CanvasProps> = ({
         y: e.clientY - rect.top - dragOffset.y,
       };
       
+      console.log('[Canvas] Moving node:', draggingNode, 'to position:', position);
       onMoveNode(draggingNode, position);
     } else if (connecting && canvasRef.current) {
       const rect = canvasRef.current.getBoundingClientRect();
@@ -178,6 +183,7 @@ const Canvas: React.FC<CanvasProps> = ({
 
   const handleMouseUp = (e: MouseEvent) => {
     if (draggingNode) {
+      console.log('[Canvas] Ending drag for node:', draggingNode);
       setDraggingNode(null);
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
@@ -452,7 +458,10 @@ const Canvas: React.FC<CanvasProps> = ({
         >
           <Card 
             className={`w-[150px] shadow-md relative draggable-item ${getNodeStatusColor(node.content.status)}`}
-            onMouseDown={(e) => handleNodeDragStart(e, node.id)}
+            onMouseDown={(e) => {
+              e.preventDefault();
+              handleNodeDragStart(e, node.id);
+            }}
           >
             {renderConnectionDot(node.id, 'top')}
             {renderConnectionDot(node.id, 'right')}

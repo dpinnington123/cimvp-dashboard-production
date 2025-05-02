@@ -1,0 +1,83 @@
+/* Canvas Styles */
+
+/* Node styles */
+.node {
+  position: absolute;
+  cursor: move;
+  user-select: none;
+  z-index: 10;
+}
+
+/* Canvas area */
+.canvas-area {
+  position: relative;
+  background-color: #f9fafb;
+}
+
+/* Connection dots */
+.connection-dot {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background-color: #cbd5e1;
+  border-radius: 50%;
+  z-index: 20;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.connection-dot:hover, .connection-dot.active {
+  background-color: #3b82f6;
+  transform: scale(1.5);
+}
+
+.connection-dot.top {
+  top: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.connection-dot.right {
+  right: -4px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.connection-dot.bottom {
+  bottom: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.connection-dot.left {
+  left: -4px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+/* Connection lines */
+.connector, .connector-preview {
+  position: absolute;
+  height: 2px;
+  background-color: #94a3b8;
+  transform-origin: left center;
+  z-index: 5;
+}
+
+.connector:hover {
+  background-color: #ef4444;
+  height: 3px;
+  cursor: pointer;
+}
+
+.connector-preview {
+  background-color: #3b82f6;
+  opacity: 0.6;
+  height: 2px;
+  z-index: 5;
+}
+
+/* Make draggable items clearly draggable */
+.draggable-item {
+  cursor: move;
+} 
