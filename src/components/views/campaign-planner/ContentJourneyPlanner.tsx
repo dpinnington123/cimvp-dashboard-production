@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { Download, Save, Trash2, HelpCircle } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useBrand } from '@/contexts/BrandContext';
 
 interface ContentJourneyPlannerProps {
   contentItems: ContentItem[];
@@ -25,8 +26,16 @@ const ContentJourneyPlanner: React.FC<ContentJourneyPlannerProps> = ({ contentIt
   });
   const [addedContentIds, setAddedContentIds] = useState<string[]>([]);
   
+  // Use the brand context to detect brand changes
+  const { selectedBrand } = useBrand();
+  
   // Use brand name in local storage key to keep journey maps separate for each brand
   const storageKey = `journey-${brandName}-${selectedCampaign}`;
+  
+  // Reset to "All Campaigns" whenever the selected brand changes
+  useEffect(() => {
+    setSelectedCampaign('All Campaigns');
+  }, [selectedBrand]);
   
   useEffect(() => {
     const savedJourney = localStorage.getItem(storageKey);
