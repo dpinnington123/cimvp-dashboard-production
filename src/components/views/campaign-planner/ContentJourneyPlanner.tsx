@@ -249,7 +249,7 @@ const ContentJourneyPlanner: React.FC<ContentJourneyPlannerProps> = ({ contentIt
     });
   };
   
-  return <div className="container mx-auto py-6 max-w-[1600px]">
+  return <div className="container py-6 max-w">
       <div className="flex flex-col gap-8">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Campaign Planning for {brandName}</h1>
