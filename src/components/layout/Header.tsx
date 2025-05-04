@@ -5,11 +5,23 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useNavigate } from 'react-router-dom';
 import { toast } from "sonner";
 import logoImage from '@/assets/ChangeInfluence-logo.png';
+import { useBrand, brandNames, regions } from '@/contexts/BrandContext';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Globe, Building } from 'lucide-react';
+import { brandsData } from '@/data/brandData';
 // We'll add page title logic and user menu later
 
 export default function Header() {
   const { signOut, user } = useAuth(); // Get signOut and user
   const navigate = useNavigate();
+  const { selectedBrand, setSelectedBrand, selectedRegion, setSelectedRegion, getBrandData } = useBrand();
+  const brandData = getBrandData();
 
   const handleLogout = async () => {
     console.log("Signing out...");
@@ -46,6 +58,44 @@ export default function Header() {
             <img src={logoImage} alt="Change Influence" className="h-8" />
           </div>
         </div>
+        
+        {/* Brand and Region Filters */}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <Building className="h-4 w-4 text-muted-foreground" />
+            <Select value={selectedBrand} onValueChange={setSelectedBrand}>
+              <SelectTrigger className="h-8 w-40 text-sm">
+                <SelectValue>
+                  {brandData.profile.name}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {brandNames.map((brandKey) => (
+                  <SelectItem key={brandKey} value={brandKey}>
+                    {brandsData[brandKey].profile.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <Globe className="h-4 w-4 text-muted-foreground" />
+            <Select value={selectedRegion} onValueChange={setSelectedRegion}>
+              <SelectTrigger className="h-8 w-36 text-sm">
+                <SelectValue>{selectedRegion}</SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {regions.map((region) => (
+                  <SelectItem key={region} value={region}>
+                    {region}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        
         <div className="flex items-center space-x-4">
             {user && <span className="text-sm text-gray-600 dark:text-gray-300">{user.email}</span>} {/* Display user email */} 
             <Button variant="outline" size="sm" onClick={handleLogout}>Logout</Button>

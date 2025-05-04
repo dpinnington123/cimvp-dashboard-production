@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +14,8 @@ import {
   FormLabel,
 } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
+import { useBrand } from "@/contexts/BrandContext";
+import { BrandVoice } from "@/data/brandData";
 
 type BrandDetailsType = {
   brandName: string;
@@ -27,45 +28,129 @@ type BrandDetailsType = {
 
 type BrandVoiceType = {
   voices: Array<{
+    id?: string;
     title: string;
     description: string;
   }>;
 };
 
 const BrandProfile = () => {
+  // Get the current brand data from context
+  const { selectedBrand, selectedRegion, getBrandData } = useBrand();
+  const brandData = getBrandData();
+  
   // State for edit modes
   const [editingDetails, setEditingDetails] = useState(false);
   const [editingVoice, setEditingVoice] = useState(false);
+  const [editingProfile, setEditingProfile] = useState(false);
 
-  // Initial data
+  // Initial data - derived from our structured brand data
   const [brandDetails, setBrandDetails] = useState<BrandDetailsType>({
-    brandName: "Eco Solutions Inc.",
-    region: "North America, Europe, Asia-Pacific",
-    businessArea: "Sustainable Consumer Products",
-    annualSales: "$38.5M",
-    targetSales: "$50M",
-    growth: "15.2%",
+    brandName: brandData.profile.name,
+    region: selectedRegion,
+    businessArea: brandData.profile.businessArea,
+    annualSales: brandData.profile.financials.annualSales,
+    targetSales: brandData.profile.financials.targetSales,
+    growth: brandData.profile.financials.growth,
   });
 
+  // Brand voice from structured data
   const [brandVoice, setBrandVoice] = useState<BrandVoiceType>({
-    voices: [
-      { title: "Confident and authoritative", description: "Establishing expertise and trust" },
-      { title: "Approachable and friendly", description: "Creating connection with customers" },
-      { title: "Clear and straightforward", description: "Communicating without jargon" },
-      { title: "Inspiring and motivational", description: "Encouraging sustainable choices" },
-      { title: "Authentic and transparent", description: "Building lasting trust and credibility" },
-    ],
+    voices: brandData.voice.map(v => ({ 
+      id: v.id,
+      title: v.title, 
+      description: v.description 
+    })),
   });
+  
+  // Brand profile comparison data
+  const [profileAttributes, setProfileAttributes] = useState([
+    { name: "Eco-friendly Production", ourBrand: "Industry Leading", competitor1: "Good", competitor2: "Average", competitor3: "Below Average" },
+    { name: "Product Quality", ourBrand: "Premium", competitor1: "Premium", competitor2: "Mid-range", competitor3: "Low-end" },
+    { name: "Price Point", ourBrand: "High", competitor1: "High", competitor2: "Medium", competitor3: "Low" },
+    { name: "Customer Service", ourBrand: "Excellent", competitor1: "Good", competitor2: "Average", competitor3: "Poor" },
+    { name: "Innovation Rate", ourBrand: "Very High", competitor1: "High", competitor2: "Medium", competitor3: "Low" },
+  ]);
+  
+  // Update profile attributes based on market analysis
+  useEffect(() => {
+    if (brandData?.marketAnalysis?.competitorAnalysis) {
+      const competitors = brandData.marketAnalysis.competitorAnalysis;
+      const attributeNames = ["Market Presence", "Product Quality", "Price Point", "Customer Service", "Innovation Rate"];
+      
+      // Create attribute values for comparison
+      const newAttributes = attributeNames.map((name, index) => {
+        let ourValue = "Strong";
+        let comp1 = "Average";
+        let comp2 = "Average";
+        let comp3 = "Average";
+        
+        // Special handling for different attribute types
+        if (name === "Market Presence" && competitors[0]?.marketShare) {
+          ourValue = parseInt(competitors[0].marketShare) > 20 ? "Leading" : "Growing";
+          comp1 = competitors[0]?.marketShare || "Unknown";
+          comp2 = competitors.length > 1 ? competitors[1]?.marketShare || "Unknown" : "Unknown";
+          comp3 = competitors.length > 2 ? competitors[2]?.marketShare || "Unknown" : "Unknown";
+        } else if (name === "Product Quality") {
+          ourValue = brandData.profile.name === "TechNova" ? "Premium" : "High";
+        } else if (name === "Innovation Rate") {
+          ourValue = brandData.marketAnalysis?.swot?.strengths?.includes("Innovation") ? "Very High" : "High";
+        }
+        
+        return {
+          name,
+          ourBrand: ourValue,
+          competitor1: comp1,
+          competitor2: comp2,
+          competitor3: comp3
+        };
+      });
+      
+      setProfileAttributes(newAttributes);
+    }
+  }, [brandData]);
+  
+  // Update state when brand changes
+  useEffect(() => {
+    if (brandData) {
+      setBrandDetails({
+        brandName: brandData.profile.name,
+        region: selectedRegion,
+        businessArea: brandData.profile.businessArea,
+        annualSales: brandData.profile.financials.annualSales,
+        targetSales: brandData.profile.financials.targetSales,
+        growth: brandData.profile.financials.growth,
+      });
+      
+      setBrandVoice({
+        voices: brandData.voice.map(v => ({ 
+          id: v.id,
+          title: v.title, 
+          description: v.description 
+        })),
+      });
+    }
+  }, [selectedBrand, selectedRegion, brandData]);
 
   // Form for brand details
   const detailsForm = useForm<BrandDetailsType>({
     defaultValues: brandDetails,
   });
+  
+  // Update form values when the brand details change
+  useEffect(() => {
+    detailsForm.reset(brandDetails);
+  }, [brandDetails, detailsForm]);
 
   // Form for brand voice
   const voiceForm = useForm<BrandVoiceType>({
     defaultValues: brandVoice,
   });
+  
+  // Update voice form when the brand voice changes
+  useEffect(() => {
+    voiceForm.reset(brandVoice);
+  }, [brandVoice, voiceForm]);
 
   // Handle saving brand details
   const handleSaveDetails = (data: BrandDetailsType) => {
@@ -79,6 +164,14 @@ const BrandProfile = () => {
     setEditingVoice(false);
   };
 
+  // Add a new attribute to profile comparison
+  const handleAddAttribute = () => {
+    setProfileAttributes([
+      ...profileAttributes,
+      { name: "New Attribute", ourBrand: "Strong", competitor1: "Average", competitor2: "Average", competitor3: "Average" }
+    ]);
+  };
+
   return (
     <div className="space-y-8">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -86,7 +179,7 @@ const BrandProfile = () => {
           <CardHeader className="flex flex-row items-start justify-between">
             <div>
               <CardTitle>Brand Details</CardTitle>
-              <CardDescription>Key information about our brand</CardDescription>
+              <CardDescription>Key information about {brandData.profile.name}</CardDescription>
             </div>
             {!editingDetails ? (
               <Button 
@@ -261,7 +354,7 @@ const BrandProfile = () => {
           <CardHeader className="flex flex-row items-start justify-between">
             <div>
               <CardTitle>Brand Voice</CardTitle>
-              <CardDescription>Key attributes of our communication style</CardDescription>
+              <CardDescription>Key attributes of {brandData.profile.name}'s communication style</CardDescription>
             </div>
             {!editingVoice ? (
               <Button 
@@ -305,7 +398,7 @@ const BrandProfile = () => {
             {!editingVoice ? (
               <ul className="space-y-2">
                 {brandVoice.voices.map((voice, index) => (
-                  <li key={index} className="flex items-start">
+                  <li key={voice.id || index} className="flex items-start">
                     <div className="w-2 h-2 bg-emerald-500 rounded-full mt-2 mr-2"></div>
                     <span>
                       <span className="font-medium">{voice.title}:</span> {voice.description}
@@ -391,151 +484,161 @@ const BrandProfile = () => {
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
             <CardTitle>Brand Profile</CardTitle>
-            <CardDescription>Comparison across key characteristics</CardDescription>
+            <CardDescription>Comparison of {brandData.profile.name} against key competitors</CardDescription>
           </div>
-          <Button size="sm" variant="outline" className="text-emerald-600 border-emerald-600 hover:bg-emerald-50">
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Add Characteristic
-          </Button>
+          <div className="flex space-x-2">
+            {!editingProfile ? (
+              <Button size="sm" variant="ghost" className="text-gray-500" onClick={() => setEditingProfile(true)}>
+                <Edit className="h-4 w-4 mr-1" />
+                Edit
+              </Button>
+            ) : (
+              <div className="flex space-x-2">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="text-red-500"
+                  onClick={() => {
+                    setEditingProfile(false);
+                  }}
+                >
+                  <X className="h-4 w-4 mr-1" />
+                  Cancel
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="text-emerald-600"
+                  onClick={() => {
+                    setEditingProfile(false);
+                  }}
+                >
+                  <Save className="h-4 w-4 mr-1" />
+                  Save
+                </Button>
+              </div>
+            )}
+            <Button size="sm" variant="outline" className="text-emerald-600 border-emerald-600 hover:bg-emerald-50" onClick={handleAddAttribute}>
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Add Characteristic
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead className="w-1/6">Characteristic</TableHead>
-                <TableHead className="w-1/6">Our Brand</TableHead>
-                <TableHead className="w-1/6">Competitor 1</TableHead>
-                <TableHead className="w-1/6">Competitor 2</TableHead>
-                <TableHead className="w-1/6">Competitor 3</TableHead>
-                <TableHead className="w-1/6">Actions</TableHead>
+                <TableHead className="w-1/6">{brandData.profile.name}</TableHead>
+                <TableHead className="w-1/6">
+                  {brandData.marketAnalysis?.competitorAnalysis?.[0]?.name || "Competitor 1"}
+                </TableHead>
+                <TableHead className="w-1/6">
+                  {brandData.marketAnalysis?.competitorAnalysis?.[1]?.name || "Competitor 2"}
+                </TableHead>
+                <TableHead className="w-1/6">
+                  {brandData.marketAnalysis?.competitorAnalysis?.[2]?.name || "Competitor 3"}
+                </TableHead>
+                <TableHead className="w-1/6 text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              <TableRow>
-                <TableCell className="font-medium">Eco-friendly Production</TableCell>
-                <TableCell className="text-emerald-700 font-medium">Industry Leading</TableCell>
-                <TableCell>Good</TableCell>
-                <TableCell>Average</TableCell>
-                <TableCell>Below Average</TableCell>
-                <TableCell className="text-right">
-                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                    <span className="sr-only">Edit</span>
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="h-4 w-4"
-                    >
-                      <path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-                      <path d="m15 5 4 4" />
-                    </svg>
-                  </Button>
-                </TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="font-medium">Product Quality</TableCell>
-                <TableCell className="text-emerald-700 font-medium">Premium</TableCell>
-                <TableCell>Premium</TableCell>
-                <TableCell>Mid-range</TableCell>
-                <TableCell>Low-end</TableCell>
-                <TableCell className="text-right">
-                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                    <span className="sr-only">Edit</span>
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="h-4 w-4"
-                    >
-                      <path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-                      <path d="m15 5 4 4" />
-                    </svg>
-                  </Button>
-                </TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="font-medium">Price Point</TableCell>
-                <TableCell className="text-emerald-700 font-medium">High</TableCell>
-                <TableCell>High</TableCell>
-                <TableCell>Medium</TableCell>
-                <TableCell>Low</TableCell>
-                <TableCell className="text-right">
-                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                    <span className="sr-only">Edit</span>
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="h-4 w-4"
-                    >
-                      <path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-                      <path d="m15 5 4 4" />
-                    </svg>
-                  </Button>
-                </TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="font-medium">Customer Service</TableCell>
-                <TableCell className="text-emerald-700 font-medium">Excellent</TableCell>
-                <TableCell>Good</TableCell>
-                <TableCell>Average</TableCell>
-                <TableCell>Poor</TableCell>
-                <TableCell className="text-right">
-                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                    <span className="sr-only">Edit</span>
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="h-4 w-4"
-                    >
-                      <path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-                      <path d="m15 5 4 4" />
-                    </svg>
-                  </Button>
-                </TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="font-medium">Innovation Rate</TableCell>
-                <TableCell className="text-emerald-700 font-medium">Very High</TableCell>
-                <TableCell>High</TableCell>
-                <TableCell>Medium</TableCell>
-                <TableCell>Low</TableCell>
-                <TableCell className="text-right">
-                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                    <span className="sr-only">Edit</span>
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="h-4 w-4"
-                    >
-                      <path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-                      <path d="m15 5 4 4" />
-                    </svg>
-                  </Button>
-                </TableCell>
-              </TableRow>
+              {profileAttributes.map((attr, index) => (
+                <TableRow key={index}>
+                  <TableCell className="font-medium">
+                    {editingProfile ? (
+                      <Input 
+                        value={attr.name}
+                        onChange={(e) => {
+                          const newAttrs = [...profileAttributes];
+                          newAttrs[index].name = e.target.value;
+                          setProfileAttributes(newAttrs);
+                        }}
+                        className="h-8"
+                      />
+                    ) : (
+                      attr.name
+                    )}
+                  </TableCell>
+                  <TableCell className="text-emerald-700 font-medium">
+                    {editingProfile ? (
+                      <Input 
+                        value={attr.ourBrand}
+                        onChange={(e) => {
+                          const newAttrs = [...profileAttributes];
+                          newAttrs[index].ourBrand = e.target.value;
+                          setProfileAttributes(newAttrs);
+                        }}
+                        className="h-8"
+                      />
+                    ) : (
+                      attr.ourBrand
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {editingProfile ? (
+                      <Input 
+                        value={attr.competitor1}
+                        onChange={(e) => {
+                          const newAttrs = [...profileAttributes];
+                          newAttrs[index].competitor1 = e.target.value;
+                          setProfileAttributes(newAttrs);
+                        }}
+                        className="h-8"
+                      />
+                    ) : (
+                      attr.competitor1
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {editingProfile ? (
+                      <Input 
+                        value={attr.competitor2}
+                        onChange={(e) => {
+                          const newAttrs = [...profileAttributes];
+                          newAttrs[index].competitor2 = e.target.value;
+                          setProfileAttributes(newAttrs);
+                        }}
+                        className="h-8"
+                      />
+                    ) : (
+                      attr.competitor2
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {editingProfile ? (
+                      <Input 
+                        value={attr.competitor3}
+                        onChange={(e) => {
+                          const newAttrs = [...profileAttributes];
+                          newAttrs[index].competitor3 = e.target.value;
+                          setProfileAttributes(newAttrs);
+                        }}
+                        className="h-8"
+                      />
+                    ) : (
+                      attr.competitor3
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {editingProfile ? (
+                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-red-500"
+                        onClick={() => {
+                          const newAttrs = [...profileAttributes];
+                          newAttrs.splice(index, 1);
+                          setProfileAttributes(newAttrs);
+                        }}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    ) : (
+                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
             </TableBody>
           </Table>
         </CardContent>

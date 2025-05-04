@@ -1,17 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -19,86 +12,77 @@ import { X, Plus, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { useBrand } from "@/contexts/BrandContext";
+import { BrandObjective, BrandMessage, BrandAudience } from "@/data/brandData";
 
 export const BrandDetails = () => {
-  const [brandName, setBrandName] = useState("Brand 1");
-  const [region, setRegion] = useState("North America");
+  // Use the global brand and region from context instead of local state
+  const { selectedBrand, selectedRegion, getBrandData } = useBrand();
+  const brandData = getBrandData();
   
-  // Tags for objectives, messages, and audiences
-  const [objectiveTags, setObjectiveTags] = useState([
-    { id: "1", text: "Increase brand awareness by 25%", notes: "Focus on social media and PR" },
-    { id: "2", text: "Grow market share by 10%", notes: "Target competitive customers" }
-  ]);
-  
-  const [messageTags, setMessageTags] = useState([
-    { id: "1", text: "Sustainable innovation", notes: "Emphasize eco-friendly practices" },
-    { id: "2", text: "Superior quality", notes: "Highlight product durability" },
-    { id: "3", text: "Customer-centric approach", notes: "Showcase customer testimonials" }
-  ]);
-  
-  const [audienceTags, setAudienceTags] = useState([
-    { id: "1", text: "Young Professionals (25-34)", notes: "Urban, tech-savvy, income >$60k" },
-    { id: "2", text: "Business Decision Makers", notes: "Mid-level managers, procurement teams" }
-  ]);
+  // Tags for objectives, messages, and audiences from the brand data
+  const [objectiveTags, setObjectiveTags] = useState<BrandObjective[]>([]);
+  const [messageTags, setMessageTags] = useState<BrandMessage[]>([]);
+  const [audienceTags, setAudienceTags] = useState<BrandAudience[]>([]);
 
+  // Load the data from the selected brand when it changes
+  useEffect(() => {
+    if (brandData) {
+      setObjectiveTags(brandData.objectives);
+      setMessageTags(brandData.messages);
+      setAudienceTags(brandData.audiences);
+    }
+  }, [selectedBrand, brandData]);
+  
   // Input states
   const [newObjectiveTag, setNewObjectiveTag] = useState("");
   const [newMessageTag, setNewMessageTag] = useState("");
   const [newAudienceTag, setNewAudienceTag] = useState("");
   
   // Tag notes states
-  const [activeTagType, setActiveTagType] = useState(null);
-  const [activeTagId, setActiveTagId] = useState(null);
+  const [activeTagType, setActiveTagType] = useState<string | null>(null);
+  const [activeTagId, setActiveTagId] = useState<string | null>(null);
   const [tagNotes, setTagNotes] = useState("");
-  
-  const brands = [
-    "Brand 1",
-    "Brand 2",
-    "Brand 3",
-  ];
-
-  const regions = [
-    "North America",
-    "Europe",
-    "Asia Pacific",
-    "Latin America",
-    "Middle East & Africa",
-    "Global",
-  ];
 
   // Add new tag functions
   const addObjectiveTag = () => {
     if (newObjectiveTag.trim() !== "") {
-      setObjectiveTags([
-        ...objectiveTags,
-        { id: Date.now().toString(), text: newObjectiveTag, notes: "" }
-      ]);
+      const newTag: BrandObjective = {
+        id: `${selectedBrand.toLowerCase()}-obj-${Date.now()}`,
+        text: newObjectiveTag,
+        notes: ""
+      };
+      setObjectiveTags([...objectiveTags, newTag]);
       setNewObjectiveTag("");
     }
   };
 
   const addMessageTag = () => {
     if (newMessageTag.trim() !== "") {
-      setMessageTags([
-        ...messageTags,
-        { id: Date.now().toString(), text: newMessageTag, notes: "" }
-      ]);
+      const newTag: BrandMessage = {
+        id: `${selectedBrand.toLowerCase()}-msg-${Date.now()}`,
+        text: newMessageTag,
+        notes: ""
+      };
+      setMessageTags([...messageTags, newTag]);
       setNewMessageTag("");
     }
   };
 
   const addAudienceTag = () => {
     if (newAudienceTag.trim() !== "") {
-      setAudienceTags([
-        ...audienceTags,
-        { id: Date.now().toString(), text: newAudienceTag, notes: "" }
-      ]);
+      const newTag: BrandAudience = {
+        id: `${selectedBrand.toLowerCase()}-aud-${Date.now()}`,
+        text: newAudienceTag,
+        notes: ""
+      };
+      setAudienceTags([...audienceTags, newTag]);
       setNewAudienceTag("");
     }
   };
 
   // Remove tag functions
-  const removeObjectiveTag = (id) => {
+  const removeObjectiveTag = (id: string) => {
     setObjectiveTags(objectiveTags.filter(tag => tag.id !== id));
     if (activeTagId === id && activeTagType === "objective") {
       setActiveTagId(null);
@@ -107,7 +91,7 @@ export const BrandDetails = () => {
     }
   };
 
-  const removeMessageTag = (id) => {
+  const removeMessageTag = (id: string) => {
     setMessageTags(messageTags.filter(tag => tag.id !== id));
     if (activeTagId === id && activeTagType === "message") {
       setActiveTagId(null);
@@ -116,7 +100,7 @@ export const BrandDetails = () => {
     }
   };
 
-  const removeAudienceTag = (id) => {
+  const removeAudienceTag = (id: string) => {
     setAudienceTags(audienceTags.filter(tag => tag.id !== id));
     if (activeTagId === id && activeTagType === "audience") {
       setActiveTagId(null);
@@ -126,7 +110,7 @@ export const BrandDetails = () => {
   };
 
   // Open tag notes
-  const openTagNotes = (type, id) => {
+  const openTagNotes = (type: string, id: string) => {
     let tag;
     if (type === "objective") {
       tag = objectiveTags.find(t => t.id === id);
@@ -163,7 +147,7 @@ export const BrandDetails = () => {
   };
 
   // Handle key down for adding tags with Enter
-  const handleKeyDown = (e, type) => {
+  const handleKeyDown = (e: React.KeyboardEvent, type: string) => {
     if (e.key === 'Enter') {
       e.preventDefault();
       if (type === "objective") addObjectiveTag();
@@ -181,37 +165,41 @@ export const BrandDetails = () => {
           </AccordionTrigger>
           <AccordionContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-2">
-              {/* Brand Name & Region in one row */}
-              <div className="space-y-1">
-                <Label className="text-sm">Brand Name</Label>
-                <Select value={brandName} onValueChange={setBrandName}>
-                  <SelectTrigger className="h-8">
-                    <SelectValue placeholder="Select a brand" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {brands.map((brand) => (
-                      <SelectItem key={brand} value={brand}>
-                        {brand}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              {/* Display selected brand and region along with business area */}
+              <div className="md:col-span-2 flex flex-col md:flex-row gap-4 mb-4">
+                <div className="flex-1 p-3 border rounded-md">
+                  <div className="text-sm text-muted-foreground mb-1">Brand</div>
+                  <div className="font-medium">{brandData.profile.name}</div>
+                </div>
+                <div className="flex-1 p-3 border rounded-md">
+                  <div className="text-sm text-muted-foreground mb-1">Region</div>
+                  <div className="font-medium">{selectedRegion}</div>
+                </div>
+                <div className="flex-1 p-3 border rounded-md">
+                  <div className="text-sm text-muted-foreground mb-1">Business Area</div>
+                  <div className="font-medium">{brandData.profile.businessArea}</div>
+                </div>
               </div>
 
-              <div className="space-y-1">
-                <Label className="text-sm">Region</Label>
-                <Select value={region} onValueChange={setRegion}>
-                  <SelectTrigger className="h-8">
-                    <SelectValue placeholder="Select a region" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {regions.map((r) => (
-                      <SelectItem key={r} value={r}>
-                        {r}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              {/* Financial overview */}
+              <div className="md:col-span-2 p-3 border rounded-md mb-4">
+                <h3 className="text-sm font-medium mb-3">Financial Overview</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <div className="text-sm text-muted-foreground">Current Annual Sales</div>
+                    <div className="font-medium">{brandData.profile.financials.annualSales}</div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-muted-foreground">Target Sales</div>
+                    <div className="font-medium">{brandData.profile.financials.targetSales}</div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-muted-foreground">YoY Growth</div>
+                    <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-200">
+                      {brandData.profile.financials.growth}
+                    </Badge>
+                  </div>
+                </div>
               </div>
 
               {/* Single row for objectives, messages, and audiences with tag notes to the right of audience */}

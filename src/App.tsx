@@ -20,6 +20,7 @@ import HomePage from './pages/HomePage';
 import { Toaster } from "@/components/ui/sonner";
 import AuthProvider, { useAuth } from './hooks/useAuth';
 import LoadingSpinner from './components/common/LoadingSpinner';
+import { BrandProvider } from './contexts/BrandContext';
 
 const queryClient = new QueryClient();
 
@@ -28,8 +29,10 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <AuthProvider>
-          <AppRoutes />
-          <Toaster />
+          <BrandProvider>
+            <AppRoutes />
+            <Toaster />
+          </BrandProvider>
         </AuthProvider>
       </BrowserRouter>
     </QueryClientProvider>

@@ -1,4 +1,5 @@
 import React from "react";
+import { useBrand } from "@/contexts/BrandContext";
 
 // Import the new dashboard components
 import { BrandDetails } from "@/components/views/brand-dashboard/BrandDetails";
@@ -40,265 +41,16 @@ interface ChannelScores {
 }
 
 export default function BrandDashboardPage() {
-  // Dummy data for the brand dashboard
-  const overallScores = {
-    overall: 78,
-    strategic: 82,
-    customer: 76,
-    content: 74
-  };
-
-  const strategies = [
-    {
-      id: "strategy-1",
-      name: "Strategy 1: Market Expansion",
-      description: "Focus on entering new geographical markets and demographics to increase customer base and market share.",
-      score: 82
-    },
-    {
-      id: "strategy-2",
-      name: "Strategy 2: Digital Transformation",
-      description: "Enhance customer experience through digital channels and implement data-driven marketing decisions.",
-      score: 76
-    },
-    {
-      id: "strategy-3",
-      name: "Strategy 3: Product Innovation",
-      description: "Develop new offerings and services that meet emerging customer needs while differentiating from competitors.",
-      score: 80
-    }
-  ];
-
-  const campaignData = [
-    {
-      name: "Summer Product Launch",
-      scores: {
-        overall: 80,
-        strategic: 82,
-        customer: 76,
-        execution: 79
-      },
-      status: "active" as const,
-      timeframe: "Jun 05 - Aug 15, 2023"
-    },
-    {
-      name: "Brand Awareness Campaign",
-      scores: {
-        overall: 78,
-        strategic: 80,
-        customer: 75,
-        execution: 82
-      },
-      status: "active" as const,
-      timeframe: "Mar 10 - Sep 30, 2023"
-    },
-    {
-      name: "Holiday Season Promotion",
-      scores: {
-        overall: 70,
-        strategic: 88,
-        customer: 75,
-        execution: 0
-      },
-      status: "planned" as const,
-      timeframe: "Oct 01 - Dec 31, 2023"
-    },
-    {
-      name: "Spring Collection",
-      scores: {
-        overall: 85,
-        strategic: 81,
-        customer: 90,
-        execution: 86
-      },
-      status: "completed" as const,
-      timeframe: "Feb 15 - Apr 30, 2023"
-    }
-  ];
-
-  const contentItems: ContentPerformanceItem[] = [
-    {
-      id: "content-1",
-      name: "New Product Feature Video",
-      campaign: "Summer Product Launch",
-      format: "Video",
-      type: "hero",
-      status: "live",
-      scores: {
-        overall: 88,
-        strategic: 92,
-        customer: 85,
-        execution: 87
-      }
-    },
-    {
-      id: "content-2",
-      name: "Instagram Story Series",
-      campaign: "Summer Product Launch",
-      format: "Social Media",
-      type: "driver",
-      status: "live",
-      scores: {
-        overall: 86,
-        strategic: 88,
-        customer: 90,
-        execution: 80
-      }
-    },
-    {
-      id: "content-3",
-      name: "Brand Manifesto Video",
-      campaign: "Brand Awareness Campaign",
-      format: "Video",
-      type: "hero",
-      status: "live",
-      scores: {
-        overall: 78,
-        strategic: 85,
-        customer: 75,
-        execution: 72
-      }
-    },
-    {
-      id: "content-4",
-      name: "Digital Display Ads",
-      campaign: "Brand Awareness Campaign",
-      format: "Display",
-      type: "driver",
-      status: "live",
-      scores: {
-        overall: 72,
-        strategic: 70,
-        customer: 80,
-        execution: 70
-      }
-    },
-    {
-      id: "content-5",
-      name: "Customer Testimonials",
-      campaign: "Brand Awareness Campaign",
-      format: "Content",
-      type: "driver",
-      status: "draft",
-      scores: {
-        overall: 80,
-        strategic: 82,
-        customer: 85,
-        execution: 75
-      }
-    },
-    {
-      id: "content-6",
-      name: "Holiday Gift Guide",
-      campaign: "Holiday Season Promotion",
-      format: "Content",
-      type: "hero",
-      status: "draft",
-      scores: {
-        overall: 68,
-        strategic: 72,
-        customer: 70,
-        execution: 65
-      }
-    },
-    {
-      id: "content-7",
-      name: "Limited Time Offer Email",
-      campaign: "Holiday Season Promotion",
-      format: "Email",
-      type: "driver",
-      status: "draft",
-      scores: {
-        overall: 73,
-        strategic: 80,
-        customer: 80,
-        execution: 65
-      }
-    },
-    {
-      id: "content-8",
-      name: "Spring Collection Lookbook",
-      campaign: "Spring Collection",
-      format: "Content",
-      type: "hero",
-      status: "live",
-      scores: {
-        overall: 84,
-        strategic: 82,
-        customer: 92,
-        execution: 80
-      }
-    },
-    {
-      id: "content-9",
-      name: "Influencer Partnership Posts",
-      campaign: "Spring Collection",
-      format: "Social Media",
-      type: "driver",
-      status: "live",
-      scores: {
-        overall: 82,
-        strategic: 80,
-        customer: 92,
-        execution: 75
-      }
-    },
-    {
-      id: "content-10",
-      name: "Product Demonstration Videos",
-      campaign: "Spring Collection",
-      format: "Video",
-      type: "driver",
-      status: "draft",
-      scores: {
-        overall: 86,
-        strategic: 82,
-        customer: 88,
-        execution: 90
-      }
-    }
-  ];
-
-  // Channel effectiveness data formatted to match component expectations
-  const channelScores = {
-    social: {
-      overall: 82,
-      strategic: 84,
-      customer: 90,
-      execution: 76
-    },
-    email: {
-      overall: 75,
-      strategic: 78,
-      customer: 72,
-      execution: 74
-    },
-    website: {
-      overall: 78,
-      strategic: 65,
-      customer: 80,
-      execution: 85
-    },
-    digital: {
-      overall: 80,
-      strategic: 78,
-      customer: 70,
-      execution: 87
-    }
-  };
-
-  const funnelData = [
-    { name: "Awareness to Consider", value: 78 },
-    { name: "Consider to Purchase", value: 64 },
-    { name: "Purchase to Growth", value: 53 }
-  ];
+  // Get selected brand and region from context along with the brand data
+  const { selectedBrand, selectedRegion, getBrandData } = useBrand();
+  const brandData = getBrandData();
 
   return (
     <div className="space-y-6 p-6 animate-in fade-in">
       <header className="mb-6">
         <h1 className="text-3xl font-bold">Brand Dashboard</h1>
         <p className="text-muted-foreground mt-1">
-          Monitor your brand effectiveness and campaign performance
+          Monitor your brand effectiveness and campaign performance for {brandData.profile.name} in {selectedRegion}
         </p>
       </header>
 
@@ -311,25 +63,25 @@ export default function BrandDashboardPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <ScoreCard 
             title="Overall Effectiveness" 
-            score={overallScores.overall}
+            score={brandData.overallScores.overall}
             description="Combined score across all metrics"
             icon={<Star className="h-4 w-4" />}
           />
           <ScoreCard 
             title="Strategic Alignment" 
-            score={overallScores.strategic}
+            score={brandData.overallScores.strategic}
             description="How well brand execution aligns with strategy"
             icon={<BarChart2 className="h-4 w-4" />}
           />
           <ScoreCard 
             title="Customer Alignment" 
-            score={overallScores.customer}
+            score={brandData.overallScores.customer}
             description="How brand resonates with target audience"
             icon={<Heart className="h-4 w-4" />}
           />
           <ScoreCard 
             title="Content Effectiveness" 
-            score={overallScores.content}
+            score={brandData.overallScores.content}
             description="Quality of brand content and implementation"
             icon={<PieChart className="h-4 w-4" />}
           />
@@ -342,7 +94,7 @@ export default function BrandDashboardPage() {
           <h2 className="text-xl font-semibold">Strategy Effectiveness</h2>
           <Button variant="outline" size="sm">View strategy details</Button>
         </div>
-        <StrategyEffectiveness strategies={strategies} />
+        <StrategyEffectiveness strategies={brandData.strategies} />
       </div>
 
       {/* Campaign Effectiveness */}
@@ -352,7 +104,7 @@ export default function BrandDashboardPage() {
           <Button variant="outline" size="sm">View all campaigns</Button>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {campaignData.map((campaign, index) => (
+          {brandData.campaigns.map((campaign, index) => (
             <CampaignCard 
               key={`campaign-${index}`}
               name={campaign.name}
@@ -373,7 +125,7 @@ export default function BrandDashboardPage() {
             Add Content
           </Button>
         </div>
-        <ContentPerformanceTable items={contentItems} />
+        <ContentPerformanceTable items={brandData.content} />
       </div>
 
       {/* Channel Effectiveness */}
@@ -382,7 +134,7 @@ export default function BrandDashboardPage() {
           <h2 className="text-xl font-semibold">Channel Effectiveness</h2>
           <Button variant="outline" size="sm">View all channels</Button>
         </div>
-        <ChannelEffectiveness channelScores={channelScores} />
+        <ChannelEffectiveness channelScores={brandData.channelScores} />
       </div>
 
       {/* Marketing Funnel Effectiveness */}
@@ -391,7 +143,7 @@ export default function BrandDashboardPage() {
           <h2 className="text-xl font-semibold">Marketing Funnel Effectiveness</h2>
           <Button variant="outline" size="sm">View detailed funnel</Button>
         </div>
-        <FunnelChart data={funnelData} />
+        <FunnelChart data={brandData.funnelData} />
       </div>
     </div>
   );

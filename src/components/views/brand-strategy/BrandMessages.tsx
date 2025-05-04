@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,6 +16,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { useBrand } from "@/contexts/BrandContext";
 
 // Define types for our brand message
 interface BrandMessage {
@@ -32,6 +32,12 @@ interface BrandMessage {
 }
 
 const BrandMessages = () => {
+  const { getBrandData } = useBrand();
+  const brandData = getBrandData();
+  
+  // Colors for different audience types
+  const audienceColors = ["emerald", "blue", "purple", "amber"];
+  
   // Initial brand messages data
   const [messages, setMessages] = useState<BrandMessage[]>([
     {
@@ -79,6 +85,35 @@ const BrandMessages = () => {
       framing: "Comparative advantage: Demonstrating superior long-term economics"
     }
   ]);
+
+  // Update messages when brand data changes
+  useEffect(() => {
+    if (brandData && brandData.messages && brandData.messages.length > 0) {
+      // Map brand messages to the format expected by the component
+      const brandMessages = brandData.messages.map((message, index) => {
+        // Get audience from the audiences array or use a default
+        const audience = brandData.audiences && brandData.audiences.length > index 
+          ? brandData.audiences[index].text
+          : "General Audience";
+        
+        return {
+          id: message.id,
+          audience: audience,
+          audienceColor: audienceColors[index % audienceColors.length],
+          title: `Message ${index + 1}`,
+          quote: message.text,
+          narrative: message.notes || "No detailed narrative available.",
+          objective: brandData.objectives && brandData.objectives.length > 0 
+            ? brandData.objectives[0].text 
+            : "Strategic Objective",
+          behavioralChange: "Change customer behavior through effective messaging",
+          framing: "Strategic message framing"
+        };
+      });
+      
+      setMessages(brandMessages);
+    }
+  }, [brandData]);
 
   // State for editing
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -145,7 +180,7 @@ const BrandMessages = () => {
     <div className="space-y-8">
       <div className="mb-6">
         <h2 className="text-2xl font-bold mb-2">Key Brand Messages</h2>
-        <p className="text-gray-600">Core messaging to be consistently conveyed across all channels and campaigns</p>
+        <p className="text-gray-600">Core messaging for {brandData.profile.name} to be consistently conveyed across all channels and campaigns</p>
       </div>
       
       <div className="flex justify-end mb-2">

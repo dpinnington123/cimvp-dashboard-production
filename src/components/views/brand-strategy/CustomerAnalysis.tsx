@@ -1,220 +1,94 @@
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Pencil, UserPlus, X, Save, Check, Plus, Trash2, ChevronDown } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { useBrand } from "@/contexts/BrandContext";
 
 const CustomerAnalysis = () => {
-  const [personas, setPersonas] = useState([
-    {
-      id: 1,
-      title: "Persona 1",
-      subtitle: "Urban Professional • 28-35",
-      audience: "Young urban professionals with disposable income",
-      color: "emerald",
-      profile: [
-        "28-35 years old",
-        "Lives in major metropolitan areas",
-        "College educated",
-        "High disposable income",
-      ],
-      painPoints: [
-        "Limited free time",
-        "Overwhelmed by choices",
-        "Skeptical of marketing claims",
-        "Concerned about environmental impact",
-      ],
-      interests: [
-        "Technology and innovation",
-        "Sustainable products",
-        "Premium experiences",
-        "Wellness and self-care",
-      ],
-      intentions: [
-        "Time-saving solutions",
-        "Premium quality products",
-        "Brand authenticity",
-        "Mobile-first experience",
-      ],
-      goals: [
-        "Find trusted brands to simplify decisions",
-        "Support companies with strong values",
-        "Balance quality and convenience",
-        "Showcase personal style",
-      ],
-      preferences: [
-        "Researches extensively before purchasing",
-        "Shops primarily on mobile",
-        "Highly influenced by peer reviews",
-        "Values brands with purpose",
-      ],
-    },
-    {
-      id: 2,
-      title: "Persona 2",
-      subtitle: "Tech-Savvy Parent • 35-45",
-      audience: "Middle-income families with young children",
-      color: "blue",
-      profile: [
-        "35-45 years old",
-        "Suburban households",
-        "Has 1-3 children",
-        "Dual income family",
-      ],
-      painPoints: [
-        "Busy schedule juggling work and family",
-        "Budget constraints",
-        "Safety concerns",
-        "Needs solutions that work for the whole family",
-      ],
-      interests: [
-        "Family activities",
-        "Educational content",
-        "Home improvement",
-        "Health and wellness",
-      ],
-      intentions: [
-        "Family-friendly solutions",
-        "Value for money",
-        "Reliability and durability",
-        "Excellent customer service",
-      ],
-      goals: [
-        "Maximize family time and efficiency",
-        "Find trusted products that last",
-        "Stay within budget while maintaining quality",
-        "Support brands with family values",
-      ],
-      preferences: [
-        "Researches product safety extensively",
-        "Loyal to brands that prove their value",
-        "Seeks recommendations from parent networks",
-        "Expects seamless omnichannel experience",
-      ],
-    },
-  ]);
+  const { getBrandData } = useBrand();
+  const brandData = getBrandData();
+  
+  // State for personas - initialized from brand data
+  const [personas, setPersonas] = useState<any[]>([]);
+  
+  // Initialize personas from brand data
+  useEffect(() => {
+    if (brandData?.customerAnalysis?.segments) {
+      const mappedPersonas = brandData.customerAnalysis.segments.map((segment, index) => ({
+        id: index + 1,
+        title: `Persona ${index + 1}`,
+        subtitle: segment.name,
+        audience: segment.description,
+        color: ["emerald", "blue", "purple", "amber", "red"][index % 5],
+        profile: [
+          ...segment.description.split(", "),
+          `Size: ${segment.size}`
+        ],
+        painPoints: segment.painPoints || ["No pain points specified"],
+        interests: ["Segment interests"],
+        intentions: segment.needs || ["No specific needs identified"],
+        goals: ["Segment goals"],
+        preferences: ["Segment preferences"],
+      }));
+      
+      setPersonas(mappedPersonas);
+    }
+  }, [brandData]);
 
-  const [customerTrends, setCustomerTrends] = useState(
-    "Mobile purchasing continues to rise significantly, with an increase from 30% in Q1 2024 to 60% in Q1 2025, " +
-    "indicating the need to prioritize mobile-first experiences. Customer acquisition costs are increasing, making " +
-    "retention strategies more valuable. Subscription-based models are gaining popularity, with 45% of customers " +
-    "preferring subscriptions over one-time purchases."
-  );
+  // Customer trends from brand data
+  const [customerTrends, setCustomerTrends] = useState("Loading customer trends...");
+  useEffect(() => {
+    if (brandData?.customerAnalysis?.customerJourney) {
+      const journey = brandData.customerAnalysis.customerJourney;
+      const trendsText = `Customer journey analysis shows key touchpoints at ${journey.map(j => j.stage).join(", ")} stages. 
+      Opportunities include ${journey.flatMap(j => j.opportunities).join(", ")}. 
+      Current market growth for ${brandData.profile.name} is ${brandData.profile.financials.growth}.`;
+      
+      setCustomerTrends(trendsText);
+    }
+  }, [brandData]);
   
   const [isEditingTrends, setIsEditingTrends] = useState(false);
   const [editedTrends, setEditedTrends] = useState(customerTrends);
   
-  const [customerScenarios, setCustomerScenarios] = useState([
-    {
-      id: 1,
-      title: "Detractors",
-      description: "Customers who have had negative experiences",
-      percentage: "5%",
-      count: "2,500",
-      colorClass: "red",
-      audience: "Previous customers with unresolved issues",
-      scenarioSize: "Small but vocal group",
-      currentBehaviors: "Public complaints, negative reviews, brand avoidance",
-      desiredBehaviors: "Problem resolution, re-engagement, brand reconsideration",
-      benefitsToCustomer: "Issue resolution, better product fit, restored trust",
-      barriersToChange: "Damaged trust, negative experiences, emotional investment in complaint",
-      changeLevers: "Quick response, above-and-beyond resolution, personal outreach",
-      objectives: [
-        "Identify pain points and resolve issues quickly",
-        "Transform negative experiences into positive ones",
-        "Rebuild trust through personalized solutions",
-        "Establish ongoing communication and feedback channels"
-      ]
-    },
-    {
-      id: 2,
-      title: "Awareness to Consider",
-      description: "Potential customers becoming aware of our brand",
-      percentage: "35%",
-      count: "17,500",
-      colorClass: "amber",
-      audience: "Market-aware prospects with unmet needs",
-      scenarioSize: "Large segment of market",
-      currentBehaviors: "Passive browsing, comparing options, information gathering",
-      desiredBehaviors: "Active engagement, deeper product research, free trial sign-ups",
-      benefitsToCustomer: "Finding solution to specific problems, improving current situation",
-      barriersToChange: "Information overload, unclear differentiation, analysis paralysis",
-      changeLevers: "Clear value proposition, customer testimonials, simplified comparison",
-      objectives: [
-        "Increase brand visibility across relevant channels",
-        "Provide clear, compelling value propositions",
-        "Address common objections proactively",
-        "Simplify initial engagement and information gathering"
-      ]
-    },
-    {
-      id: 3,
-      title: "Consider to Buy",
-      description: "Prospects actively evaluating our products",
-      percentage: "25%",
-      count: "12,500",
-      colorClass: "blue",
-      audience: "Engaged prospects with defined needs",
-      scenarioSize: "Medium segment with high potential",
-      currentBehaviors: "Product comparison, feature evaluation, pricing research",
-      desiredBehaviors: "Trial completion, decision-making, purchase initiation",
-      benefitsToCustomer: "Finding optimal solution, confidence in decision, clear ROI",
-      barriersToChange: "Decision risk, price concerns, implementation worries",
-      changeLevers: "Money-back guarantee, case studies, implementation support",
-      objectives: [
-        "Deliver tailored product demonstrations and trials",
-        "Provide transparent pricing and value comparisons",
-        "Reduce friction in the purchase process",
-        "Establish trust through testimonials and social proof"
-      ]
-    },
-    {
-      id: 4,
-      title: "Expand Use",
-      description: "Existing customers increasing engagement",
-      percentage: "20%",
-      count: "10,000",
-      colorClass: "purple",
-      audience: "Current customers with growth potential",
-      scenarioSize: "Medium segment with high lifetime value",
-      currentBehaviors: "Basic product usage, underutilization of features",
-      desiredBehaviors: "Advanced feature adoption, increased usage, additional purchases",
-      benefitsToCustomer: "Greater ROI, enhanced productivity, better outcomes",
-      barriersToChange: "Comfort with status quo, training time, change management",
-      changeLevers: "Success stories, training resources, personalized recommendations",
-      objectives: [
-        "Educate customers on additional features and use cases",
-        "Create seamless cross-sell and up-sell pathways",
-        "Reward increased usage and engagement",
-        "Collect and implement feedback for product improvement"
-      ]
-    },
-    {
-      id: 5,
-      title: "Advocacy",
-      description: "Loyal customers who promote our brand",
-      percentage: "15%",
-      count: "7,500",
-      colorClass: "emerald",
-      audience: "Highly satisfied customers with social influence",
-      scenarioSize: "Small but highly influential group",
-      currentBehaviors: "Frequent usage, occasional recommendations, positive reviews",
-      desiredBehaviors: "Active referrals, testimonials, social sharing, community participation",
-      benefitsToCustomer: "Exclusivity, recognition, community belonging, additional value",
-      barriersToChange: "Time constraints, lack of incentives, no clear process",
-      changeLevers: "Recognition programs, referral incentives, exclusive access",
-      objectives: [
-        "Create exclusive community and recognition programs",
-        "Provide shareable content and referral incentives",
-        "Involve advocates in product development and testing",
-        "Celebrate customer success stories and testimonials"
-      ]
+  // Update edited trends when customer trends change
+  useEffect(() => {
+    setEditedTrends(customerTrends);
+  }, [customerTrends]);
+  
+  // Customer scenarios from brand data and customer journey
+  const [customerScenarios, setCustomerScenarios] = useState<any[]>([]);
+  
+  // Initialize scenarios from brand data
+  useEffect(() => {
+    if (brandData?.customerAnalysis?.customerJourney) {
+      const journey = brandData.customerAnalysis.customerJourney;
+      const colors = ["red", "amber", "blue", "purple", "emerald"];
+      
+      const mappedScenarios = journey.map((stage, index) => ({
+        id: index + 1,
+        title: stage.stage,
+        description: `${stage.stage} stage of customer journey`,
+        percentage: `${20 + index * 5}%`,
+        count: `${10000 - index * 2000}`,
+        colorClass: colors[index % colors.length],
+        audience: brandData.customerAnalysis?.segments?.[0]?.name || "General audience",
+        scenarioSize: "Significant segment",
+        currentBehaviors: stage.touchpoints.join(", "),
+        desiredBehaviors: "Increased engagement and conversion",
+        benefitsToCustomer: "Better product fit and experience",
+        barriersToChange: "Awareness and competitive offers",
+        changeLevers: "Marketing and product optimization",
+        objectives: stage.opportunities || ["No specific opportunities identified"]
+      }));
+      
+      setCustomerScenarios(mappedScenarios);
     }
-  ]);
+  }, [brandData]);
   
   const [editingScenarioId, setEditingScenarioId] = useState<number | null>(null);
   const [editedScenario, setEditedScenario] = useState<any>(null);

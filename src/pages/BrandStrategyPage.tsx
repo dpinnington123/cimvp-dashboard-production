@@ -7,8 +7,13 @@ import BrandMessages from "@/components/views/brand-strategy/BrandMessages";
 import ResearchFiles from "@/components/views/brand-strategy/ResearchFiles";
 import MarketingCampaigns from "@/components/views/brand-strategy/MarketingCampaigns";
 import { Button } from "@/components/ui/button";
+import { useBrand } from "@/contexts/BrandContext";
 
 export default function BrandStrategyPage() {
+  // Get the current brand data from context
+  const { getBrandData } = useBrand();
+  const brandData = getBrandData();
+  
   // State to keep track of the active tab
   const [activeTab, setActiveTab] = useState("Brand Profile");
 
@@ -46,9 +51,9 @@ export default function BrandStrategyPage() {
     <div className="flex flex-col min-h-screen bg-gray-50">
       {/* Header with title and description */}
       <div className="flex flex-col py-8 bg-white border-b border-gray-200">
-        <h1 className="text-3xl font-bold ml-4">Brand Strategy</h1>
+        <h1 className="text-3xl font-bold ml-4">{brandData.profile.name} - Brand Strategy</h1>
         <p className="text-muted-foreground mt-2 mb-4 ml-4">
-          A comprehensive visualization of our marketing plan and brand strategy
+          A comprehensive visualization of {brandData.profile.name}'s marketing plan and brand strategy
         </p>
       </div>
       {/* Tab Navigation */}
