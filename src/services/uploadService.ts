@@ -37,7 +37,7 @@ export interface ProcessedContent {
     storage_path?: string;
   }[];
   createdAt: string;
-  status: 'processing' | 'analyzed' | 'error';
+  status: 'draft' | 'live';
 }
 
 /**
@@ -208,7 +208,7 @@ export const storeContentMetadata = async (
       format: metadata.contentFormat || null,
       funnel_alignment: metadata.campaign || null,
       strategy_aligned_to: metadata.businessObjective || null,
-      status: 'processing',
+      status: 'draft',
       type: metadata.contentType || null
     };
     
@@ -242,7 +242,7 @@ export const storeContentMetadata = async (
           const { data: rpcData, error: rpcError } = await supabase.rpc('insert_content', {
             p_content_name: insertData.content_name,
             p_client_id: insertData.client_id,
-            p_status: insertData.status
+            p_status: 'draft'
           });
           
           if (rpcError) {
@@ -325,7 +325,7 @@ function processContentData(
       storage_path: file.storage_path || data?.file_storage_path
     })),
     createdAt: data?.created_at || new Date().toISOString(),
-    status: data?.status || 'processing'
+    status: data?.status || 'draft'
   };
 
   return { data: processedContent, error: null };
@@ -472,7 +472,7 @@ export const getProcessedContent = async (
           }
         ] : [], 
         createdAt: item.created_at || new Date().toISOString(),
-        status: item.status || 'processing'
+        status: item.status === 'live' ? 'live' : 'draft'
       };
     });
 
