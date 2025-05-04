@@ -4,24 +4,32 @@ import ContentTable from './ContentTable';
 import Canvas from './Canvas';
 import CampaignTabs from './CampaignTabs';
 import CampaignOverview from './CampaignOverview';
-import { sampleContentItems } from '@/data/sampleContent';
 import { CanvasNode, Connection, ContentItem, JourneyMap, Position } from '@/types/content';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { Download, Save, Trash2, HelpCircle } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-const ContentJourneyPlanner: React.FC = () => {
+
+interface ContentJourneyPlannerProps {
+  contentItems: ContentItem[];
+  brandName: string;
+}
+
+const ContentJourneyPlanner: React.FC<ContentJourneyPlannerProps> = ({ contentItems, brandName }) => {
   const [selectedCampaign, setSelectedCampaign] = useState<string>('All Campaigns');
-  const [contentItems] = useState<ContentItem[]>(sampleContentItems);
   const [journeyMap, setJourneyMap] = useState<JourneyMap>({
     nodes: [],
     connections: [],
     title: "Campaign Journey"
   });
   const [addedContentIds, setAddedContentIds] = useState<string[]>([]);
+  
+  // Use brand name in local storage key to keep journey maps separate for each brand
+  const storageKey = `journey-${brandName}-${selectedCampaign}`;
+  
   useEffect(() => {
-    const savedJourney = localStorage.getItem(`journey-${selectedCampaign}`);
+    const savedJourney = localStorage.getItem(storageKey);
     if (savedJourney) {
       setJourneyMap(JSON.parse(savedJourney));
     } else {
@@ -32,31 +40,55 @@ const ContentJourneyPlanner: React.FC = () => {
       });
       setAddedContentIds([]);
     }
-  }, [selectedCampaign]);
+  }, [selectedCampaign, brandName, storageKey]);
+  
   useEffect(() => {
-    localStorage.setItem(`journey-${selectedCampaign}`, JSON.stringify(journeyMap));
-  }, [journeyMap, selectedCampaign]);
+    localStorage.setItem(storageKey, JSON.stringify(journeyMap));
+  }, [journeyMap, storageKey]);
 
   // Create the filtered content items based on the selected campaign
   const filteredContentItems = contentItems.filter(item => selectedCampaign === 'All Campaigns' || item.campaign === selectedCampaign);
+  
   const handleCampaignChange = (campaign: string) => {
     setSelectedCampaign(campaign);
+    setJourneyMap(prev => ({
+      ...prev,
+      title: campaign === 'All Campaigns' ? 'Campaign Journey' : `${campaign} Journey`
+    }));
   };
+  
   const handleTitleChange = (title: string) => {
     setJourneyMap(prev => ({
       ...prev,
       title
     }));
   };
+  
   const handleDragStart = (e: React.DragEvent, item: ContentItem) => {
     e.dataTransfer.setData('text', JSON.stringify(item));
   };
+  
   const handleAddNode = (content: ContentItem, position: Position) => {
+    // Create a new node with enhanced data from the content item
     const newNode: CanvasNode = {
       id: uuidv4(),
-      content,
+      content: {
+        ...content,
+        // Set default campaign scores if not already present
+        campaignScores: content.campaignScores || {
+          overallEffectiveness: 75,
+          strategicAlignment: 75,
+          customerAlignment: 75,
+          contentEffectiveness: 75
+        },
+        // Ensure audience information is available
+        audience: content.audience || getDefaultAudience(content.campaign),
+        // Ensure we have key actions for engagement tracking
+        keyActions: content.keyActions || ['View', 'Share', 'Learn More']
+      },
       position
     };
+    
     setJourneyMap(prev => ({
       ...prev,
       nodes: [...prev.nodes, newNode]
@@ -68,6 +100,35 @@ const ContentJourneyPlanner: React.FC = () => {
       description: `Added "${content.name}" to your journey`
     });
   };
+  
+  // Helper function to get default audience based on campaign
+  const getDefaultAudience = (campaign?: string): string => {
+    if (!campaign) return 'General audience';
+    
+    switch (campaign) {
+      case 'Earth Month Awareness':
+        return 'Environmentally conscious consumers aged 25-45';
+      case 'Zero-Waste Challenge':
+        return 'Sustainability advocates, zero-waste lifestyle enthusiasts';
+      case 'Holiday Gift Guide: Sustainable Edition':
+        return 'Gift shoppers interested in sustainable products';
+      case 'Next Gen Product Launch':
+        return 'Tech early adopters aged 25-40';
+      case 'Work From Anywhere':
+        return 'Remote workers and digital nomads';
+      case 'Smart Home Essentials':
+        return 'Tech-savvy homeowners aged 30-55';
+      case 'Sleep Revolution':
+        return 'Health-conscious adults with sleep concerns';
+      case 'Immune Health Awareness':
+        return 'Health-focused individuals aged 25-65';
+      case 'Active Aging Initiative':
+        return 'Active adults aged 55+';
+      default:
+        return 'General audience';
+    }
+  };
+  
   const handleAddToJourney = (content: ContentItem) => {
     let xPosition = 50;
     let yPosition = 150;
@@ -84,6 +145,7 @@ const ContentJourneyPlanner: React.FC = () => {
     };
     handleAddNode(content, position);
   };
+  
   const handleMoveNode = (id: string, position: Position) => {
     setJourneyMap(prev => ({
       ...prev,
@@ -93,6 +155,7 @@ const ContentJourneyPlanner: React.FC = () => {
       } : node)
     }));
   };
+  
   const handleRemoveNode = (id: string) => {
     const nodeToRemove = journeyMap.nodes.find(node => node.id === id);
     setJourneyMap(prev => ({
@@ -111,6 +174,7 @@ const ContentJourneyPlanner: React.FC = () => {
       description: "The content item has been removed from your journey"
     });
   };
+  
   const handleConnect = (fromId: string, toId: string) => {
     const connectionExists = journeyMap.connections.some(conn => conn.from === fromId && conn.to === toId);
     if (connectionExists) {
@@ -133,6 +197,7 @@ const ContentJourneyPlanner: React.FC = () => {
       description: "Content items have been connected in your journey"
     });
   };
+  
   const handleRemoveConnection = (id: string) => {
     setJourneyMap(prev => ({
       ...prev,
@@ -142,6 +207,7 @@ const ContentJourneyPlanner: React.FC = () => {
       description: "The connection has been removed from your journey"
     });
   };
+  
   const handleClearCanvas = () => {
     setJourneyMap({
       nodes: [],
@@ -153,17 +219,19 @@ const ContentJourneyPlanner: React.FC = () => {
       description: "All content and connections have been removed"
     });
   };
+  
   const handleSaveJourney = () => {
-    localStorage.setItem(`journey-${selectedCampaign}`, JSON.stringify(journeyMap));
+    localStorage.setItem(storageKey, JSON.stringify(journeyMap));
     toast("Journey Saved", {
       description: "Your content journey has been saved successfully"
     });
   };
+  
   const handleExportJourney = () => {
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(journeyMap, null, 2));
     const downloadAnchorNode = document.createElement('a');
     downloadAnchorNode.setAttribute("href", dataStr);
-    downloadAnchorNode.setAttribute("download", "content-journey.json");
+    downloadAnchorNode.setAttribute("download", `${brandName}-${selectedCampaign}-journey.json`);
     document.body.appendChild(downloadAnchorNode);
     downloadAnchorNode.click();
     downloadAnchorNode.remove();
@@ -171,10 +239,11 @@ const ContentJourneyPlanner: React.FC = () => {
       description: "Your content journey has been exported as JSON"
     });
   };
+  
   return <div className="container mx-auto py-6 max-w-[1600px]">
       <div className="flex flex-col gap-8">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Campaign Planning</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Campaign Planning for {brandName}</h1>
           <p className="text-muted-foreground mt-2">
             Plan and visualize your content marketing journeys with drag and drop simplicity
           </p>
@@ -182,7 +251,7 @@ const ContentJourneyPlanner: React.FC = () => {
 
         <div className="flex gap-6">
           <div className="shrink-0">
-            <CampaignTabs onCampaignChange={handleCampaignChange} />
+            <CampaignTabs onCampaignChange={handleCampaignChange} campaigns={contentItems} />
           </div>
           
           <div className="flex-1 space-y-6">
@@ -196,7 +265,7 @@ const ContentJourneyPlanner: React.FC = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <ContentTable items={filteredContentItems} onDragStart={handleDragStart} addedContentIds={addedContentIds} onAddToJourney={handleAddToJourney} />
+                <ContentTable items={filteredContentItems} onDragStart={handleDragStart} addedContentIds={addedContentIds} onAddToJourney={handleAddToJourney} selectedCampaign={selectedCampaign} />
               </CardContent>
             </Card>
 
@@ -248,4 +317,5 @@ const ContentJourneyPlanner: React.FC = () => {
       </div>
     </div>;
 };
+
 export default ContentJourneyPlanner;

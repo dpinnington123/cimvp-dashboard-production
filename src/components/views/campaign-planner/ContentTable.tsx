@@ -3,12 +3,18 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Plus, Info, FilePlus, Pencil } from 'lucide-react';
+import { Plus, Info, FilePlus, Pencil, ChevronDown } from 'lucide-react';
 import { ContentItem } from '@/types/content';
 import ContentDetails from './ContentDetails';
 import ContentFilters, { FilterValues } from './ContentFilters';
 import AddContentForm from './AddContentForm';
 import { toast } from '@/hooks/use-toast';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface ContentTableProps {
   items: ContentItem[];
@@ -61,13 +67,13 @@ const ContentTable: React.FC<ContentTableProps> = ({
   const getStatusVariant = (status: string): "default" | "outline" | "destructive" | "secondary" => {
     switch (status) {
       case 'live':
-        return 'default';
+        return "default";
       case 'draft':
-        return 'destructive';
+        return "secondary";
       case 'planned':
-        return 'secondary';
+        return "outline";
       default:
-        return 'secondary';
+        return "outline";
     }
   };
 
@@ -138,9 +144,68 @@ const ContentTable: React.FC<ContentTableProps> = ({
                     {item.campaign || '-'}
                   </TableCell>
                   <TableCell>
-                    <Badge variant={getStatusVariant(item.status)}>
-                      {item.status}
-                    </Badge>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          className={`px-3 py-1 h-7 font-normal text-xs ${
+                            item.status === 'live' 
+                              ? 'bg-green-100 hover:bg-green-200 text-green-800 border-green-200' 
+                              : item.status === 'draft'
+                                ? 'bg-yellow-100 hover:bg-yellow-200 text-yellow-800 border-yellow-200'
+                                : ''
+                          }`}
+                        >
+                          {item.status}
+                          <ChevronDown className="ml-1 h-3 w-3" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem 
+                          onClick={() => {
+                            const newStatus = "live" as const;
+                            const updatedItem = { ...item, status: newStatus };
+                            setItems(prev => 
+                              prev.map(i => i.id === item.id ? updatedItem : i)
+                            );
+                            toast(`Status Updated`, {
+                              description: `Status changed to ${newStatus}`,
+                            });
+                          }}
+                        >
+                          live
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => {
+                            const newStatus = "draft" as const;
+                            const updatedItem = { ...item, status: newStatus };
+                            setItems(prev => 
+                              prev.map(i => i.id === item.id ? updatedItem : i)
+                            );
+                            toast(`Status Updated`, {
+                              description: `Status changed to ${newStatus}`,
+                            });
+                          }}
+                        >
+                          draft
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => {
+                            const newStatus = "planned" as const;
+                            const updatedItem = { ...item, status: newStatus };
+                            setItems(prev => 
+                              prev.map(i => i.id === item.id ? updatedItem : i)
+                            );
+                            toast(`Status Updated`, {
+                              description: `Status changed to ${newStatus}`,
+                            });
+                          }}
+                        >
+                          planned
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableCell>
                   <TableCell className="text-right">
                     {item.status !== 'planned' ? (

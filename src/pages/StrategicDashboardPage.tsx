@@ -93,14 +93,14 @@ export default function StrategicDashboardPage() {
         </div>
       </div>
 
-      {/* Overall Marketing Activity Effectiveness Score */}
-      <div ref={overallScoreRef}>
-        <OverallEffectivenessScore />
-      </div>
-
       {/* Metrics Cards Row */}
       <div ref={metricsCardRef}>
         <MetricsCard />
+      </div>
+
+      {/* Overall Marketing Activity Effectiveness Score */}
+      <div ref={overallScoreRef}>
+        <OverallEffectivenessScore />
       </div>
 
       {/* Content Performance by Country and Brand Content Effectiveness */}

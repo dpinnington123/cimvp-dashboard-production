@@ -15,7 +15,6 @@ import {
 } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { useBrand } from "@/contexts/BrandContext";
-import { BrandVoice } from "@/data/brandData";
 
 type BrandDetailsType = {
   brandName: string;
@@ -26,13 +25,15 @@ type BrandDetailsType = {
   growth: string;
 };
 
-type BrandVoiceType = {
-  voices: Array<{
-    id?: string;
-    title: string;
-    description: string;
-  }>;
-};
+interface VoiceAttribute {
+  id?: string;
+  title: string;
+  description: string;
+}
+
+interface VoiceFormData {
+  voiceAttributes: VoiceAttribute[];
+}
 
 const BrandProfile = () => {
   // Get the current brand data from context
@@ -43,6 +44,9 @@ const BrandProfile = () => {
   const [editingDetails, setEditingDetails] = useState(false);
   const [editingVoice, setEditingVoice] = useState(false);
   const [editingProfile, setEditingProfile] = useState(false);
+  
+  // Voice attributes state
+  const [voiceAttributes, setVoiceAttributes] = useState<VoiceAttribute[]>(brandData.voice || []);
 
   // Initial data - derived from our structured brand data
   const [brandDetails, setBrandDetails] = useState<BrandDetailsType>({
@@ -54,15 +58,6 @@ const BrandProfile = () => {
     growth: brandData.profile.financials.growth,
   });
 
-  // Brand voice from structured data
-  const [brandVoice, setBrandVoice] = useState<BrandVoiceType>({
-    voices: brandData.voice.map(v => ({ 
-      id: v.id,
-      title: v.title, 
-      description: v.description 
-    })),
-  });
-  
   // Brand profile comparison data
   const [profileAttributes, setProfileAttributes] = useState([
     { name: "Eco-friendly Production", ourBrand: "Industry Leading", competitor1: "Good", competitor2: "Average", competitor3: "Below Average" },
@@ -79,7 +74,7 @@ const BrandProfile = () => {
       const attributeNames = ["Market Presence", "Product Quality", "Price Point", "Customer Service", "Innovation Rate"];
       
       // Create attribute values for comparison
-      const newAttributes = attributeNames.map((name, index) => {
+      const newAttributes = attributeNames.map((name) => {
         let ourValue = "Strong";
         let comp1 = "Average";
         let comp2 = "Average";
@@ -122,13 +117,7 @@ const BrandProfile = () => {
         growth: brandData.profile.financials.growth,
       });
       
-      setBrandVoice({
-        voices: brandData.voice.map(v => ({ 
-          id: v.id,
-          title: v.title, 
-          description: v.description 
-        })),
-      });
+      setVoiceAttributes(brandData.voice || []);
     }
   }, [selectedBrand, selectedRegion, brandData]);
 
@@ -137,30 +126,32 @@ const BrandProfile = () => {
     defaultValues: brandDetails,
   });
   
+  // Form for voice attributes
+  const voiceForm = useForm({
+    defaultValues: {
+      voiceAttributes: voiceAttributes
+    }
+  });
+  
   // Update form values when the brand details change
   useEffect(() => {
     detailsForm.reset(brandDetails);
   }, [brandDetails, detailsForm]);
-
-  // Form for brand voice
-  const voiceForm = useForm<BrandVoiceType>({
-    defaultValues: brandVoice,
-  });
   
-  // Update voice form when the brand voice changes
+  // Update voice form values when voice attributes change
   useEffect(() => {
-    voiceForm.reset(brandVoice);
-  }, [brandVoice, voiceForm]);
+    voiceForm.reset({ voiceAttributes });
+  }, [voiceAttributes, voiceForm]);
 
   // Handle saving brand details
   const handleSaveDetails = (data: BrandDetailsType) => {
     setBrandDetails(data);
     setEditingDetails(false);
   };
-
-  // Handle saving brand voice
-  const handleSaveVoice = (data: BrandVoiceType) => {
-    setBrandVoice(data);
+  
+  // Handle saving voice attributes
+  const handleSaveVoice = (data: VoiceFormData) => {
+    setVoiceAttributes(data.voiceAttributes || voiceAttributes);
     setEditingVoice(false);
   };
 
@@ -170,6 +161,21 @@ const BrandProfile = () => {
       ...profileAttributes,
       { name: "New Attribute", ourBrand: "Strong", competitor1: "Average", competitor2: "Average", competitor3: "Average" }
     ]);
+  };
+  
+  // Add a new voice attribute
+  const handleAddVoiceAttribute = () => {
+    setVoiceAttributes([
+      ...voiceAttributes,
+      { title: "", description: "" }
+    ]);
+  };
+  
+  // Remove the last voice attribute
+  const handleRemoveVoiceAttribute = () => {
+    if (voiceAttributes.length > 1) {
+      setVoiceAttributes(voiceAttributes.slice(0, -1));
+    }
   };
 
   return (
@@ -362,7 +368,7 @@ const BrandProfile = () => {
                 size="sm" 
                 className="text-gray-500"
                 onClick={() => {
-                  voiceForm.reset(brandVoice);
+                  voiceForm.reset({ voiceAttributes });
                   setEditingVoice(true);
                 }}
               >
@@ -397,7 +403,7 @@ const BrandProfile = () => {
           <CardContent>
             {!editingVoice ? (
               <ul className="space-y-2">
-                {brandVoice.voices.map((voice, index) => (
+                {brandData.voice.map((voice, index) => (
                   <li key={voice.id || index} className="flex items-start">
                     <div className="w-2 h-2 bg-emerald-500 rounded-full mt-2 mr-2"></div>
                     <span>
@@ -409,34 +415,30 @@ const BrandProfile = () => {
             ) : (
               <Form {...voiceForm}>
                 <form className="space-y-4">
-                  {voiceForm.watch("voices").map((_, index) => (
-                    <div key={index} className="grid grid-cols-3 gap-2">
+                  {voiceAttributes.map((voice, index) => (
+                    <div key={voice.id || index} className="grid grid-cols-3 gap-2">
                       <div className="col-span-1">
-                        <FormField
-                          control={voiceForm.control}
-                          name={`voices.${index}.title`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Title</FormLabel>
-                              <FormControl>
-                                <Input {...field} />
-                              </FormControl>
-                            </FormItem>
-                          )}
+                        <Input 
+                          value={voice.title}
+                          onChange={(e) => {
+                            const updatedVoice = [...voiceAttributes];
+                            updatedVoice[index].title = e.target.value;
+                            setVoiceAttributes(updatedVoice);
+                          }}
+                          placeholder="Title"
+                          className="h-8"
                         />
                       </div>
                       <div className="col-span-2">
-                        <FormField
-                          control={voiceForm.control}
-                          name={`voices.${index}.description`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Description</FormLabel>
-                              <FormControl>
-                                <Input {...field} />
-                              </FormControl>
-                            </FormItem>
-                          )}
+                        <Input 
+                          value={voice.description}
+                          onChange={(e) => {
+                            const updatedVoice = [...voiceAttributes];
+                            updatedVoice[index].description = e.target.value;
+                            setVoiceAttributes(updatedVoice);
+                          }}
+                          placeholder="Description"
+                          className="h-8"
                         />
                       </div>
                     </div>
@@ -446,13 +448,7 @@ const BrandProfile = () => {
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={() => {
-                        const currentVoices = voiceForm.getValues("voices");
-                        voiceForm.setValue("voices", [
-                          ...currentVoices,
-                          { title: "", description: "" }
-                        ]);
-                      }}
+                      onClick={handleAddVoiceAttribute}
                     >
                       <PlusCircle className="mr-2 h-4 w-4" />
                       Add Voice Attribute
@@ -462,12 +458,7 @@ const BrandProfile = () => {
                       variant="outline"
                       size="sm"
                       className="text-red-500 border-red-500 hover:bg-red-50"
-                      onClick={() => {
-                        const currentVoices = voiceForm.getValues("voices");
-                        if (currentVoices.length > 1) {
-                          voiceForm.setValue("voices", currentVoices.slice(0, -1));
-                        }
-                      }}
+                      onClick={handleRemoveVoiceAttribute}
                     >
                       <X className="mr-2 h-4 w-4" />
                       Remove Last

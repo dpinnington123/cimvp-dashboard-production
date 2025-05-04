@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Calendar, Clock, Target, Users, Edit, Save, Trash2, Plus, X } from "lucide-react";
 import { useBrand } from "@/contexts/BrandContext";
-import { BrandObjective, BrandAudience, Strategy } from "@/data/brandData";
+import type { BrandObjective, BrandAudience, Strategy } from "@/types/brand";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -65,7 +65,7 @@ const StrategicObjectives = () => {
       
       // Map connected audiences and strategies
       let audienceText = "General audience";
-      let audienceId = enhancedObjective.targetAudienceId;
+      const audienceId = enhancedObjective.targetAudienceId;
       
       // Connect to audience if possible
       if (audienceId) {

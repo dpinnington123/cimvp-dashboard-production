@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { useBrand } from "@/contexts/BrandContext";
-import { BrandObjective, BrandMessage, BrandAudience } from "@/data/brandData";
+import type { BrandObjective, BrandMessage, BrandAudience } from "@/types/brand";
 
 export const BrandDetails = () => {
   // Use the global brand and region from context instead of local state

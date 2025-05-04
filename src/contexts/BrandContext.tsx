@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { brandsData, brandNames, regions, BrandData } from '@/data/brandData';
+import { brandsData, brandNames, regions } from '@/data/index';
+import type { BrandData } from '@/types/brand';
 
 interface BrandContextType {
   selectedBrand: string;

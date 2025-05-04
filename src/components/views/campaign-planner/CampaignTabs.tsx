@@ -2,16 +2,17 @@ import React from 'react';
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import { sampleContentItems } from '@/data/sampleContent';
+import { ContentItem } from '@/types/content';
 import { toast } from "sonner";
 
 interface CampaignTabsProps {
   onCampaignChange: (campaign: string) => void;
+  campaigns: ContentItem[];
 }
 
-const CampaignTabs: React.FC<CampaignTabsProps> = ({ onCampaignChange }) => {
+const CampaignTabs: React.FC<CampaignTabsProps> = ({ onCampaignChange, campaigns }) => {
   // Get unique campaigns from content items
-  const campaigns = ['All Campaigns', ...new Set(sampleContentItems
+  const campaignNames = ['All Campaigns', ...new Set(campaigns
     .map(item => item.campaign)
     .filter(Boolean) as string[])];
 
@@ -36,11 +37,11 @@ const CampaignTabs: React.FC<CampaignTabsProps> = ({ onCampaignChange }) => {
       
       <Tabs defaultValue="All Campaigns" className="w-full" onValueChange={onCampaignChange}>
         <TabsList className="flex flex-col h-auto bg-muted/50 p-1 w-48 space-y-1">
-          {campaigns.map((campaign) => (
+          {campaignNames.map((campaign) => (
             <TabsTrigger
               key={campaign}
               value={campaign}
-              className="w-full justify-start px-4 py-2 h-auto text-left data-[state=active]:bg-accent data-[state=active]:text-accent-foreground hover:bg-muted/80"
+              className="w-full justify-start px-4 py-2 h-auto text-left whitespace-normal break-words data-[state=active]:bg-accent data-[state=active]:text-accent-foreground hover:bg-muted/80"
             >
               {campaign}
             </TabsTrigger>

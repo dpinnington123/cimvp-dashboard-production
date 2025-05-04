@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Globe, Building } from 'lucide-react';
-import { brandsData } from '@/data/brandData';
+import { brandsData } from '@/data/index';
 // We'll add page title logic and user menu later
 
 export default function Header() {
