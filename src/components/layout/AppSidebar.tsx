@@ -2,10 +2,12 @@ import { Link, useLocation } from 'react-router-dom';
 import { 
   HomeIcon, 
   FileText, 
-  ClipboardList, 
+  Presentation, 
   Target, 
   LayoutDashboard, 
-  PieChart 
+  BarChart3, 
+  FileSpreadsheet, 
+  Megaphone
 } from "lucide-react";
 import logo from '@/assets/ChangeInfluence-logo.png';
 import {
@@ -30,22 +32,22 @@ const navigationItems = [
   },
   {
     title: "Strategic Dashboard",
-    icon: PieChart,
+    icon: BarChart3,
     path: "/strategic-dashboard",
   },
   {
     title: "Campaign Planner",
-    icon: LayoutDashboard,
+    icon: Megaphone,
     path: "/campaign-planner",
   },
   {
     title: "Brand Dashboard",
-    icon: LayoutDashboard,
+    icon: FileSpreadsheet,
     path: "/brand-dashboard",
   },
   {
     title: "Content Reports",
-    icon: ClipboardList,
+    icon: Presentation,
     path: "/content-reports",
   },
   {
