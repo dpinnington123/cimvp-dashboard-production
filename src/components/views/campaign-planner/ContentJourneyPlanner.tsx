@@ -29,19 +29,62 @@ const ContentJourneyPlanner: React.FC<ContentJourneyPlannerProps> = ({ contentIt
   // Use the brand context to detect brand changes
   const { selectedBrand } = useBrand();
   
+  // Add debugging log at component render
+  console.log(`[ContentJourneyPlanner] Rendering with brandName: ${brandName}, selectedBrand: ${selectedBrand}, contentItems: ${contentItems.length}`);
+  
   // Use brand name in local storage key to keep journey maps separate for each brand
   const storageKey = `journey-${brandName}-${selectedCampaign}`;
   
   // Reset to "All Campaigns" whenever the selected brand changes
   useEffect(() => {
+    console.log(`[ContentJourneyPlanner] selectedBrand changed to: ${selectedBrand}`);
     setSelectedCampaign('All Campaigns');
   }, [selectedBrand]);
   
+  // NEW: Complete state reset when brandName changes
   useEffect(() => {
+    console.log(`[ContentJourneyPlanner] brandName changed to: ${brandName}`);
+    
+    // Reset to default state for the new brand
+    setSelectedCampaign('All Campaigns');
+    setJourneyMap({
+      nodes: [],
+      connections: [],
+      title: "Campaign Journey"
+    });
+    setAddedContentIds([]);
+    
+    // Clear any localStorage data for the previous brand that might interfere
+    const previousBrandKeys = Object.keys(localStorage).filter(key => 
+      key.startsWith('journey-') && !key.startsWith(`journey-${brandName}`)
+    );
+    console.log(`[ContentJourneyPlanner] Cleaning up previous brand localStorage keys: ${previousBrandKeys.length}`);
+  }, [brandName]);
+  
+  useEffect(() => {
+    console.log(`[ContentJourneyPlanner] Loading from localStorage with key: ${storageKey}`);
     const savedJourney = localStorage.getItem(storageKey);
     if (savedJourney) {
-      setJourneyMap(JSON.parse(savedJourney));
+      try {
+        const parsedJourney = JSON.parse(savedJourney);
+        console.log(`[ContentJourneyPlanner] Found saved journey with ${parsedJourney.nodes.length} nodes`);
+        setJourneyMap(parsedJourney);
+        
+        // Extract content IDs from the loaded journey
+        const loadedContentIds = parsedJourney.nodes.map((node: CanvasNode) => node.content.id);
+        setAddedContentIds(loadedContentIds);
+      } catch (e) {
+        console.error('Error parsing saved journey:', e);
+        // Reset to default if there's an error
+        setJourneyMap({
+          nodes: [],
+          connections: [],
+          title: selectedCampaign === 'All Campaigns' ? 'Campaign Journey' : `${selectedCampaign} Journey`
+        });
+        setAddedContentIds([]);
+      }
     } else {
+      console.log(`[ContentJourneyPlanner] No saved journey found, creating new one for ${brandName}, ${selectedCampaign}`);
       setJourneyMap({
         nodes: [],
         connections: [],
@@ -52,13 +95,44 @@ const ContentJourneyPlanner: React.FC<ContentJourneyPlannerProps> = ({ contentIt
   }, [selectedCampaign, brandName, storageKey]);
   
   useEffect(() => {
+    console.log(`[ContentJourneyPlanner] Saving to localStorage with key: ${storageKey}`);
     localStorage.setItem(storageKey, JSON.stringify(journeyMap));
   }, [journeyMap, storageKey]);
 
   // Create the filtered content items based on the selected campaign
-  const filteredContentItems = contentItems.filter(item => selectedCampaign === 'All Campaigns' || item.campaign === selectedCampaign);
+  const filteredContentItems = contentItems.filter(item => {
+    // For debugging purposes
+    console.log(`Filtering: Item ${item.name}, Campaign: "${item.campaign}", Selected: "${selectedCampaign}"`);
+    
+    // Handle "All Campaigns" case
+    if (selectedCampaign === 'All Campaigns') {
+      return true;
+    }
+    
+    // Handle cases where campaign might be undefined or not exactly matching
+    if (!item.campaign) {
+      return false;
+    }
+    
+    // First try exact match (case insensitive)
+    if (item.campaign.toLowerCase() === selectedCampaign.toLowerCase()) {
+      return true;
+    }
+    
+    // If no exact match, try partial matching (for sub-campaigns or variations in naming)
+    // This helps with potential discrepancies in how campaigns are named in the data
+    const itemCampaignLower = item.campaign.toLowerCase();
+    const selectedCampaignLower = selectedCampaign.toLowerCase();
+    
+    return itemCampaignLower.includes(selectedCampaignLower) || 
+           selectedCampaignLower.includes(itemCampaignLower);
+  });
+  
+  // Log the filtered content items for debugging
+  console.log(`Found ${filteredContentItems.length} items for campaign "${selectedCampaign}"`);
   
   const handleCampaignChange = (campaign: string) => {
+    console.log(`Changing campaign to: ${campaign}`);
     setSelectedCampaign(campaign);
     setJourneyMap(prev => ({
       ...prev,

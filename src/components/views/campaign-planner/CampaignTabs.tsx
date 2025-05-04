@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { ContentItem } from '@/types/content';
 import { toast } from "sonner";
+import { useBrand } from '@/contexts/BrandContext';
 
 interface CampaignTabsProps {
   onCampaignChange: (campaign: string) => void;
@@ -11,10 +12,43 @@ interface CampaignTabsProps {
 }
 
 const CampaignTabs: React.FC<CampaignTabsProps> = ({ onCampaignChange, campaigns }) => {
+  const { selectedBrand } = useBrand();
+  
+  // Log that the campaign tabs component is rendering
+  console.log(`[CampaignTabs] Rendering with ${campaigns.length} content items for brand: ${selectedBrand}`);
+  
   // Get unique campaigns from content items
-  const campaignNames = ['All Campaigns', ...new Set(campaigns
-    .map(item => item.campaign)
-    .filter(Boolean) as string[])];
+  // First extract all campaign names and normalize them
+  const allCampaignNames = campaigns
+    .map(item => {
+      const campaign = item.campaign || '';
+      console.log(`Campaign extraction: ${item.name} - Campaign: "${campaign}"`);
+      return campaign;
+    })
+    .filter(Boolean);
+  
+  // Get unique normalized campaign names
+  const uniqueCampaignNames = [...new Set(allCampaignNames)];
+  
+  // Add 'All Campaigns' at the beginning
+  const campaignNames = ['All Campaigns', ...uniqueCampaignNames];
+  
+  console.log('Available campaigns:', campaignNames);
+  
+  // Log campaign stats at component mount
+  useEffect(() => {
+    console.log('Campaign statistics:');
+    campaignNames.forEach(campaign => {
+      if (campaign === 'All Campaigns') return;
+      
+      const count = campaigns.filter(item => {
+        const itemCampaign = item.campaign || '';
+        return itemCampaign === campaign;
+      }).length;
+      
+      console.log(`  - "${campaign}": ${count} items`);
+    });
+  }, [campaigns, campaignNames]);
 
   const handleNewCampaign = () => {
     toast("Create New Campaign", {
@@ -35,7 +69,13 @@ const CampaignTabs: React.FC<CampaignTabsProps> = ({ onCampaignChange, campaigns
         </Button>
       </div>
       
-      <Tabs defaultValue="All Campaigns" className="w-full" onValueChange={onCampaignChange}>
+      {/* Add key prop based on selectedBrand to force remounting when brand changes */}
+      <Tabs 
+        key={`campaign-tabs-${selectedBrand}`} 
+        defaultValue="All Campaigns" 
+        className="w-full" 
+        onValueChange={onCampaignChange}
+      >
         <TabsList className="flex flex-col h-auto bg-muted/50 p-1 w-48 space-y-1">
           {campaignNames.map((campaign) => (
             <TabsTrigger
