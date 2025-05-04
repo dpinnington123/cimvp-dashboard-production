@@ -24,7 +24,7 @@ import {
   Star, ArrowLeft, CalendarIcon, ClockIcon, UsersIcon, FileTextIcon,
   TypeIcon, TargetIcon, BriefcaseIcon, Building2Icon, BarChart3Icon,
   InfoIcon, AlertCircleIcon, Hash, Image as ImageIcon, Video, AlignLeft,
-  Thermometer, Smile, ChevronDown
+  Thermometer, Smile, ChevronDown, BookmarkCheck
 } from "lucide-react";
 
 // Import our content report components
@@ -134,6 +134,42 @@ export default function ContentReportsPage() {
 
   // State to control how many improvement cards to show
   const [improvementsToShow, setImprovementsToShow] = useState(4);
+  
+  // State to track saved improvement areas
+  const [savedImprovements, setSavedImprovements] = useState<Set<number>>(new Set());
+  
+  // State to track removed improvement areas (only for the current session)
+  const [removedImprovements, setRemovedImprovements] = useState<Set<number>>(new Set());
+
+  // Function to handle saving an improvement
+  const handleSaveImprovement = (id: string | number) => {
+    setSavedImprovements(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(Number(id))) {
+        newSet.delete(Number(id));
+      } else {
+        newSet.add(Number(id));
+      }
+      return newSet;
+    });
+  };
+
+  // Function to handle removing an improvement from the list
+  const handleRemoveImprovement = (id: string | number) => {
+    // Add to removed set (will hide it for the session)
+    setRemovedImprovements(prev => {
+      const newSet = new Set(prev);
+      newSet.add(Number(id));
+      return newSet;
+    });
+    
+    // Also remove from saved set if it was saved
+    setSavedImprovements(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(Number(id));
+      return newSet;
+    });
+  };
 
   // --- Data Fetching ---
   // For list view: fetch the list of content items
@@ -628,6 +664,7 @@ export default function ContentReportsPage() {
                           description={score.check_description || score.comments || "This metric evaluates an aspect of your content's effectiveness."}
                           className="animate-in fade-in zoom-in-95"
                           style={{ animationDelay: `${Math.random() * 0.2}s` }} // Random animation delay
+                          check_id={score.check_id} // Pass the check_id to fetch what_it_measures
                         />
                       ))}
 
@@ -727,9 +764,57 @@ export default function ContentReportsPage() {
             
             {/* Areas to Improve Tab Content */}
             <TabsContent value="improvements" className="mt-0 p-0 animate-in fade-in-50">
+              {/* Saved Improvements Section - Only show if there are saved items */}
+              {savedImprovements.size > 0 && (
+                <div className="mb-6">
+                  <h3 className="text-lg font-medium mb-3 flex items-center">
+                    <BookmarkCheck className="w-5 h-5 text-primary mr-2" />
+                    Saved Improvements
+                  </h3>
+                  <div className="grid grid-cols-1 gap-4 mb-6">
+                    {contentScores && contentScores
+                      .filter((score: Score) => 
+                        score.fix_recommendation && 
+                        convertScoreToPercentage(score.score_value) < 80 &&
+                        savedImprovements.has(score.id) &&
+                        !removedImprovements.has(score.id)
+                      )
+                      .map((score: Score, index: number) => {
+                        // Determine priority based on converted percentage score
+                        const percentageScore = convertScoreToPercentage(score.score_value);
+                        let priority: 'high' | 'medium' | 'low' = 'medium';
+                        if (percentageScore < 50) priority = 'high';
+                        else if (percentageScore >= 70) priority = 'low';
+                        
+                        return (
+                          <ImprovementArea
+                            key={`saved-${score.id}`}
+                            id={score.id}
+                            title={score.check_name || `Improvement Area ${index + 1}`}
+                            description={score.fix_recommendation || "No specific recommendation provided."}
+                            priority={priority}
+                            className="animate-in fade-in-up border-primary/40"
+                            initialSaved={true}
+                            onSave={handleSaveImprovement}
+                            onRemove={handleRemoveImprovement}
+                          />
+                        );
+                      })}
+                  </div>
+                  <div className="border-b border-dashed my-4"></div>
+                </div>
+              )}
+              
+              {/* All Improvements */}
+              <h3 className="text-lg font-medium mb-3">Recommended Improvements</h3>
               <div className="grid grid-cols-1 gap-4">
                 {contentScores && contentScores
-                  .filter((score: Score) => score.fix_recommendation && convertScoreToPercentage(score.score_value) < 80)
+                  .filter((score: Score) => 
+                    score.fix_recommendation && 
+                    convertScoreToPercentage(score.score_value) < 80 &&
+                    !savedImprovements.has(score.id) &&
+                    !removedImprovements.has(score.id)
+                  )
                   // Sort by priority: high (lowest scores) to low (highest scores)
                   .sort((a, b) => {
                     const scoreA = convertScoreToPercentage(a.score_value);
@@ -747,22 +832,43 @@ export default function ContentReportsPage() {
                     return (
                       <ImprovementArea
                         key={score.id}
+                        id={score.id}
                         title={score.check_name || `Improvement Area ${index + 1}`}
                         description={score.fix_recommendation || "No specific recommendation provided."}
                         priority={priority}
                         className="animate-in fade-in-up"
                         style={{ animationDelay: `${index * 0.1}s` }}
+                        initialSaved={savedImprovements.has(score.id)}
+                        onSave={handleSaveImprovement}
+                        onRemove={handleRemoveImprovement}
                       />
                     );
                   })}
                 
                 {/* Message when no improvements are needed */}
                 {(!contentScores || 
-                  !contentScores.filter((score: Score) => score.fix_recommendation && convertScoreToPercentage(score.score_value) < 80).length) && (
+                  !contentScores.filter((score: Score) => 
+                    score.fix_recommendation && 
+                    convertScoreToPercentage(score.score_value) < 80 &&
+                    !savedImprovements.has(score.id) &&
+                    !removedImprovements.has(score.id)
+                  ).length) && (
                   <Card className="text-center py-6 bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-900/50">
                     <CardContent>
-                      <h3 className="text-emerald-600 font-medium mb-1">Great job! No significant improvements needed.</h3>
-                      <p className="text-sm text-muted-foreground">Your content is performing well across all metrics.</p>
+                      <h3 className="text-emerald-600 font-medium mb-1">
+                        {savedImprovements.size > 0 
+                          ? "All improvements saved!" 
+                          : removedImprovements.size > 0
+                          ? "All improvements hidden"
+                          : "Great job! No significant improvements needed."}
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        {savedImprovements.size > 0 
+                          ? "You've saved all available improvement suggestions." 
+                          : removedImprovements.size > 0
+                          ? "You've hidden all improvement suggestions for this session. Reload the page to see them again."
+                          : "Your content is performing well across all metrics."}
+                      </p>
                     </CardContent>
                   </Card>
                 )}
@@ -770,7 +876,12 @@ export default function ContentReportsPage() {
               
               {/* Load More button */}
               {contentScores && 
-               contentScores.filter((score: Score) => score.fix_recommendation && convertScoreToPercentage(score.score_value) < 80).length > improvementsToShow && (
+               contentScores.filter((score: Score) => 
+                 score.fix_recommendation && 
+                 convertScoreToPercentage(score.score_value) < 80 &&
+                 !savedImprovements.has(score.id) &&
+                 !removedImprovements.has(score.id)
+               ).length > improvementsToShow && (
                 <Button
                   variant="outline"
                   className="w-full mt-4 border-dashed"

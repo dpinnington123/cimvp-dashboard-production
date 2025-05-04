@@ -6,6 +6,9 @@ type Score = Database['public']['Tables']['scores']['Row'];
 type ContentReview = Database['public']['Tables']['content_reviews']['Row']; // Added type for content_reviews
 type CategoryReviewSummary = Database['public']['Tables']['category_review_summaries']['Row'];
 
+// Added type for check details
+type CheckDetails = Database['public']['Tables']['checks']['Row'];
+
 // Export the type so it can be used elsewhere
 export type { CategoryReviewSummary };
 
@@ -116,6 +119,27 @@ export const getCategoryReviewSummaries = async (contentId: number): Promise<Cat
 
   console.log(`Found ${data?.length || 0} category review summaries for content id: ${contentId}.`);
   return data || [];
+};
+
+/**
+ * Fetches check details including what_it_measures for a given check_id
+ */
+export const getCheckDetails = async (checkId: number): Promise<CheckDetails | null> => {
+  console.log(`Fetching check details for check_id: ${checkId}...`);
+
+  const { data, error } = await supabase
+    .from('checks')
+    .select('*')
+    .eq('check_id', checkId)
+    .single();
+
+  if (error) {
+    console.error(`Error fetching check details for check_id ${checkId}:`, error);
+    // Return null instead of throwing to handle the case where the check may not exist
+    return null;
+  }
+
+  return data;
 };
 
 // Additional helper functions can be added as needed 
