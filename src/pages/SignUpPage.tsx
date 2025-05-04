@@ -10,6 +10,8 @@ import CheckEmailPage from './CheckEmailPage';
 
 export default function SignUpPage() {
   const [email, setEmail] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -23,6 +25,12 @@ export default function SignUpPage() {
 
   const handleSignUp = async (event: React.FormEvent) => {
     event.preventDefault();
+    
+    // Validate required fields
+    if (!firstName.trim() || !lastName.trim()) {
+      toast.error("Missing information", { description: "Please provide both first and last name" });
+      return;
+    }
     
     // Validate passwords match
     if (password !== confirmPassword) {
@@ -39,7 +47,7 @@ export default function SignUpPage() {
     setLoading(true);
 
     try {
-      const { error, data } = await signUp(email, password);
+      const { error, data } = await signUp(email, password, firstName, lastName);
       if (error) throw error;
       
       toast.success("Sign Up Successful", { 
@@ -70,6 +78,32 @@ export default function SignUpPage() {
         </CardHeader>
         <form onSubmit={handleSignUp}>
           <CardContent className="grid gap-4">
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Label htmlFor="firstName">First Name</Label>
+                <Input
+                  id="firstName"
+                  type="text"
+                  placeholder="John"
+                  required
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  disabled={loading}
+                />
+              </div>
+              <div>
+                <Label htmlFor="lastName">Last Name</Label>
+                <Input
+                  id="lastName"
+                  type="text"
+                  placeholder="Doe"
+                  required
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  disabled={loading}
+                />
+              </div>
+            </div>
             <div className="grid gap-2">
               <Label htmlFor="email">Email</Label>
               <Input

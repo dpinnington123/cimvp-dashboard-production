@@ -1,3 +1,4 @@
+// INSERT_YOUR_REWRITE_HERE
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import ActionCard from '@/components/views/home/ActionCard';
@@ -6,9 +7,17 @@ import chameleonImage from '@/assets/ChangeInfluence-character.png';
 import Header from '@/components/layout/Header';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/layout/AppSidebar';
+import { useAuth } from '@/hooks/useAuth';
 
 const HomePage: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  
+  // Get user's name from metadata, fall back to email if not available
+  const userDisplayName = user?.user_metadata?.full_name 
+    || `${user?.user_metadata?.first_name || ''} ${user?.user_metadata?.last_name || ''}`.trim() 
+    || user?.email 
+    || 'there';
 
   return (
     <SidebarProvider>
@@ -34,12 +43,11 @@ const HomePage: React.FC = () => {
                 
                 <div className="text-center">
                   <h1 className="text-4xl font-bold mb-2">
-                    Welcome back, <span className="text-purple-600">Alex</span>!
+                    Welcome back, <span className="text-purple-600">{userDisplayName}</span>!
                   </h1>
                   <p className="text-gray-600 text-lg">What would you like to do today?</p>
                 </div>
               </div>
-              
               {/* Action Cards */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-5xl">
                 <ActionCard

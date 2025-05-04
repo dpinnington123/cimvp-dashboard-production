@@ -13,7 +13,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Globe, Building } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Globe, Building, User, Settings, LogOut, ChevronDown } from 'lucide-react';
 import { brandsData } from '@/data/index';
 // We'll add page title logic and user menu later
 
@@ -22,6 +30,12 @@ export default function Header() {
   const navigate = useNavigate();
   const { selectedBrand, setSelectedBrand, selectedRegion, setSelectedRegion, getBrandData } = useBrand();
   const brandData = getBrandData();
+
+  // Get user's name from metadata, fall back to email if not available
+  const userDisplayName = user?.user_metadata?.full_name 
+    || `${user?.user_metadata?.first_name || ''} ${user?.user_metadata?.last_name || ''}`.trim() 
+    || user?.email 
+    || 'User';
 
   const handleLogout = async () => {
     console.log("Signing out...");
@@ -97,8 +111,27 @@ export default function Header() {
         </div>
         
         <div className="flex items-center space-x-4">
-            {user && <span className="text-sm text-gray-600 dark:text-gray-300">{user.email}</span>} {/* Display user email */} 
-            <Button variant="outline" size="sm" onClick={handleLogout}>Logout</Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="flex items-center gap-2">
+                <User className="h-4 w-4" />
+                <span className="text-sm">{userDisplayName}</span>
+                <ChevronDown className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>My Account</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => navigate('/profile')}>
+                <User className="mr-2 h-4 w-4" />
+                <span>Profile</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleLogout}>
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Log out</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </header>

@@ -17,6 +17,7 @@ import ProcessContentPage from './pages/ProcessContentPage';
 import ContentProcessingPage from './pages/ContentProcessingPage';
 import CampaignPlannerPage from './pages/CampaignPlannerPage';
 import HomePage from './pages/HomePage';
+import ProfilePage from './pages/ProfilePage';
 import { Toaster } from "@/components/ui/sonner";
 import AuthProvider, { useAuth } from './hooks/useAuth';
 import LoadingSpinner from './components/common/LoadingSpinner';
@@ -76,6 +77,16 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <HomePage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* User Profile */}
+      <Route
+        path="/profile"
+        element={
+          <ProtectedRoute>
+            <ProfilePage />
           </ProtectedRoute>
         }
       />
