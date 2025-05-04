@@ -29,9 +29,9 @@ const navigationItems = [
     path: "/",
   },
   {
-    title: "Process Content",
-    icon: FileText,
-    path: "/process-content",
+    title: "Strategic Dashboard",
+    icon: PieChart,
+    path: "/strategic-dashboard",
   },
   {
     title: "Campaign Planner",
@@ -39,24 +39,24 @@ const navigationItems = [
     path: "/campaign-planner",
   },
   {
-    title: "Content Reports",
-    icon: ClipboardList,
-    path: "/content-reports",
-  },
-  {
-    title: "Brand Strategy",
-    icon: Target,
-    path: "/brand-strategy",
-  },
-  {
     title: "Brand Dashboard",
     icon: LayoutDashboard,
     path: "/brand-dashboard",
   },
   {
-    title: "Strategic Dashboard",
-    icon: PieChart,
-    path: "/strategic-dashboard",
+    title: "Content Reports",
+    icon: ClipboardList,
+    path: "/content-reports",
+  },
+  {
+    title: "Process Content",
+    icon: FileText,
+    path: "/process-content",
+  },
+  {
+    title: "Brand Strategy",
+    icon: Target,
+    path: "/brand-strategy",
   },
 ];
 
