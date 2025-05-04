@@ -110,6 +110,13 @@ export interface ChannelScores {
 export interface FunnelStep {
   name: string;
   value: number;
+  // Add metrics for different alignment and effectiveness scores
+  metrics?: {
+    overallEffectiveness: number;
+    strategicAlignment: number;
+    customerAlignment: number;
+    executionEffectiveness: number;
+  };
 }
 
 export interface MarketAnalysis {

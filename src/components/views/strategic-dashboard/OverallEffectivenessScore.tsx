@@ -1,33 +1,29 @@
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Award } from "lucide-react";
+import { AggregatedScores } from "@/types/company";
 
-// Sample data from the MetricsCard component
-const metricsData = [{
-  title: "Strategic Alignment",
-  value: 62
-}, {
-  title: "Customer Alignment",
-  value: 37
-}, {
-  title: "Content Effectiveness",
-  value: 52
-}];
+interface OverallEffectivenessScoreProps {
+  overallScores: AggregatedScores;
+}
 
 // Calculate the overall effectiveness score as an average of the three key metrics
-const calculateOverallScore = () => {
-  const totalScore = metricsData.reduce((sum, metric) => sum + metric.value, 0);
-  return (totalScore / metricsData.length).toFixed(1);
+const calculateOverallScore = (scores: AggregatedScores) => {
+  return ((scores.strategic + scores.customer + scores.content) / 3).toFixed(1);
 };
+
 const getScoreColor = (score: number) => {
   if (score >= 70) return "text-emerald-600";
   if (score >= 50) return "text-amber-600";
   return "text-rose-600";
 };
-const OverallEffectivenessScore: React.FC = () => {
-  const overallScore = calculateOverallScore();
+
+const OverallEffectivenessScore: React.FC<OverallEffectivenessScoreProps> = ({ overallScores }) => {
+  const overallScore = calculateOverallScore(overallScores);
   const scoreNumber = parseFloat(overallScore);
-  return <Card className="mb-6 animate-slide-up">
+  
+  return (
+    <Card className="mb-6 animate-slide-up">
       <CardContent className="pt-6">
         <div className="p-4 bg-gray-50 rounded-md border border-gray-100">
           <div className="flex items-center justify-between">
@@ -47,14 +43,18 @@ const OverallEffectivenessScore: React.FC = () => {
           </div>
           <div className="mt-3 w-full h-2 bg-gray-200 rounded-full overflow-hidden">
             <div className="h-full bg-primary transition-all duration-500" style={{
-            width: `${scoreNumber}%`
-          }} />
+              width: `${scoreNumber}%`
+            }} />
           </div>
           <div className="mt-3 text-xs text-muted-foreground">
-            Based on the average of Strategic Alignment ({metricsData[0].value}%), Customer Alignment ({metricsData[1].value}%), and Content Effectiveness ({metricsData[2].value}%)
+            Based on the average of Strategic Alignment ({overallScores.strategic}%), 
+            Customer Alignment ({overallScores.customer}%), 
+            and Content Effectiveness ({overallScores.content}%)
           </div>
         </div>
       </CardContent>
-    </Card>;
+    </Card>
+  );
 };
+
 export default OverallEffectivenessScore;

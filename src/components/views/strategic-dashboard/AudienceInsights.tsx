@@ -1,4 +1,3 @@
-
 import React from "react";
 import {
   Card,
@@ -19,6 +18,8 @@ import {
 } from "recharts";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { demoData } from "@/assets/avatars";
+import { ContentItem } from "@/types/brand";
+import { Users } from "lucide-react";
 
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28"];
 
@@ -39,74 +40,55 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
-const AudienceInsights: React.FC = () => {
+interface AudienceInsightsProps {
+  topContent: ContentItem[];
+}
+
+const getScoreClass = (score: number) => {
+  if (score >= 70) return "text-emerald-600";
+  if (score >= 50) return "text-amber-600";
+  return "text-rose-600";
+};
+
+const AudienceInsights: React.FC<AudienceInsightsProps> = ({ topContent }) => {
   return (
     <Card className="stat-card animate-slide-up">
       <CardHeader>
-        <CardTitle className="text-xl">Audience Engagement</CardTitle>
-        <CardDescription>
-          Content quality metrics across different personas
-        </CardDescription>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Users className="h-5 w-5 text-muted-foreground" />
+            <div>
+              <CardTitle className="text-xl">Top Performing Content</CardTitle>
+              <CardDescription>Content with highest audience engagement</CardDescription>
+            </div>
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="quality">
-          <TabsList className="grid w-full grid-cols-3 mb-6">
-            <TabsTrigger value="quality">Content Quality</TabsTrigger>
-            <TabsTrigger value="centricity">Customer Alignment</TabsTrigger>
-            <TabsTrigger value="engagement">Engagement</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="quality" className="h-[300px] mt-0">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={demoData.audienceData.audienceEngagement}
-                margin={{ top: 5, right: 30, left: 50, bottom: 5 }}
-                layout="vertical"
-              >
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis type="number" domain={[0, 100]} />
-                <YAxis type="category" dataKey="persona" width={80} />
-                <Tooltip content={<CustomTooltip />} />
-                <Legend />
-                <Bar dataKey="quality" name="Content Quality" fill={COLORS[0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </TabsContent>
-          
-          <TabsContent value="centricity" className="h-[300px] mt-0">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={demoData.audienceData.audienceEngagement}
-                margin={{ top: 5, right: 30, left: 50, bottom: 5 }}
-                layout="vertical"
-              >
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis type="number" domain={[0, 100]} />
-                <YAxis type="category" dataKey="persona" width={80} />
-                <Tooltip content={<CustomTooltip />} />
-                <Legend />
-                <Bar dataKey="centricity" name="Customer Alignment" fill={COLORS[1]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </TabsContent>
-          
-          <TabsContent value="engagement" className="h-[300px] mt-0">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={demoData.audienceData.audienceEngagement}
-                margin={{ top: 5, right: 30, left: 50, bottom: 5 }}
-                layout="vertical"
-              >
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis type="number" domain={[0, 100]} />
-                <YAxis type="category" dataKey="persona" width={80} />
-                <Tooltip content={<CustomTooltip />} />
-                <Legend />
-                <Bar dataKey="engagement" name="Engagement" fill={COLORS[2]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </TabsContent>
-        </Tabs>
+        <div className="space-y-4">
+          {topContent.slice(0, 5).map((content, index) => (
+            <div key={index} className="flex items-center justify-between p-3 bg-muted/30 rounded-md">
+              <div className="flex flex-col">
+                <span className="font-medium">{content.name}</span>
+                <span className="text-xs text-muted-foreground">{content.format}</span>
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="text-right">
+                  <div className="text-xs text-muted-foreground">Overall</div>
+                  <div className={`font-medium ${getScoreClass(content.scores.overall)}`}>
+                    {content.scores.overall}%
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-xs text-muted-foreground">Customer</div>
+                  <div className={`font-medium ${getScoreClass(content.scores.customer)}`}>
+                    {content.scores.customer}%
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       </CardContent>
     </Card>
   );

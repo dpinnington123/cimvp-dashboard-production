@@ -1,4 +1,3 @@
-
 import React from "react";
 import {
   Card,
@@ -15,48 +14,35 @@ import {
   TableHeader,
   TableRow
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { FileText, Layers } from "lucide-react";
+import { FileImage, FileText, Video } from "lucide-react";
+import { ContentTypePerformance } from "@/types/company";
 
-// Sample data for content type effectiveness
-const contentTypeData = [
-  { 
-    id: 1, 
-    name: "Hero Content", 
-    icon: <FileText className="h-4 w-4" />, 
-    status: "High", 
-    executionEffectiveness: 89, 
-    strategicAlignment: 92,
-    customerAlignment: 78
-  },
-  { 
-    id: 2, 
-    name: "Diver Content", 
-    icon: <Layers className="h-4 w-4" />, 
-    status: "Medium", 
-    executionEffectiveness: 74, 
-    strategicAlignment: 68,
-    customerAlignment: 82
-  }
-];
+interface ContentTypeComparisonProps {
+  contentTypePerformance: ContentTypePerformance[];
+}
 
-const getStatusColor = (status: string) => {
-  switch (status.toLowerCase()) {
-    case "high":
-      return "bg-emerald-100 text-emerald-800 hover:bg-emerald-200";
-    case "medium":
-      return "bg-amber-100 text-amber-800 hover:bg-amber-200";
-    case "low":
-      return "bg-gray-100 text-gray-800 hover:bg-gray-200";
+const getIcon = (type: string) => {
+  switch(type.toLowerCase()) {
+    case 'video':
+      return <Video className="h-3 w-3" />;
+    case 'blog':
+    case 'whitepaper':
+      return <FileText className="h-3 w-3" />;
     default:
-      return "bg-gray-100 text-gray-800 hover:bg-gray-200";
+      return <FileImage className="h-3 w-3" />;
   }
 };
 
-const ContentTypeComparison: React.FC = () => {
+const getScoreClass = (score: number) => {
+  if (score >= 70) return "text-emerald-600";
+  if (score >= 50) return "text-amber-600";
+  return "text-rose-600";
+};
+
+const ContentTypeComparison: React.FC<ContentTypeComparisonProps> = ({ contentTypePerformance }) => {
   // Metrics that we want to display as rows
   const metrics = [
-    { key: "status", label: "Performance" },
+    { key: "overallEffectiveness", label: "Overall Effectiveness" },
     { key: "executionEffectiveness", label: "Execution Effectiveness" },
     { key: "strategicAlignment", label: "Strategic Alignment" },
     { key: "customerAlignment", label: "Customer Alignment" }
@@ -74,42 +60,27 @@ const ContentTypeComparison: React.FC = () => {
             <TableHeader>
               <TableRow className="hover:bg-transparent">
                 <TableHead>Metric</TableHead>
-                {contentTypeData.map(content => (
-                  <TableHead key={content.id}>
+                {contentTypePerformance.map((content, index) => (
+                  <TableHead key={index}>
                     <div className="flex items-center gap-2">
                       <span className="flex items-center justify-center w-6 h-6 bg-gray-100 rounded-full">
-                        {content.icon}
+                        {getIcon(content.type)}
                       </span>
-                      <span className="font-medium">{content.name}</span>
+                      <span className="font-medium">{content.type}</span>
                     </div>
                   </TableHead>
                 ))}
               </TableRow>
             </TableHeader>
             <TableBody>
-              {metrics.map((metric, metricIndex) => (
-                <TableRow 
-                  key={metric.key}
-                  className="group transition-colours"
-                  style={{ 
-                    animationDelay: `${metricIndex * 0.1}s`,
-                    animation: 'fade-in 0.5s ease-out forwards' 
-                  }}
-                >
+              {metrics.map((metric, i) => (
+                <TableRow key={i}>
                   <TableCell className="font-medium">{metric.label}</TableCell>
-                  
-                  {contentTypeData.map(content => (
-                    <TableCell 
-                      key={`${content.id}-${metric.key}`}
-                      className={metric.key !== "status" ? "text-center" : ""}
-                    >
-                      {metric.key === "status" ? (
-                        <Badge variant="secondary" className={`${getStatusColor(content.status)}`}>
-                          {content.status}
-                        </Badge>
-                      ) : (
-                        <span>{content[metric.key as keyof typeof content]}%</span>
-                      )}
+                  {contentTypePerformance.map((content, j) => (
+                    <TableCell key={j} className="text-center">
+                      <span className={`font-medium ${getScoreClass(content[metric.key as keyof ContentTypePerformance] as number)}`}>
+                        {content[metric.key as keyof ContentTypePerformance]}%
+                      </span>
                     </TableCell>
                   ))}
                 </TableRow>

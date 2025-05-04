@@ -17,6 +17,9 @@ import CampaignTable from "@/components/views/strategic-dashboard/CampaignTable"
 // Import the export services
 import { generatePDF, generatePPT } from "@/services/exportService";
 
+// Import aggregated company data
+import { companyOverviewData } from "@/data/companyOverview";
+
 export default function StrategicDashboardPage() {
   const dashboardRef = useRef<HTMLDivElement>(null);
   
@@ -70,7 +73,7 @@ export default function StrategicDashboardPage() {
     <div className="space-y-6 p-6" ref={dashboardRef}>
       <div className="flex flex-col">
         <h1 className="text-3xl font-bold">Strategic Dashboard</h1>
-        <p className="text-muted-foreground mt-1">Here's how your marketing content is performing across markets and channels.</p>
+        <p className="text-muted-foreground mt-1">Here's how your marketing content is performing across all brands and markets.</p>
         
         <div className="flex justify-end mt-4 gap-3">
           <Button 
@@ -95,31 +98,50 @@ export default function StrategicDashboardPage() {
 
       {/* Metrics Cards Row */}
       <div ref={metricsCardRef}>
-        <MetricsCard />
+        <MetricsCard 
+          data={{
+            strategic: companyOverviewData.overallScores.strategic,
+            customer: companyOverviewData.overallScores.customer,
+            content: companyOverviewData.overallScores.content,
+            financialSummary: companyOverviewData.financialSummary
+          }}
+        />
       </div>
 
       {/* Overall Marketing Activity Effectiveness Score */}
       <div ref={overallScoreRef}>
-        <OverallEffectivenessScore />
+        <OverallEffectivenessScore 
+          overallScores={companyOverviewData.overallScores}
+        />
       </div>
 
       {/* Content Performance by Country and Brand Content Effectiveness */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div ref={countryPerformanceRef}>
-          <ContentPerformanceByCountry />
+          <ContentPerformanceByCountry 
+            regionalPerformance={companyOverviewData.regionalPerformance}
+          />
         </div>
         <div ref={brandEffectivenessRef}>
-          <BrandContentEffectiveness />
+          <BrandContentEffectiveness 
+            brandSummaries={companyOverviewData.brandSummaries}
+            isLoading={false}
+          />
         </div>
       </div>
 
       {/* Content Type Comparison and Behavioral Funnel */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div ref={contentTypeRef}>
-          <ContentTypeComparison />
+          <ContentTypeComparison 
+            contentTypePerformance={companyOverviewData.contentTypePerformance}
+          />
         </div>
         <div ref={funnelRef}>
-          <BehavioralFunnel />
+          <BehavioralFunnel 
+            funnelData={companyOverviewData.funnelData}
+            isLoading={false}
+          />
         </div>
       </div>
 
@@ -128,10 +150,12 @@ export default function StrategicDashboardPage() {
         <Card className="stat-card animate-slide-up">
           <CardHeader>
             <CardTitle className="text-xl">Marketing Activity Effectiveness</CardTitle>
-            <p className="text-sm text-muted-foreground">Brand performance over time</p>
+            <p className="text-sm text-muted-foreground">Company performance over time</p>
           </CardHeader>
           <CardContent>
-            <PerformanceChart />
+            <PerformanceChart 
+              brandPerformanceData={companyOverviewData.brandPerformanceOverTime}
+            />
           </CardContent>
         </Card>
       </div>
@@ -145,12 +169,16 @@ export default function StrategicDashboardPage() {
               <p className="text-sm text-muted-foreground">Performance metrics across marketing channels</p>
             </CardHeader>
             <CardContent>
-              <CampaignTable />
+              <CampaignTable 
+                topCampaigns={companyOverviewData.topCampaigns}
+              />
             </CardContent>
           </Card>
         </div>
         <div ref={audienceInsightsRef}>
-          <AudienceInsights />
+          <AudienceInsights 
+            topContent={companyOverviewData.topContent}
+          />
         </div>
       </div>
     </div>
