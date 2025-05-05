@@ -294,21 +294,21 @@ export default function ContentReportsPage() {
   const categoryDisplayMap: Record<string, string> = {
     "Strategic alignment": "Strategic Alignment",
     "Customer alignment": "Customer Alignment",
-    "Execution effectiveness": "Execution Effectiveness", 
-    "Format effectiveness": "Format Effectiveness",
+    "Execution effectiveness": "Customer Alignment", //Change Back to Execution Effectiveness once we have the data
+    "Format effectiveness": "Content Effectiveness",
     // Add fallbacks for possible variations in the database
     "strategic alignment": "Strategic Alignment",
     "customer alignment": "Customer Alignment",
-    "execution effectiveness": "Execution Effectiveness", 
-    "format effectiveness": "Format Effectiveness"
+    "execution effectiveness": "Customer Alignment", //Change Back to Execution Effectiveness once we have the data
+    "format effectiveness": "Content Effectiveness"
   };
   
   // Define the category descriptions
   const categoryDescriptions: Record<string, string> = {
     "Strategic Alignment": "Alignment with business priorities",
     "Customer Alignment": "Customer focus and relevance",
-    "Execution Effectiveness": "Relevance to customer needs",
-    "Format Effectiveness": "Quality of implementation"
+    "Execution Effectiveness": "Relevance to customer needs", //Change Back to Execution Effectiveness once we have the data
+    "Format Effectiveness": "Highlights the content effectiveness"
   };
 
   // Group scores by category and calculate averages for Performance Scores tab
@@ -318,7 +318,7 @@ export default function ContentReportsPage() {
       const result: CategoryScores = {};
       
       // Initialize our target categories with empty data
-      const targetCategories = ["Strategic Alignment", "Execution Effectiveness", "Format Effectiveness"];
+      const targetCategories = ["Strategic Alignment", "Customer Alignment", "Content Effectiveness"]; //Change Back to Execution Effectiveness once we have the data
       targetCategories.forEach(category => {
         result[category] = { checks: [], average: 0 };
       });
@@ -626,7 +626,7 @@ export default function ContentReportsPage() {
         <div className="flex gap-2">
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="destructive" size="sm" className="flex items-center gap-1">
+              <Button variant="outline" size="sm" className="flex items-center gap-1">
                 <Trash2 className="h-4 w-4" />
                 Hide Report
               </Button>
