@@ -618,5 +618,98 @@ export const techNovaData: BrandData = {
         opportunities: ["Simplified configuration", "Trade-in programs", "Bundling options"]
       }
     ]
-  }
+  },
+  personas: [
+    {
+      name: "Persona 1",
+      description: "Career-focused individuals aged 25-35 who prioritize quality and convenience",
+      icon: "User",
+      scores: {
+        overall: 86,
+        strategic: 90,
+        customer: 84,
+        execution: 84
+      }
+    },
+    {
+      name: "Persona 2",
+      description: "Family-oriented consumers aged 30-45 seeking reliable and valuable solutions",
+      icon: "MessageSquare",
+      scores: {
+        overall: 82,
+        strategic: 78,
+        customer: 88,
+        execution: 80
+      }
+    },
+    {
+      name: "Persona 3",
+      description: "Early adopters aged 20-40 who embrace new technologies and experiences",
+      icon: "Star",
+      scores: {
+        overall: 74,
+        strategic: 82,
+        customer: 76,
+        execution: 65
+      }
+    }
+  ],
+  performanceTimeData: [
+    {
+      month: "Jan 2023",
+      overall: 65,
+      strategic: 62,
+      customer: 68,
+      content: 64
+    },
+    {
+      month: "Feb 2023",
+      overall: 68,
+      strategic: 65,
+      customer: 70,
+      content: 68
+    },
+    {
+      month: "Mar 2023",
+      overall: 72,
+      strategic: 70,
+      customer: 73,
+      content: 72
+    },
+    {
+      month: "Apr 2023",
+      overall: 74,
+      strategic: 73,
+      customer: 76,
+      content: 73
+    },
+    {
+      month: "May 2023",
+      overall: 78,
+      strategic: 76,
+      customer: 79,
+      content: 77
+    },
+    {
+      month: "Jun 2023",
+      overall: 75,
+      strategic: 74,
+      customer: 77,
+      content: 74
+    },
+    {
+      month: "Jul 2023",
+      overall: 82,
+      strategic: 80,
+      customer: 83,
+      content: 81
+    },
+    {
+      month: "Aug 2023",
+      overall: 85,
+      strategic: 84,
+      customer: 86,
+      content: 85
+    }
+  ]
 }; 

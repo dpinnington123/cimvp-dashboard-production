@@ -611,5 +611,98 @@ export const ecoSolutionsData: BrandData = {
         opportunities: ["Simplified checkout", "Bundle offerings", "Subscription options"]
       }
     ]
-  }
+  },
+  personas: [
+    {
+      name: "Persona 1",
+      description: "Career-focused individuals aged 25-35 who prioritize quality and convenience",
+      icon: "User",
+      scores: {
+        overall: 83,
+        strategic: 87,
+        customer: 82,
+        execution: 81
+      }
+    },
+    {
+      name: "Persona 2",
+      description: "Family-oriented consumers aged 30-45 seeking reliable and valuable solutions",
+      icon: "MessageSquare",
+      scores: {
+        overall: 80,
+        strategic: 76,
+        customer: 84,
+        execution: 78
+      }
+    },
+    {
+      name: "Persona 3",
+      description: "Early adopters aged 20-40 who embrace new technologies and experiences",
+      icon: "Star",
+      scores: {
+        overall: 78,
+        strategic: 80,
+        customer: 74,
+        execution: 70
+      }
+    }
+  ],
+  performanceTimeData: [
+    {
+      month: "Jan 2023",
+      overall: 63,
+      strategic: 60,
+      customer: 65,
+      content: 62
+    },
+    {
+      month: "Feb 2023",
+      overall: 66,
+      strategic: 64,
+      customer: 68,
+      content: 65
+    },
+    {
+      month: "Mar 2023",
+      overall: 70,
+      strategic: 69,
+      customer: 71,
+      content: 70
+    },
+    {
+      month: "Apr 2023",
+      overall: 72,
+      strategic: 71,
+      customer: 74,
+      content: 71
+    },
+    {
+      month: "May 2023",
+      overall: 76,
+      strategic: 75,
+      customer: 78,
+      content: 75
+    },
+    {
+      month: "Jun 2023",
+      overall: 79,
+      strategic: 77,
+      customer: 81,
+      content: 78
+    },
+    {
+      month: "Jul 2023",
+      overall: 83,
+      strategic: 82,
+      customer: 84,
+      content: 82
+    },
+    {
+      month: "Aug 2023",
+      overall: 87,
+      strategic: 85,
+      customer: 89,
+      content: 86
+    }
+  ]
 }; 

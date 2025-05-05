@@ -10,12 +10,22 @@ import { ContentPerformanceTable } from "@/components/views/brand-dashboard/Cont
 import { ChannelEffectiveness } from "@/components/views/brand-dashboard/ChannelEffectiveness";
 import { FunnelChart } from "@/components/views/brand-dashboard/FunnelChart";
 import { PerformanceChart } from "@/components/views/brand-dashboard/PerformanceChart";
+import { CustomerEngagementSection } from "@/components/views/brand-dashboard/CustomerEngagementSection";
 
 // Import UI components
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { PlusIcon, BarChart2, PieChart, Star, Heart, Zap, AlertCircle } from "lucide-react";
+import { 
+  PlusIcon, 
+  BarChart2, 
+  PieChart, 
+  Star, 
+  Heart, 
+  Zap, 
+  AlertCircle,
+  ChevronRight 
+} from "lucide-react";
 
 // Define interfaces to match component props
 interface ContentPerformanceItem {
@@ -144,6 +154,48 @@ export default function BrandDashboardPage() {
           <Button variant="outline" size="sm">View detailed funnel</Button>
         </div>
         <FunnelChart data={brandData.funnelData} />
+      </div>
+
+      {/* Customer Engagement Effectiveness */}
+      <div className="mb-6">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold">Customer Engagement Effectiveness</h2>
+          <Button 
+            variant="link" 
+            size="sm" 
+            className="text-sm text-brand-blue hover:underline flex items-center gap-1 px-0"
+          >
+            View detailed engagement <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+        {brandData.personas && (
+          <CustomerEngagementSection 
+            engagementScores={{
+              overall: brandData.overallScores.overall,
+              strategic: brandData.overallScores.strategic,
+              customer: brandData.overallScores.customer,
+              execution: brandData.overallScores.content // Map content to execution
+            }} 
+            personas={brandData.personas} 
+          />
+        )}
+      </div>
+
+      {/* Performance Over Time */}
+      <div className="mb-6">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold">Performance Over Time</h2>
+          <Button 
+            variant="link" 
+            size="sm" 
+            className="text-sm text-brand-blue hover:underline flex items-center gap-1 px-0"
+          >
+            View full reports <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+        {brandData.performanceTimeData && (
+          <PerformanceChart data={brandData.performanceTimeData} />
+        )}
       </div>
     </div>
   );

@@ -618,5 +618,98 @@ export const vitalWellnessData: BrandData = {
         opportunities: ["Personalized recommendations", "Starter kits", "Risk-free trials"]
       }
     ]
-  }
+  },
+  personas: [
+    {
+      name: "Persona 1",
+      description: "Career-focused individuals aged 25-35 who prioritize quality and convenience",
+      icon: "User",
+      scores: {
+        overall: 84,
+        strategic: 88,
+        customer: 86,
+        execution: 80
+      }
+    },
+    {
+      name: "Persona 2",
+      description: "Family-oriented consumers aged 30-45 seeking reliable and valuable solutions",
+      icon: "MessageSquare",
+      scores: {
+        overall: 79,
+        strategic: 75,
+        customer: 82,
+        execution: 76
+      }
+    },
+    {
+      name: "Persona 3",
+      description: "Early adopters aged 20-40 who embrace new technologies and experiences",
+      icon: "Star",
+      scores: {
+        overall: 72,
+        strategic: 78,
+        customer: 75,
+        execution: 68
+      }
+    }
+  ],
+  performanceTimeData: [
+    {
+      month: "Jan 2023",
+      overall: 61,
+      strategic: 59,
+      customer: 63,
+      content: 60
+    },
+    {
+      month: "Feb 2023",
+      overall: 65,
+      strategic: 63,
+      customer: 66,
+      content: 64
+    },
+    {
+      month: "Mar 2023",
+      overall: 69,
+      strategic: 67,
+      customer: 70,
+      content: 68
+    },
+    {
+      month: "Apr 2023",
+      overall: 74,
+      strategic: 72,
+      customer: 75,
+      content: 73
+    },
+    {
+      month: "May 2023",
+      overall: 77,
+      strategic: 75,
+      customer: 78,
+      content: 76
+    },
+    {
+      month: "Jun 2023",
+      overall: 80,
+      strategic: 78,
+      customer: 81,
+      content: 79
+    },
+    {
+      month: "Jul 2023",
+      overall: 84,
+      strategic: 82,
+      customer: 85,
+      content: 83
+    },
+    {
+      month: "Aug 2023",
+      overall: 88,
+      strategic: 86,
+      customer: 89,
+      content: 87
+    }
+  ]
 }; 

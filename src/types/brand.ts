@@ -151,6 +151,28 @@ export interface CustomerAnalysis {
   }>;
 }
 
+// New interface for customer personas
+export interface Persona {
+  name: string;
+  description: string;
+  icon: "User" | "MessageSquare" | "Handshake" | "Star" | "Award" | "BadgeCheck"; // Icon identifier must be one of these values
+  scores: {
+    overall: number;
+    strategic: number;
+    customer: number;
+    execution: number;
+  };
+}
+
+// New interface for performance time data
+export interface PerformanceTimeData {
+  month: string;
+  overall: number;
+  strategic: number;
+  customer: number;
+  content: number;
+}
+
 export interface BrandData {
   profile: BrandProfile;
   voice: BrandVoice[];
@@ -175,4 +197,7 @@ export interface BrandData {
   funnelData: FunnelStep[];
   marketAnalysis?: MarketAnalysis;
   customerAnalysis?: CustomerAnalysis;
+  // New fields
+  personas?: Persona[];
+  performanceTimeData?: PerformanceTimeData[];
 } 
