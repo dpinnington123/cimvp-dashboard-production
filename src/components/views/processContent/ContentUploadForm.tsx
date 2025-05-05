@@ -170,7 +170,7 @@ const ContentUploadForm: React.FC = () => {
       setCurrentStep(1);
       
       // Navigate to the processing page immediately
-      navigate('/content-processing');
+      navigate('/dashboard/content-processing');
       
     } catch (error) {
       console.error('Upload error:', error);

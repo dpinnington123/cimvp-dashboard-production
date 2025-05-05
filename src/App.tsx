@@ -146,6 +146,18 @@ function AppRoutes() {
         <Route index element={<BrandDashboardPage />} />
       </Route>
 
+      {/* Add direct route for ContentProcessingPage */}
+      <Route
+        path="/content-processing"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<ContentProcessingPage />} />
+      </Route>
+
       {/* Additional Direct Routes for Sidebar Navigation */}
       <Route
         path="/strategic-dashboard"

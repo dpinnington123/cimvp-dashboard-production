@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { getContentById, getContent } from '@/services/contentService';
+import { getContentById, getContent, deleteContentById } from '@/services/contentService';
 import { uploadContent, getProcessedContent, ContentFile, ContentMetadata, ProcessedContent } from '@/services/uploadService';
 
 // Unique query key for all content
@@ -85,11 +85,41 @@ export const useContent = () => {
     });
   };
   
+  // Delete content mutation
+  const useDeleteContentMutation = () => {
+    return useMutation({
+      mutationFn: (id: number) => deleteContentById(id),
+      onSuccess: (result, id) => {
+        // Log success result
+        console.log(`Delete mutation success result:`, result);
+        
+        // Invalidate all potentially affected queries
+        queryClient.invalidateQueries({ queryKey: ['processedContent'] });
+        queryClient.invalidateQueries({ queryKey: ['allContent'] });
+        queryClient.invalidateQueries({ queryKey: contentListQueryKey });
+        queryClient.invalidateQueries({ queryKey: contentDetailQueryKey(id) });
+        
+        // Force content list refetch
+        queryClient.refetchQueries({ queryKey: contentListQueryKey });
+        
+        // If delete was not successful, throw error to trigger onError
+        if (!result.success) {
+          throw result.error || new Error('Delete operation failed with unknown error');
+        }
+      },
+      onError: (error, id) => {
+        console.error(`Error in delete mutation for content ${id}:`, error);
+        // We can add additional error handling here if needed
+      }
+    });
+  };
+  
   return {
     useContentQuery,
     useAllContentQuery,
     useProcessedContentQuery,
     useUploadContentMutation,
+    useDeleteContentMutation,
   };
 };
 

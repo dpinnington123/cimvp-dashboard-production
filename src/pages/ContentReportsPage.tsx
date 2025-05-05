@@ -1,12 +1,13 @@
 import { useContentList, useContentDetail } from "@/hooks/useContent";
 import LoadingSpinner from "@/components/common/LoadingSpinner";
 import ErrorDisplay from "@/components/common/ErrorDisplay";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { useScores, useCategoryReviewSummaries } from "@/hooks/useScores";
 import { type CategoryReviewSummary } from "@/services/scoreService";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient"; // Import supabase client
 import eyeTrackingImage from "../assets/eyetracking.png"; // Import the eye tracking image
+import { useToast } from "@/hooks/use-toast";
 
 // Import Shared UI components
 import {
@@ -24,7 +25,7 @@ import {
   Star, ArrowLeft, CalendarIcon, ClockIcon, UsersIcon, FileTextIcon,
   TypeIcon, TargetIcon, BriefcaseIcon, Building2Icon, BarChart3Icon,
   InfoIcon, AlertCircleIcon, Hash, Image as ImageIcon, Video, AlignLeft,
-  Thermometer, Smile, ChevronDown, BookmarkCheck
+  Thermometer, Smile, ChevronDown, BookmarkCheck, Trash2, MoreVertical
 } from "lucide-react";
 
 // Import our content report components
@@ -35,6 +36,23 @@ import { CircularProgressIndicator } from "@/components/common/CircularProgressI
 import { DetailItem } from "@/components/views/content-reports/DetailItem";
 import { CharacteristicCard } from "@/components/views/content-reports/CharacteristicCard";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 // Define score type based on error messages
 type Score = {
@@ -123,6 +141,8 @@ const getCharacteristicIcon = (checkName: string | null): React.ReactNode => {
 export default function ContentReportsPage() {
   // --- State Management ---
   const { contentId: contentIdParam } = useParams<{ contentId: string }>();
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
   // If contentIdParam exists, we're in detail view, otherwise list view
   const isDetailView = !!contentIdParam;
@@ -140,6 +160,18 @@ export default function ContentReportsPage() {
   
   // State to track removed improvement areas (only for the current session)
   const [removedImprovements, setRemovedImprovements] = useState<Set<number>>(new Set());
+
+  // State to track hidden content items (UI-only removal)
+  const [hiddenContentIds, setHiddenContentIds] = useState<Set<number>>(() => {
+    // Initialize from localStorage if available
+    const savedHiddenIds = localStorage.getItem('hiddenContentIds');
+    return savedHiddenIds ? new Set(JSON.parse(savedHiddenIds)) : new Set<number>();
+  });
+
+  // Save hidden content IDs to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('hiddenContentIds', JSON.stringify(Array.from(hiddenContentIds)));
+  }, [hiddenContentIds]);
 
   // Function to handle saving an improvement
   const handleSaveImprovement = (id: string | number) => {
@@ -171,12 +203,36 @@ export default function ContentReportsPage() {
     });
   };
 
+  // Function to handle UI-only removal of content
+  const handleHideContent = (id: number) => {
+    console.log(`Hiding content with ID: ${id} from UI only`);
+    
+    // Add to hidden set
+    setHiddenContentIds(prev => {
+      const newSet = new Set(prev);
+      newSet.add(id);
+      return newSet;
+    });
+    
+    // Show success toast
+    toast({
+      title: "Report hidden",
+      description: "The report has been removed from your view.",
+    });
+    
+    // If we're in detail view, navigate back to the list
+    if (isDetailView) {
+      navigate('/content-reports');
+    }
+  };
+
   // --- Data Fetching ---
   // For list view: fetch the list of content items
   const {
     data: contentList,
     isLoading: isLoadingList,
     error: errorList,
+    refetch: refetchList,
   } = useContentList();
 
   // For detail view: fetch details for a specific content item
@@ -395,6 +451,9 @@ export default function ContentReportsPage() {
     return <ErrorDisplay error={error} message="Failed to load content data." />;
   }
 
+  // Filter out hidden content items for list view
+  const filteredContentList = contentList?.filter(item => !hiddenContentIds.has(item.id)) || [];
+
   // TODO: Implement a proper content list view with filtering, sorting, and pagination
   // This button allows users to navigate to the Process Content page for uploading new content
 
@@ -432,8 +491,8 @@ export default function ContentReportsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {contentList && contentList.length > 0 ? (
-                  contentList.map((item: any) => (
+                {filteredContentList && filteredContentList.length > 0 ? (
+                  filteredContentList.map((item: any) => (
                     <TableRow key={item.id}>
                       <TableCell>{item.content_name || 'Untitled'}</TableCell>
                       <TableCell>{item.format || 'Unknown'}</TableCell>
@@ -443,12 +502,36 @@ export default function ContentReportsPage() {
                           : 'Unknown'}
                       </TableCell>
                       <TableCell>
-                        <Link 
-                          to={`/content-reports/${item.id}`}
-                          className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
-                        >
-                          View Report
-                        </Link>
+                        <div className="flex items-center gap-2">
+                          <Link 
+                            to={`/content-reports/${item.id}`}
+                            className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
+                          >
+                            View Report
+                          </Link>
+                          
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="outline" size="sm" className="px-2 ml-5">
+                                <Trash2 className="h-4 w-4"/>
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Hide Content Report</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to hide this content report? You won't see it in the list anymore.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleHideContent(item.id)}>
+                                  Hide
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
@@ -463,6 +546,22 @@ export default function ContentReportsPage() {
             </Table>
           </CardContent>
         </Card>
+      </div>
+    );
+  }
+
+  // For detail view, check if this content is hidden (if in URL directly)
+  if (contentId && hiddenContentIds.has(contentId)) {
+    return (
+      <div className="p-6">
+        <h1 className="text-2xl font-semibold mb-4">Report Hidden</h1>
+        <p>This content report has been hidden from your view.</p>
+        <Link 
+          to="/content-reports"
+          className="mt-4 inline-block px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+        >
+          Return to Content List
+        </Link>
       </div>
     );
   }
@@ -516,20 +615,47 @@ export default function ContentReportsPage() {
       </div>
 
       {/* 1. Header Area */}
-      <header className="mb-6">
-        <h1 className="text-3xl font-bold">{contentDetails?.content_name || 'Content Report'}</h1>
-        <p className="text-muted-foreground mt-1">
-          Comprehensive analysis of content performance and recommendations for optimization.
-        </p>
-      </header>
-      <div className="flex justify-end">
+      <header className="mb-6 flex justify-between items-start">
+        <div>
+          <h1 className="text-3xl font-bold">{contentDetails?.content_name || 'Content Report'}</h1>
+          <p className="text-muted-foreground mt-1">
+            Comprehensive analysis of content performance and recommendations for optimization.
+          </p>
+        </div>
+        
+        <div className="flex gap-2">
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" size="sm" className="flex items-center gap-1">
+                <Trash2 className="h-4 w-4" />
+                Hide Report
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Hide Content Report</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to hide "{contentDetails?.content_name || 'this content report'}"? 
+                  You won't see it in the list anymore.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={() => handleHideContent(contentId!)}>
+                  Hide
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+          
           <Link 
             to="/process-content"
-            className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 text-sm mr-100"
+            className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 text-sm"
           >
            + Upload New Content
           </Link>
         </div>
+      </header>
 
       {/* 2. Main Content Grid (Two Columns) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

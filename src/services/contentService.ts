@@ -44,4 +44,69 @@ export const getContentById = async (id: number): Promise<Content | null> => { /
   // return null;
 };
 
+// Delete a content item by ID
+export const deleteContentById = async (id: number): Promise<{ success: boolean, error: Error | null }> => {
+  console.log(`Starting delete process for content with ID: ${id}...`);
+  
+  try {
+    // First, check if the content exists and you have permission
+    const { data: contentCheck, error: checkError } = await supabase
+      .from('content')
+      .select('id, content_name')
+      .eq('id', id)
+      .single();
+    
+    if (checkError) {
+      console.error(`Error verifying content with id ${id}:`, checkError);
+      return { success: false, error: new Error(`Failed to verify content: ${checkError.message}`) };
+    }
+    
+    if (!contentCheck) {
+      console.error(`Content with id ${id} does not exist or you don't have permission to access it`);
+      return { success: false, error: new Error(`Content not found or permission denied`) };
+    }
+    
+    console.log(`Content exists, proceeding with deletion: ${contentCheck.content_name}`);
+    
+    // First, check if there are related content_reviews to delete
+    console.log(`Attempting to delete related content_reviews for content ${id}...`);
+    const { data: reviewsData, error: reviewsError } = await supabase
+      .from('content_reviews')
+      .delete()
+      .eq('content_id', id)
+      .select();
+    
+    if (reviewsError) {
+      console.error(`Error deleting related content_reviews for content ${id}:`, reviewsError);
+      return { success: false, error: new Error(`Failed to delete related reviews: ${reviewsError.message}`) };
+    }
+    
+    console.log(`Successfully deleted ${reviewsData?.length || 0} related reviews`);
+    
+    // Then delete the content record itself
+    console.log(`Attempting to delete content with id ${id}...`);
+    const { data: contentData, error } = await supabase
+      .from('content')
+      .delete()
+      .eq('id', id)
+      .select();
+    
+    if (error) {
+      console.error(`Error deleting content with id ${id}:`, error);
+      return { success: false, error: new Error(`Failed to delete content: ${error.message}`) };
+    }
+    
+    if (!contentData || contentData.length === 0) {
+      console.warn(`Delete operation sent successfully but no content was deleted for id ${id}. This may indicate the content doesn't exist or you don't have permission to delete it.`);
+      return { success: false, error: new Error('Content not deleted - permission issue or already deleted') };
+    }
+    
+    console.log(`Successfully deleted content with id ${id}:`, contentData);
+    return { success: true, error: null };
+  } catch (error) {
+    console.error(`Unexpected error deleting content with id ${id}:`, error);
+    return { success: false, error: error as Error };
+  }
+};
+
 // Add other content-related functions as needed (e.g., create, update, delete) 
