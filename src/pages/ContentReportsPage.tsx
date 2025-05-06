@@ -28,6 +28,17 @@ import {
   Thermometer, Smile, ChevronDown, BookmarkCheck, Trash2, MoreVertical
 } from "lucide-react";
 
+// Import pagination components
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+
 // Import our content report components
 import { ContentPreview } from "@/components/views/content-reports/ContentPreview";
 import { ScoreCard } from "../components/views/content-reports/ScoreCard";
@@ -167,6 +178,10 @@ export default function ContentReportsPage() {
     const savedHiddenIds = localStorage.getItem('hiddenContentIds');
     return savedHiddenIds ? new Set(JSON.parse(savedHiddenIds)) : new Set<number>();
   });
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   // Save hidden content IDs to localStorage whenever they change
   useEffect(() => {
@@ -451,11 +466,71 @@ export default function ContentReportsPage() {
     return <ErrorDisplay error={error} message="Failed to load content data." />;
   }
 
-  // Filter out hidden content items for list view
-  const filteredContentList = contentList?.filter(item => !hiddenContentIds.has(item.id)) || [];
+  // Filter out hidden content items for list view and sort by most recent first
+  const filteredContentList = contentList?.filter(item => !hiddenContentIds.has(item.id))
+    .sort((a, b) => {
+      // Sort by created_at date in descending order (most recent first)
+      const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+      return dateB - dateA; // Descending order (newest first)
+    }) || [];
 
-  // TODO: Implement a proper content list view with filtering, sorting, and pagination
-  // This button allows users to navigate to the Process Content page for uploading new content
+  // Pagination logic
+  const totalItems = filteredContentList.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  
+  // Get current page items
+  const currentItems = filteredContentList.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  // Handle page changes
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  
+  // Generate page numbers for pagination
+  const getPageNumbers = () => {
+    const pageNumbers: (number | 'ellipsis')[] = [];
+    
+    if (totalPages <= 7) {
+      // If less than 7 pages, show all page numbers
+      for (let i = 1; i <= totalPages; i++) {
+        pageNumbers.push(i);
+      }
+    } else {
+      // Always show first page
+      pageNumbers.push(1);
+      
+      // Logic for showing ellipsis and surrounding pages
+      if (currentPage < 5) {
+        // Current page is near the start
+        for (let i = 2; i <= 5; i++) {
+          pageNumbers.push(i);
+        }
+        pageNumbers.push('ellipsis');
+        pageNumbers.push(totalPages);
+      } else if (currentPage > totalPages - 4) {
+        // Current page is near the end
+        pageNumbers.push('ellipsis');
+        for (let i = totalPages - 4; i <= totalPages; i++) {
+          pageNumbers.push(i);
+        }
+      } else {
+        // Current page is in the middle
+        pageNumbers.push('ellipsis');
+        for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+          pageNumbers.push(i);
+        }
+        pageNumbers.push('ellipsis');
+        pageNumbers.push(totalPages);
+      }
+    }
+    
+    return pageNumbers;
+  };
 
   if (!isDetailView) {
     return (
@@ -491,8 +566,8 @@ export default function ContentReportsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredContentList && filteredContentList.length > 0 ? (
-                  filteredContentList.map((item: any) => (
+                {currentItems && currentItems.length > 0 ? (
+                  currentItems.map((item: any) => (
                     <TableRow key={item.id}>
                       <TableCell>{item.content_name || 'Untitled'}</TableCell>
                       <TableCell>{item.format || 'Unknown'}</TableCell>
@@ -544,6 +619,55 @@ export default function ContentReportsPage() {
                 )}
               </TableBody>
             </Table>
+            
+            {/* Pagination */}
+            {totalItems > 0 && (
+              <div className="mt-6 flex justify-center">
+                <Pagination>
+                  <PaginationContent>
+                    {/* Previous button */}
+                    <PaginationItem>
+                      <PaginationPrevious 
+                        onClick={() => currentPage > 1 && handlePageChange(currentPage - 1)}
+                        className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                      />
+                    </PaginationItem>
+                    
+                    {/* Page numbers */}
+                    {getPageNumbers().map((page, index) => (
+                      <PaginationItem key={index}>
+                        {page === 'ellipsis' ? (
+                          <PaginationEllipsis />
+                        ) : (
+                          <PaginationLink
+                            isActive={page === currentPage}
+                            onClick={() => handlePageChange(page)}
+                            className="cursor-pointer"
+                          >
+                            {page}
+                          </PaginationLink>
+                        )}
+                      </PaginationItem>
+                    ))}
+                    
+                    {/* Next button */}
+                    <PaginationItem>
+                      <PaginationNext 
+                        onClick={() => currentPage < totalPages && handlePageChange(currentPage + 1)}
+                        className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            )}
+            
+            {/* Page info */}
+            {totalItems > 0 && (
+              <div className="text-center text-sm text-muted-foreground mt-2">
+                Showing {(currentPage - 1) * itemsPerPage + 1}-{Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems} items
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
