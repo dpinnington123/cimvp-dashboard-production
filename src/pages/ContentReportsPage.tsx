@@ -28,17 +28,6 @@ import {
   Thermometer, Smile, ChevronDown, BookmarkCheck, Trash2, MoreVertical
 } from "lucide-react";
 
-// Import pagination components
-import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
-
 // Import our content report components
 import { ContentPreview } from "@/components/views/content-reports/ContentPreview";
 import { ScoreCard } from "../components/views/content-reports/ScoreCard";
@@ -179,10 +168,6 @@ export default function ContentReportsPage() {
     return savedHiddenIds ? new Set(JSON.parse(savedHiddenIds)) : new Set<number>();
   });
 
-  // Pagination state
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
-
   // Save hidden content IDs to localStorage whenever they change
   useEffect(() => {
     localStorage.setItem('hiddenContentIds', JSON.stringify(Array.from(hiddenContentIds)));
@@ -309,21 +294,21 @@ export default function ContentReportsPage() {
   const categoryDisplayMap: Record<string, string> = {
     "Strategic alignment": "Strategic Alignment",
     "Customer alignment": "Customer Alignment",
-    "Execution effectiveness": "Customer Alignment", //Change Back to Execution Effectiveness once we have the data
-    "Format effectiveness": "Content Effectiveness",
+    // "Content alignment": "Content  Alignment", //Change Back to Execution Effectiveness once we have the data
+    "Content effectiveness": "Content Effectiveness",
     // Add fallbacks for possible variations in the database
     "strategic alignment": "Strategic Alignment",
     "customer alignment": "Customer Alignment",
-    "execution effectiveness": "Customer Alignment", //Change Back to Execution Effectiveness once we have the data
-    "format effectiveness": "Content Effectiveness"
+    // "content alignment": "Content Alignment", //Change Back to Execution Effectiveness once we have the data
+    "content effectiveness": "Content Effectiveness"
   };
   
   // Define the category descriptions
   const categoryDescriptions: Record<string, string> = {
     "Strategic Alignment": "Alignment with business priorities",
     "Customer Alignment": "Customer focus and relevance",
-    "Execution Effectiveness": "Relevance to customer needs", //Change Back to Execution Effectiveness once we have the data
-    "Format Effectiveness": "Highlights the content effectiveness"
+    // "Content Alignment": "Content alignment with customer needs", //Change Back to Execution Effectiveness once we have the data
+    "Content Effectiveness": "Highlights the content effectiveness"
   };
 
   // Group scores by category and calculate averages for Performance Scores tab
@@ -373,7 +358,7 @@ export default function ContentReportsPage() {
     if (!contentScores) return null;
     
     // Define our target categories
-    const categories = ["Strategic Alignment", "Execution Effectiveness", "Format Effectiveness"];
+    const categories = ["Strategic Alignment", "Customer Alignment", "Content Effectiveness"];
     
     // Initialize our result structure
     const result: CategoryScores = {};
@@ -475,62 +460,8 @@ export default function ContentReportsPage() {
       return dateB - dateA; // Descending order (newest first)
     }) || [];
 
-  // Pagination logic
-  const totalItems = filteredContentList.length;
-  const totalPages = Math.ceil(totalItems / itemsPerPage);
-  
-  // Get current page items
-  const currentItems = filteredContentList.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
-
-  // Handle page changes
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-  
-  // Generate page numbers for pagination
-  const getPageNumbers = () => {
-    const pageNumbers: (number | 'ellipsis')[] = [];
-    
-    if (totalPages <= 7) {
-      // If less than 7 pages, show all page numbers
-      for (let i = 1; i <= totalPages; i++) {
-        pageNumbers.push(i);
-      }
-    } else {
-      // Always show first page
-      pageNumbers.push(1);
-      
-      // Logic for showing ellipsis and surrounding pages
-      if (currentPage < 5) {
-        // Current page is near the start
-        for (let i = 2; i <= 5; i++) {
-          pageNumbers.push(i);
-        }
-        pageNumbers.push('ellipsis');
-        pageNumbers.push(totalPages);
-      } else if (currentPage > totalPages - 4) {
-        // Current page is near the end
-        pageNumbers.push('ellipsis');
-        for (let i = totalPages - 4; i <= totalPages; i++) {
-          pageNumbers.push(i);
-        }
-      } else {
-        // Current page is in the middle
-        pageNumbers.push('ellipsis');
-        for (let i = currentPage - 1; i <= currentPage + 1; i++) {
-          pageNumbers.push(i);
-        }
-        pageNumbers.push('ellipsis');
-        pageNumbers.push(totalPages);
-      }
-    }
-    
-    return pageNumbers;
-  };
+  // TODO: Implement a proper content list view with filtering, sorting, and pagination
+  // This button allows users to navigate to the Process Content page for uploading new content
 
   if (!isDetailView) {
     return (
@@ -566,8 +497,8 @@ export default function ContentReportsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {currentItems && currentItems.length > 0 ? (
-                  currentItems.map((item: any) => (
+                {filteredContentList && filteredContentList.length > 0 ? (
+                  filteredContentList.map((item: any) => (
                     <TableRow key={item.id}>
                       <TableCell>{item.content_name || 'Untitled'}</TableCell>
                       <TableCell>{item.format || 'Unknown'}</TableCell>
@@ -619,55 +550,6 @@ export default function ContentReportsPage() {
                 )}
               </TableBody>
             </Table>
-            
-            {/* Pagination */}
-            {totalItems > 0 && (
-              <div className="mt-6 flex justify-center">
-                <Pagination>
-                  <PaginationContent>
-                    {/* Previous button */}
-                    <PaginationItem>
-                      <PaginationPrevious 
-                        onClick={() => currentPage > 1 && handlePageChange(currentPage - 1)}
-                        className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                      />
-                    </PaginationItem>
-                    
-                    {/* Page numbers */}
-                    {getPageNumbers().map((page, index) => (
-                      <PaginationItem key={index}>
-                        {page === 'ellipsis' ? (
-                          <PaginationEllipsis />
-                        ) : (
-                          <PaginationLink
-                            isActive={page === currentPage}
-                            onClick={() => handlePageChange(page)}
-                            className="cursor-pointer"
-                          >
-                            {page}
-                          </PaginationLink>
-                        )}
-                      </PaginationItem>
-                    ))}
-                    
-                    {/* Next button */}
-                    <PaginationItem>
-                      <PaginationNext 
-                        onClick={() => currentPage < totalPages && handlePageChange(currentPage + 1)}
-                        className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                      />
-                    </PaginationItem>
-                  </PaginationContent>
-                </Pagination>
-              </div>
-            )}
-            
-            {/* Page info */}
-            {totalItems > 0 && (
-              <div className="text-center text-sm text-muted-foreground mt-2">
-                Showing {(currentPage - 1) * itemsPerPage + 1}-{Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems} items
-              </div>
-            )}
           </CardContent>
         </Card>
       </div>
