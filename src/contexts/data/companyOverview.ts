@@ -8,14 +8,14 @@ import {
   BrandSummary,
   RegionalPerformance,
   ContentTypePerformance 
-} from '../types/company';
+} from '../../types/company';
 import { 
   BrandData, 
   Campaign, 
   ChannelScores,
   ContentItem,
   FunnelStep
-} from '../types/brand';
+} from '../../types/brand';
 
 /**
  * Calculate average scores across all brands

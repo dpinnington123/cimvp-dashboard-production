@@ -21,7 +21,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { DialogFooter } from '@/components/ui/dialog';
 import { ContentItem } from '@/types/content';
-import { sampleContentItems } from '@/data/sampleContent';
+import { sampleContentItems } from '@/contexts/data/sampleContent';
 
 const formSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),

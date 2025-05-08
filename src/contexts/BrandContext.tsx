@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { brandsData, brandNames, regions } from '@/data/index';
+import { brandsData, brandNames, regions } from '@/contexts/data/index';
 import type { BrandData } from '@/types/brand';
 
 interface BrandContextType {

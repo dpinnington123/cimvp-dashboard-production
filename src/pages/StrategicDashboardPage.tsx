@@ -18,7 +18,7 @@ import CampaignTable from "@/components/views/strategic-dashboard/CampaignTable"
 import { generatePDF, generatePPT } from "@/services/exportService";
 
 // Import aggregated company data
-import { companyOverviewData } from "@/data/companyOverview";
+import { companyOverviewData } from "@/contexts/data/companyOverview";
 
 export default function StrategicDashboardPage() {
   const dashboardRef = useRef<HTMLDivElement>(null);

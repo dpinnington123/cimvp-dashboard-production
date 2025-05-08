@@ -1,7 +1,7 @@
 // src/data/brands/vitalWellness.ts
 // Data for the VitalWellness brand
 
-import type { BrandData } from '../../types/brand';
+import type { BrandData } from '../../../types/brand';
 
 export const vitalWellnessData: BrandData = {
   profile: {

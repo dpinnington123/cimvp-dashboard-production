@@ -135,7 +135,7 @@ export default function AuthProvider({ children }: AuthProviderProps) {
   const resetPassword = async (email: string) => {
     setLoading(true);
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: window.location.origin + '/reset-password#',
+      redirectTo: `${window.location.origin}/reset-password`,
     });
     
     setLoading(false);
@@ -145,13 +145,44 @@ export default function AuthProvider({ children }: AuthProviderProps) {
 
   const updatePassword = async (password: string) => {
     setLoading(true);
-    const { error } = await supabase.auth.updateUser({
-      password,
-    });
-    
-    setLoading(false);
-    
-    return { error };
+    try {
+      // First verify we have a session
+      const { data: sessionData } = await supabase.auth.getSession();
+      
+      if (!sessionData.session) {
+        console.error('Cannot update password: No active session');
+        setLoading(false);
+        return { 
+          error: {
+            message: 'No active session found',
+            name: 'AuthApiError'
+          } as unknown as AuthError
+        };
+      }
+      
+      // Then update the password
+      const { error } = await supabase.auth.updateUser({
+        password,
+      });
+      
+      if (error) {
+        console.error('Password update error:', error);
+      } else {
+        console.log('Password updated successfully');
+      }
+      
+      setLoading(false);
+      return { error };
+    } catch (err) {
+      console.error('Exception during password update:', err);
+      setLoading(false);
+      return { 
+        error: {
+          message: err instanceof Error ? err.message : 'Unknown error',
+          name: 'AuthApiError'
+        } as unknown as AuthError 
+      };
+    }
   };
 
   const value = {

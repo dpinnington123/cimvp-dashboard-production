@@ -1,7 +1,7 @@
 // src/data/brands/techNova.ts
 // Data for the TechNova brand
 
-import type { BrandData } from '../../types/brand';
+import type { BrandData } from '../../../types/brand';
 
 export const techNovaData: BrandData = {
   profile: {

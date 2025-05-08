@@ -1,7 +1,7 @@
 // src/data/index.ts
 // Centralized export for brand data
 
-import type { BrandData } from '../types/brand';
+import type { BrandData } from '../../types/brand';
 import { ecoSolutionsData } from './brands/ecoSolutions';
 import { techNovaData } from './brands/techNova';
 import { vitalWellnessData } from './brands/vitalWellness';

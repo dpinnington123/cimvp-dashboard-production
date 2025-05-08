@@ -12,79 +12,114 @@ import { supabase } from '../lib/supabaseClient';
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [localLoading, setLocalLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [tokenError, setTokenError] = useState(false);
   const { updatePassword, user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Log the URL and hash for debugging
   useEffect(() => {
-    const handlePasswordReset = async () => {
-      // Get the hash fragment from the URL
+    console.log('Current URL:', window.location.href);
+    console.log('Hash fragment:', location.hash);
+    console.log('Auth state:', { user: !!user, authLoading });
+  }, [location, user, authLoading]);
+
+  // Process the reset token from URL on initial load
+  useEffect(() => {
+    const processResetToken = async () => {
       const hash = location.hash;
       
-      // Extract the access token and refresh token from the hash
+      // No hash or no token, and no authenticated user - invalid state
+      if ((!hash || !hash.includes('access_token')) && !user && !authLoading) {
+        console.log('No valid token found and no authenticated user');
+        setTokenError(true);
+        toast.error("Invalid reset link", {
+          description: "Please request a new password reset link"
+        });
+        setTimeout(() => navigate('/forgot-password'), 2000);
+        return;
+      }
+      
+      // If we have a hash with tokens, try to establish a session
       if (hash && hash.includes('access_token')) {
         try {
-          setLocalLoading(true);
-          // Use Supabase to set the session with the provided tokens
-          // This will establish a session that allows the password reset to work
-          const { error } = await supabase.auth.getSession();
+          setLoading(true);
+          console.log('Processing access token from hash');
+          
+          const hashParams = new URLSearchParams(hash.substring(1));
+          const accessToken = hashParams.get('access_token');
+          const refreshToken = hashParams.get('refresh_token');
+          
+          if (!accessToken) {
+            throw new Error('No access token found in URL');
+          }
+          
+          console.log('Setting session with token');
+          const { data, error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken || ''
+          });
           
           if (error) {
+            console.error('Error setting session:', error.message);
             throw error;
           }
-        } catch (error) {
+          
+          console.log('Session established successfully:', !!data.session);
+        } catch (error: any) {
           console.error('Error setting up session from URL:', error);
           setTokenError(true);
           toast.error("Invalid or expired reset link", {
             description: "Please request a new password reset link"
           });
-          // Navigate after a short delay to allow the toast to be seen
           setTimeout(() => navigate('/forgot-password'), 2000);
         } finally {
-          setLocalLoading(false);
+          setLoading(false);
         }
-      } else if (!user && !authLoading) {
-        // If we don't have a hash with tokens and no user is authenticated
-        // We're likely accessing this page directly without a valid reset link
-        setTokenError(true);
-        toast.error("Invalid or expired reset link", {
-          description: "Please request a new password reset link"
-        });
-        // Navigate after a short delay to allow the toast to be seen
-        setTimeout(() => navigate('/forgot-password'), 2000);
       }
     };
     
-    handlePasswordReset();
+    processResetToken();
   }, [location, navigate, authLoading, user]);
 
-  const handlePasswordReset = async (event: React.FormEvent) => {
+  const handlePasswordUpdate = async (event: React.FormEvent) => {
     event.preventDefault();
     
     if (!user) {
-        toast.error("Session error", { description: "Cannot reset password without a valid session." });
-        return;
+      console.error('No authenticated user found when attempting to update password');
+      toast.error("Session error", { 
+        description: "Cannot reset password without a valid session" 
+      });
+      return;
     }
 
     if (password !== confirmPassword) {
-      toast.error("Passwords don't match", { description: "Please make sure your passwords match" });
+      toast.error("Passwords don't match", { 
+        description: "Please make sure your passwords match" 
+      });
       return;
     }
     
     if (password.length < 6) {
-      toast.error("Password too weak", { description: "Password should be at least 6 characters long" });
+      toast.error("Password too weak", { 
+        description: "Password should be at least 6 characters long" 
+      });
       return;
     }
     
-    setLocalLoading(true);
+    setLoading(true);
+    console.log('Updating password for user:', user.email);
 
     try {
       const { error } = await updatePassword(password);
-      if (error) throw error;
+      if (error) {
+        console.error('Error updating password:', error.message);
+        throw error;
+      }
       
+      console.log('Password updated successfully');
       setSuccess(true);
       toast.success("Password Reset Successful", { 
         description: "Your password has been updated" 
@@ -95,12 +130,12 @@ export default function ResetPasswordPage() {
         description: error.message || "Could not update password" 
       });
     } finally {
-      setLocalLoading(false);
+      setLoading(false);
     }
   };
 
-  // Show loading spinner while the initial auth check is happening
-  if (authLoading || localLoading) {
+  // Show loading spinner while processing
+  if (authLoading || loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <LoadingSpinner />
@@ -108,6 +143,7 @@ export default function ResetPasswordPage() {
     );
   }
   
+  // Show error state
   if (tokenError) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900">
@@ -131,6 +167,7 @@ export default function ResetPasswordPage() {
     );
   }
 
+  // Show success state
   if (success) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900">
@@ -154,6 +191,7 @@ export default function ResetPasswordPage() {
     );
   }
 
+  // Default form view
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900 p-4">
       <img src="/ChangeInfluence-logo.png" alt="Change Influence Logo" className="mb-8 h-16" />
@@ -164,7 +202,7 @@ export default function ResetPasswordPage() {
             Enter a new password for your account {user?.email ? `(${user.email})` : ''}
           </CardDescription>
         </CardHeader>
-        <form onSubmit={handlePasswordReset}>
+        <form onSubmit={handlePasswordUpdate}>
           <CardContent className="grid gap-4">
             <div className="grid gap-2">
               <Label htmlFor="password">New Password</Label>
@@ -174,7 +212,7 @@ export default function ResetPasswordPage() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                disabled={localLoading}
+                disabled={loading}
               />
             </div>
             <div className="grid gap-2">
@@ -185,13 +223,13 @@ export default function ResetPasswordPage() {
                 required
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                disabled={localLoading}
+                disabled={loading}
               />
             </div>
           </CardContent>
           <CardFooter>
-            <Button type="submit" className="w-full" disabled={localLoading}>
-              {localLoading ? 'Updating Password...' : 'Update Password'}
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? 'Updating Password...' : 'Update Password'}
             </Button>
           </CardFooter>
         </form>

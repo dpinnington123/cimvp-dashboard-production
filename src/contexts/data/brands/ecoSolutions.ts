@@ -1,7 +1,7 @@
 // src/data/brands/ecoSolutions.ts
 // Data for the EcoSolutions brand
 
-import type { BrandData } from '../../types/brand';
+import type { BrandData } from '../../../types/brand';
 
 export const ecoSolutionsData: BrandData = {
   profile: {

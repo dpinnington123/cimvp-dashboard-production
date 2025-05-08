@@ -16,5 +16,6 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     storageKey: 'change-influence-auth',
     autoRefreshToken: true,
     detectSessionInUrl: true,
+    flowType: 'pkce', // Use PKCE flow for better security
   }
 }); 

@@ -22,7 +22,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Globe, Building, User, Settings, LogOut, ChevronDown } from 'lucide-react';
-import { brandsData } from '@/data/index';
+import { brandsData } from '@/contexts/data/index';
 // We'll add page title logic and user menu later
 
 export default function Header() {
