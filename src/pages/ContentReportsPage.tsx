@@ -313,85 +313,70 @@ export default function ContentReportsPage() {
 
   // Group scores by category and calculate averages for Performance Scores tab
   const categoryScores = React.useMemo<CategoryScores>(() => {
-    // If we have category review summaries from the database, use those instead of calculating
-    if (categoryReviewSummaries && categoryReviewSummaries.length > 0) {
-      const result: CategoryScores = {};
-      
-      // Initialize our target categories with empty data
-      const targetCategories = ["Strategic Alignment", "Customer Alignment", "Content Effectiveness"]; //Change Back to Execution Effectiveness once we have the data
-      targetCategories.forEach(category => {
-        result[category] = { checks: [], average: 0 };
-      });
-      
-      // Process each summary from the database
-      categoryReviewSummaries.forEach((summary) => {
-        // Map database category name to display name
-        const displayName = categoryDisplayMap[summary.category_name] || summary.category_name;
-        
-        // Only process categories we're interested in
-        if (targetCategories.includes(displayName) && contentScores) {
-          // Find the scores that belong to this category
-          const categoryChecks = contentScores.filter(
-            (score) => 
-              score.check_sub_category && 
-              score.check_sub_category.toLowerCase() === summary.category_name.toLowerCase()
-          );
-          
-          // Get average score as percentage (convert from 0-5 scale to 0-100)
-          // Handle potential null/NaN values
-          const averageScore = summary.category_score !== null && !isNaN(summary.category_score)
-            ? Math.round(summary.category_score)
-            : 0;
-          
-          // Store the data
-          result[displayName] = {
-            checks: categoryChecks,
-            average: averageScore
-          };
-        }
-      });
-      
-      return result;
-    }
-    
-    // Fallback to client-side calculation if no summaries are available
-    if (!contentScores) return null;
-    
-    // Define our target categories
-    const categories = ["Strategic Alignment", "Customer Alignment", "Content Effectiveness"];
-    
-    // Initialize our result structure
+    if (!contentScores) return null; // Guard: If no contentScores, no calculations can be done.
+
     const result: CategoryScores = {};
-    categories.forEach(category => {
-      result[category] = { checks: [], average: 0 };
-    });
-    
-    // Filter and group scores by check_sub_category
-    categories.forEach(category => {
-      // For client-side filtering, we need to handle case variations
-      const categoryChecks = contentScores.filter(
-        (score) => {
-          const subCategory = score.check_sub_category;
-          if (!subCategory) return false;
-          
-          // Try to match regardless of case and normalize spaces/dashes
-          return subCategory.toLowerCase().replace(/[-_\s]+/g, ' ') === 
-                 category.toLowerCase().replace(/[-_\s]+/g, ' ');
+    // These are the canonical display names for categories we want to show.
+    const targetCategories = ["Strategic Alignment", "Customer Alignment", "Content Effectiveness"];
+
+    targetCategories.forEach(categoryDisplayName => {
+      // Filter contentScores to get all checks belonging to the current categoryDisplayName.
+      // A score belongs to this categoryDisplayName if its 'check_sub_category' (from the database)
+      // can be mapped to this categoryDisplayName using the categoryDisplayMap.
+      const categoryChecks = contentScores.filter(score => {
+        if (!score.check_sub_category) return false;
+
+        // Attempt to map the score's database sub-category to a canonical display name.
+        // Checks categoryDisplayMap with the original casing and lowercase version of the score's sub-category.
+        const mappedScoreDisplayName = categoryDisplayMap[score.check_sub_category] || 
+                                     categoryDisplayMap[score.check_sub_category.toLowerCase()];
+        
+        if (mappedScoreDisplayName) {
+          // Compare the mapped display name (from score) with the current target categoryDisplayName.
+          // Normalization (toLowerCase, replace spaces/hyphens) for robust comparison.
+          return mappedScoreDisplayName.toLowerCase().replace(/[-_\s]+/g, ' ') === 
+                 categoryDisplayName.toLowerCase().replace(/[-_\s]+/g, ' ');
         }
-      );
-      
-      // Calculate average percentage score for this category
-      let sum = 0;
-      categoryChecks.forEach(check => {
-        sum += convertScoreToPercentage(check.score_value);
+        return false; // If the score's sub-category doesn't map to a known display name.
       });
-      const average = categoryChecks.length > 0 ? Math.round(sum / categoryChecks.length) : 0;
-      
-      // Store the results
-      result[category].checks = categoryChecks;
-      result[category].average = average;
+
+      let averageScore = 0;
+
+      // Find if there's a pre-calculated summary for this categoryDisplayName in categoryReviewSummaries.
+      const summary = categoryReviewSummaries?.find(s => {
+        if (!s.category_name) return false;
+
+        // Attempt to map the summary's database category name to a canonical display name.
+        const mappedSummaryDisplayName = categoryDisplayMap[s.category_name] ||
+                                        categoryDisplayMap[s.category_name.toLowerCase()];
+        
+        if (mappedSummaryDisplayName) {
+          // Compare the mapped display name (from summary) with the current target categoryDisplayName.
+          return mappedSummaryDisplayName.toLowerCase().replace(/[-_\s]+/g, ' ') === 
+                 categoryDisplayName.toLowerCase().replace(/[-_\s]+/g, ' ');
+        }
+        return false;
+      });
+
+      if (summary && summary.category_score !== null && !isNaN(summary.category_score)) {
+        // If a valid summary score exists, use it.
+        averageScore = Math.round(summary.category_score);
+      } else {
+        // Otherwise, calculate the average from the collected categoryChecks.
+        if (categoryChecks.length > 0) {
+          const sum = categoryChecks.reduce((acc, check) => acc + convertScoreToPercentage(check.score_value), 0);
+          averageScore = Math.round(sum / categoryChecks.length);
+        } else {
+          averageScore = 0; // Default to 0 if no checks and no valid summary.
+        }
+      }
+
+      result[categoryDisplayName] = {
+        checks: categoryChecks,
+        average: averageScore,
+      };
     });
-    
+
     return result;
   }, [contentScores, categoryReviewSummaries, categoryDisplayMap]);
 

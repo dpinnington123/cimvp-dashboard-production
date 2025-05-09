@@ -281,3 +281,24 @@ export const demoData = {
     { month: "Jul", social: 88, email: 68, ads: 75 }
   ]
 };
+
+  export const avatars = [
+  {
+    id: 1,
+    name: "John Doe",
+    avatar: "https://placehold.co/600x400/png",
+    role: "Admin",
+  },
+  {
+    id: 2,
+    name: "Jane Smith",
+    avatar: "https://placehold.co/600x400/png",
+    role: "Editor",
+  },
+  {
+    id: 3,
+    name: "Michael Brown",
+    avatar: "https://placehold.co/600x400/png",
+    role: "Viewer",
+  }
+];
