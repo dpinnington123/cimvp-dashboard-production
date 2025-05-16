@@ -138,6 +138,7 @@ export type Database = {
           content_objectives: string | null
           created_at: string | null
           expiry_date: string | null
+          eye_tracking_path: string | null
           file_storage_path: string | null
           format: string | null
           funnel_alignment: string | null
@@ -157,6 +158,7 @@ export type Database = {
           content_objectives?: string | null
           created_at?: string | null
           expiry_date?: string | null
+          eye_tracking_path?: string | null
           file_storage_path?: string | null
           format?: string | null
           funnel_alignment?: string | null
@@ -176,6 +178,7 @@ export type Database = {
           content_objectives?: string | null
           created_at?: string | null
           expiry_date?: string | null
+          eye_tracking_path?: string | null
           file_storage_path?: string | null
           format?: string | null
           funnel_alignment?: string | null
