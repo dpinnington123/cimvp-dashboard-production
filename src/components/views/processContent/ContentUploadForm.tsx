@@ -14,6 +14,8 @@ import { ArrowRight, Info, Tag, CalendarClock, Globe, File, CheckCircle, Users, 
 import { useNavigate } from "react-router-dom";
 import { ContentFile } from '@/services/uploadService';
 import useContent from '@/hooks/useContent';
+import useBrandFormOptions from '@/hooks/useBrandFormOptions';
+import { useBrand } from '@/contexts/BrandContext';
 
 type ContentFormState = {
   content_name: string;
@@ -34,6 +36,19 @@ const ContentUploadForm: React.FC = () => {
   const navigate = useNavigate();
   const { useUploadContentMutation } = useContent();
   const uploadContentMutation = useUploadContentMutation();
+  const { selectedBrand } = useBrand();
+  
+  // Use the brand form options hook to get dropdown options
+  const { 
+    campaignOptions,
+    audienceOptions,
+    strategyOptions, 
+    objectiveOptions,
+    agencyOptions,
+    funnelAlignmentOptions,
+    formatOptions,
+    typeOptions
+  } = useBrandFormOptions();
   
   const [files, setFiles] = useState<ContentFile[]>([]);
   const [currentTag, setCurrentTag] = useState('');
@@ -199,9 +214,11 @@ const ContentUploadForm: React.FC = () => {
     <form onSubmit={handleSubmit} className="w-full max-w-4xl mx-auto animate-fade-in">
       <Card className="border border-border/40 shadow-sm">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-medium tracking-tight">Upload Content</CardTitle>
+          <CardTitle className="text-2xl font-medium tracking-tight">
+            Upload Content {selectedBrand && <span className="text-muted-foreground font-normal text-base">({selectedBrand})</span>}
+          </CardTitle>
           <CardDescription>
-            Share your content with additional context information
+            Share your content with additional context information specific to your brand
           </CardDescription>
         </CardHeader>
         
@@ -277,14 +294,34 @@ const ContentUploadForm: React.FC = () => {
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="content_objectives">Content Objectives</Label>
-                  <Textarea 
-                    id="content_objectives" 
-                    placeholder="What is the goal of this content?" 
-                    value={metadata.content_objectives} 
-                    onChange={e => handleMetadataChange('content_objectives', e.target.value)} 
-                    className="resize-none h-32 focus-ring" 
-                  />
+                  <Label htmlFor="content_objectives" className="flex items-center gap-2">
+                    <Target className="h-4 w-4" /> Content Objectives
+                  </Label>
+                  {objectiveOptions.length > 0 ? (
+                    <Select 
+                      value={metadata.content_objectives} 
+                      onValueChange={value => handleMetadataChange('content_objectives', value)}
+                    >
+                      <SelectTrigger className="focus-ring">
+                        <SelectValue placeholder="Select an objective" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {objectiveOptions.map(option => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Textarea 
+                      id="content_objectives" 
+                      placeholder="What is the goal of this content?" 
+                      value={metadata.content_objectives} 
+                      onChange={e => handleMetadataChange('content_objectives', e.target.value)} 
+                      className="resize-none h-32 focus-ring" 
+                    />
+                  )}
                 </div>
                 
                 <div className="space-y-2">
@@ -299,11 +336,21 @@ const ContentUploadForm: React.FC = () => {
                       <SelectValue placeholder="Select a format" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="email">Email</SelectItem>
-                      <SelectItem value="social">Social Media</SelectItem>
-                      <SelectItem value="website">Website</SelectItem>
-                      <SelectItem value="presentation">Presentation</SelectItem>
-                      <SelectItem value="infographic">Infographic</SelectItem>
+                      {formatOptions.length > 0 ? (
+                        formatOptions.map(option => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <>
+                          <SelectItem value="email">Email</SelectItem>
+                          <SelectItem value="social">Social Media</SelectItem>
+                          <SelectItem value="website">Website</SelectItem>
+                          <SelectItem value="presentation">Presentation</SelectItem>
+                          <SelectItem value="infographic">Infographic</SelectItem>
+                        </>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
@@ -320,8 +367,18 @@ const ContentUploadForm: React.FC = () => {
                       <SelectValue placeholder="Select content type" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="hero">Hero</SelectItem>
-                      <SelectItem value="driver">Driver</SelectItem>
+                      {typeOptions.length > 0 ? (
+                        typeOptions.map(option => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <>
+                          <SelectItem value="hero">Hero</SelectItem>
+                          <SelectItem value="driver">Driver</SelectItem>
+                        </>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
@@ -339,14 +396,24 @@ const ContentUploadForm: React.FC = () => {
                         <SelectValue placeholder="Select target audience" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="general">General Public</SelectItem>
-                        <SelectItem value="business">Business Professionals</SelectItem>
-                        <SelectItem value="technical">Technical Audience</SelectItem>
-                        <SelectItem value="policymakers">Policymakers</SelectItem>
-                        <SelectItem value="investors">Investors</SelectItem>
-                        <SelectItem value="partners">Partners</SelectItem>
-                        <SelectItem value="employees">Employees</SelectItem>
-                        <SelectItem value="customers">Customers</SelectItem>
+                        {audienceOptions.length > 0 ? (
+                          audienceOptions.map(option => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <>
+                            <SelectItem value="general">General Public</SelectItem>
+                            <SelectItem value="business">Business Professionals</SelectItem>
+                            <SelectItem value="technical">Technical Audience</SelectItem>
+                            <SelectItem value="policymakers">Policymakers</SelectItem>
+                            <SelectItem value="investors">Investors</SelectItem>
+                            <SelectItem value="partners">Partners</SelectItem>
+                            <SelectItem value="employees">Employees</SelectItem>
+                            <SelectItem value="customers">Customers</SelectItem>
+                          </>
+                        )}
                       </SelectContent>
                     </Select>
                     <Button type="button" variant="outline" className="px-3" title="Audience Builder">
@@ -361,26 +428,62 @@ const ContentUploadForm: React.FC = () => {
                   <Label htmlFor="campaign_aligned_to" className="flex items-center gap-2">
                     <BriefcaseBusiness className="h-4 w-4" /> Campaign
                   </Label>
-                  <Input 
-                    id="campaign_aligned_to" 
-                    placeholder="Enter campaign name" 
-                    value={metadata.campaign_aligned_to} 
-                    onChange={e => handleMetadataChange('campaign_aligned_to', e.target.value)} 
-                    className="focus-ring" 
-                  />
+                  {campaignOptions.length > 0 ? (
+                    <Select 
+                      value={metadata.campaign_aligned_to} 
+                      onValueChange={value => handleMetadataChange('campaign_aligned_to', value)}
+                    >
+                      <SelectTrigger className="focus-ring">
+                        <SelectValue placeholder="Select a campaign" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {campaignOptions.map(option => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Input 
+                      id="campaign_aligned_to" 
+                      placeholder="Enter campaign name" 
+                      value={metadata.campaign_aligned_to} 
+                      onChange={e => handleMetadataChange('campaign_aligned_to', e.target.value)} 
+                      className="focus-ring" 
+                    />
+                  )}
                 </div>
                 
                 <div className="space-y-2">
                   <Label htmlFor="agency" className="flex items-center gap-2">
                     <Building2 className="h-4 w-4" /> Agency
                   </Label>
-                  <Input 
-                    id="agency" 
-                    placeholder="Enter agency name" 
-                    value={metadata.agency} 
-                    onChange={e => handleMetadataChange('agency', e.target.value)} 
-                    className="focus-ring" 
-                  />
+                  {agencyOptions.length > 0 ? (
+                    <Select 
+                      value={metadata.agency} 
+                      onValueChange={value => handleMetadataChange('agency', value)}
+                    >
+                      <SelectTrigger className="focus-ring">
+                        <SelectValue placeholder="Select an agency" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {agencyOptions.map(option => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Input 
+                      id="agency" 
+                      placeholder="Enter agency name" 
+                      value={metadata.agency} 
+                      onChange={e => handleMetadataChange('agency', e.target.value)} 
+                      className="focus-ring" 
+                    />
+                  )}
                 </div>
                 
                 <div className="space-y-2">
@@ -400,26 +503,62 @@ const ContentUploadForm: React.FC = () => {
                   <Label htmlFor="funnel_alignment" className="flex items-center gap-2">
                     <BarChart3 className="h-4 w-4" /> Funnel Alignment
                   </Label>
-                  <Input 
-                    id="funnel_alignment" 
-                    placeholder="Enter funnel alignment" 
-                    value={metadata.funnel_alignment} 
-                    onChange={e => handleMetadataChange('funnel_alignment', e.target.value)} 
-                    className="focus-ring" 
-                  />
+                  {funnelAlignmentOptions.length > 0 ? (
+                    <Select 
+                      value={metadata.funnel_alignment} 
+                      onValueChange={value => handleMetadataChange('funnel_alignment', value)}
+                    >
+                      <SelectTrigger className="focus-ring">
+                        <SelectValue placeholder="Select funnel alignment" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {funnelAlignmentOptions.map(option => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Input 
+                      id="funnel_alignment" 
+                      placeholder="Enter funnel alignment" 
+                      value={metadata.funnel_alignment} 
+                      onChange={e => handleMetadataChange('funnel_alignment', e.target.value)} 
+                      className="focus-ring" 
+                    />
+                  )}
                 </div>
                 
                 <div className="space-y-2">
                   <Label htmlFor="strategy_aligned_to" className="flex items-center gap-2">
                     <Target className="h-4 w-4" /> Strategy Aligned To
                   </Label>
-                  <Input 
-                    id="strategy_aligned_to" 
-                    placeholder="Enter strategy alignment" 
-                    value={metadata.strategy_aligned_to} 
-                    onChange={e => handleMetadataChange('strategy_aligned_to', e.target.value)} 
-                    className="focus-ring" 
-                  />
+                  {strategyOptions.length > 0 ? (
+                    <Select 
+                      value={metadata.strategy_aligned_to} 
+                      onValueChange={value => handleMetadataChange('strategy_aligned_to', value)}
+                    >
+                      <SelectTrigger className="focus-ring">
+                        <SelectValue placeholder="Select aligned strategy" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {strategyOptions.map(option => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Input 
+                      id="strategy_aligned_to" 
+                      placeholder="Enter strategy alignment" 
+                      value={metadata.strategy_aligned_to} 
+                      onChange={e => handleMetadataChange('strategy_aligned_to', e.target.value)} 
+                      className="focus-ring" 
+                    />
+                  )}
                 </div>
                 
                 <div className="space-y-2">
@@ -476,6 +615,8 @@ const ContentUploadForm: React.FC = () => {
                       {metadata.format && <p><span className="font-medium">Format:</span> {metadata.format}</p>}
                       {metadata.type && <p><span className="font-medium">Type:</span> {metadata.type}</p>}
                       {metadata.audience && <p><span className="font-medium">Audience:</span> {metadata.audience}</p>}
+                      {metadata.campaign_aligned_to && <p><span className="font-medium">Campaign:</span> {metadata.campaign_aligned_to}</p>}
+                      {metadata.agency && <p><span className="font-medium">Agency:</span> {metadata.agency}</p>}
                       {metadata.status && <p><span className="font-medium">Status:</span> {metadata.status}</p>}
                     </div>
                   </div>

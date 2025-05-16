@@ -6,7 +6,7 @@ import { useScores, useCategoryReviewSummaries } from "@/hooks/useScores";
 import { type CategoryReviewSummary } from "@/services/scoreService";
 import React, { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient"; // Import supabase client
-import eyeTrackingImage from "../assets/eyetracking.png"; // Import the eye tracking image
+import eyeTrackingImage from "../assets/eyetracking.png"; // Keep as fallback
 import { useToast } from "@/hooks/use-toast";
 
 // Import Shared UI components
@@ -25,7 +25,8 @@ import {
   Star, ArrowLeft, CalendarIcon, ClockIcon, UsersIcon, FileTextIcon,
   TypeIcon, TargetIcon, BriefcaseIcon, Building2Icon, BarChart3Icon,
   InfoIcon, AlertCircleIcon, Hash, Image as ImageIcon, Video, AlignLeft,
-  Thermometer, Smile, ChevronDown, BookmarkCheck, Trash2, MoreVertical
+  Thermometer, Smile, ChevronDown, BookmarkCheck, Trash2, MoreVertical,
+  ZoomIn, Maximize2, X
 } from "lucide-react";
 
 // Import our content report components
@@ -167,6 +168,22 @@ export default function ContentReportsPage() {
     const savedHiddenIds = localStorage.getItem('hiddenContentIds');
     return savedHiddenIds ? new Set(JSON.parse(savedHiddenIds)) : new Set<number>();
   });
+  
+  // State to track if the eye tracking modal is open
+  const [isEyeTrackingModalOpen, setIsEyeTrackingModalOpen] = useState(false);
+  
+  // Function to open eye tracking modal
+  const openEyeTrackingModal = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent event bubbling
+    if (eyeTrackingUrl || eyeTrackingImage) {
+      setIsEyeTrackingModalOpen(true);
+    }
+  };
+
+  // Function to close eye tracking modal
+  const closeEyeTrackingModal = () => {
+    setIsEyeTrackingModalOpen(false);
+  };
 
   // Save hidden content IDs to localStorage whenever they change
   useEffect(() => {
@@ -273,6 +290,27 @@ export default function ContentReportsPage() {
     console.log("No file_storage_path found for content");
     return null;
   }, [contentDetails?.file_storage_path]);
+
+  // Generate eye tracking URL if available - similar approach to imageUrl
+  const eyeTrackingUrl = React.useMemo(() => {
+    if (contentDetails?.eye_tracking_path) {
+      console.log("Generating eye tracking URL for path:", contentDetails.eye_tracking_path);
+      // Check if it's already a full URL (starting with http/https)
+      if (contentDetails.eye_tracking_path.startsWith('http')) {
+        return contentDetails.eye_tracking_path;
+      }
+      
+      // Otherwise, treat as Supabase storage path
+      const { data } = supabase.storage
+        .from('client-content') // Use the Supabase bucket name
+        .getPublicUrl(contentDetails.eye_tracking_path);
+      
+      console.log("Generated eye tracking URL:", data?.publicUrl);
+      return data?.publicUrl;
+    }
+    console.log("No eye_tracking_path found for content");
+    return null;
+  }, [contentDetails?.eye_tracking_path]);
 
   // Generate characteristics data from scores where check_sub_category is 'Characteristics'
   const characteristicsData = React.useMemo((): CharacteristicData[] => {
@@ -619,7 +657,6 @@ export default function ContentReportsPage() {
             <AlertDialogTrigger asChild>
               <Button variant="outline" size="sm" className="flex items-center gap-1">
                 <Trash2 className="h-4 w-4" />
-                Hide Report
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
@@ -1048,24 +1085,49 @@ export default function ContentReportsPage() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="relative">
-                    {/* Coming Soon Sash Overlay */}
-                    <div className="absolute top-0 right-0 w-full h-full overflow-hidden pointer-events-none z-10">
-                      <div className="absolute top-[20px] right-[-70px] bg-orange-500 text-white py-2 px-20 font-bold text-sm transform rotate-45 shadow-md z-10">
-                        COMING SOON
+                    {/* Show Coming Soon overlay only if no eye tracking data is available */}
+                    {!eyeTrackingUrl && (
+                      <div className="absolute top-0 right-0 w-full h-full overflow-hidden pointer-events-none z-10">
+                        <div className="absolute top-[20px] right-[-70px] bg-orange-500 text-white py-2 px-20 font-bold text-sm transform rotate-45 shadow-md z-10">
+                          COMING SOON
+                        </div>
                       </div>
-                    </div>
+                    )}
                     
-                    {/* Eye Tracking Image */}
-                    <div className="rounded-md overflow-hidden bg-muted/30 border">
+                    {/* Eye Tracking Image - use dynamic URL if available, fallback to static image */}
+                    <div className="rounded-md overflow-hidden bg-muted/30 border relative">
                       <img 
-                        src={eyeTrackingImage} 
+                        src={eyeTrackingUrl || eyeTrackingImage} 
                         alt="Eye tracking heatmap visualization" 
                         className="w-full h-auto object-cover rounded" 
                         style={{ maxHeight: '400px' }}
                       />
+                      
+                      {/* Expand button overlay */}
+                      <div 
+                        className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity"
+                        onClick={openEyeTrackingModal}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        <div className="bg-black/70 hover:bg-black/80 p-3 rounded-full transition-colors">
+                          <Maximize2 className="w-6 h-6 text-white" />
+                        </div>
+                      </div>
+                      
+                      {/* Additional expand button in corner for more visibility */}
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        className="absolute top-2 right-2 opacity-80 hover:opacity-100 z-10"
+                        onClick={openEyeTrackingModal}
+                      >
+                        <ZoomIn className="w-4 h-4 mr-1" />
+                        <span className="text-xs">Expand</span>
+                      </Button>
                     </div>
                     <p className="text-sm text-muted-foreground mt-4">
                       Eye tracking analysis shows where readers spend the most time and what elements catch their attention first.
+                      {eyeTrackingUrl ? " Analysis is based on real user data." : " Sample visualization shown."}
                     </p>
                   </CardContent>
                 </Card>
@@ -1079,6 +1141,38 @@ export default function ContentReportsPage() {
           </Tabs>
         </div>
       </div>
+      
+      {/* Modal for full-size eye tracking image */}
+      {isEyeTrackingModalOpen && (
+        <div 
+          className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in" 
+          onClick={closeEyeTrackingModal}
+        >
+          <div 
+            className="relative max-w-6xl w-full max-h-[90vh] bg-white dark:bg-gray-900 rounded-lg shadow-xl animate-in zoom-in-95" 
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-4 border-b flex justify-between items-center">
+              <h3 className="font-medium text-lg">Eye Tracking Analysis</h3>
+              <Button variant="ghost" size="icon" onClick={closeEyeTrackingModal} className="rounded-full h-8 w-8">
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="overflow-auto max-h-[calc(90vh-120px)] p-4">
+              <img 
+                src={eyeTrackingUrl || eyeTrackingImage} 
+                alt="Eye tracking heatmap visualization" 
+                className="w-full h-auto object-contain rounded-md" 
+              />
+            </div>
+            <div className="p-4 border-t text-xs text-muted-foreground">
+              {eyeTrackingUrl 
+                ? "Real user eye tracking data for " + (contentDetails?.content_name || "this content")
+                : "Sample eye tracking visualization"}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 
