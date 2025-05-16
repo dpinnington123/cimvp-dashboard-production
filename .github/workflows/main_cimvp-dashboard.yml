@@ -20,10 +20,20 @@ jobs:
         with:
           node-version: '22.x'
 
-      - name: Install dependencies and build
+      - name: Clean npm cache and remove problematic files
         run: |
-          npm install
-          npm run build --if-present
+          npm cache clean --force
+          if exist package-lock.json del package-lock.json
+          if exist node_modules rd /s /q node_modules
+
+      - name: Install dependencies
+        run: npm install --no-optional
+
+      - name: Install platform-specific Rollup
+        run: npm install @rollup/rollup-win32-x64-msvc --no-save
+
+      - name: Build project
+        run: npm run build --if-present
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}          
