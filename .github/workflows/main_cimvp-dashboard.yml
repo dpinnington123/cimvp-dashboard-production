@@ -25,6 +25,7 @@ jobs:
           npm cache clean --force
           if exist package-lock.json del package-lock.json
           if exist node_modules rd /s /q node_modules
+        shell: cmd
 
       - name: Install dependencies
         run: npm install --no-optional
