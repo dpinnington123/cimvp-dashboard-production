@@ -280,16 +280,28 @@ export default function ContentReportsPage() {
   const imageUrl = React.useMemo(() => {
     if (contentDetails?.file_storage_path) {
       console.log("Generating image URL for path:", contentDetails.file_storage_path);
+      
+      // Use the bucket_id from the database, fallback to 'client-content' if not specified
+      const bucketName = contentDetails.bucket_id || 'client-content';
+      console.log("Using bucket for image:", bucketName);
+      
+      // Strip bucket prefix from path if it exists (for backwards compatibility)
+      let cleanPath = contentDetails.file_storage_path;
+      if (cleanPath.startsWith(`${bucketName}/`)) {
+        cleanPath = cleanPath.replace(`${bucketName}/`, '');
+        console.log("Stripped bucket prefix from image path, clean path:", cleanPath);
+      }
+      
       const { data } = supabase.storage
-        .from('client-content') // Use the Supabase bucket name
-        .getPublicUrl(contentDetails.file_storage_path);
+        .from(bucketName) // Use the bucket_id from database
+        .getPublicUrl(cleanPath);
       
       console.log("Generated public URL:", data?.publicUrl);
       return data?.publicUrl;
     }
     console.log("No file_storage_path found for content");
     return null;
-  }, [contentDetails?.file_storage_path]);
+  }, [contentDetails?.file_storage_path, contentDetails?.bucket_id]);
 
   // Generate eye tracking URL if available - similar approach to imageUrl
   const eyeTrackingUrl = React.useMemo(() => {
@@ -300,17 +312,28 @@ export default function ContentReportsPage() {
         return contentDetails.eye_tracking_path;
       }
       
-      // Otherwise, treat as Supabase storage path
+      // Use the bucket_id from the database, fallback to 'client-content' if not specified
+      const bucketName = contentDetails.bucket_id || 'client-content';
+      console.log("Using bucket:", bucketName);
+      
+      // Strip bucket prefix from path if it exists (for backwards compatibility)
+      let cleanPath = contentDetails.eye_tracking_path;
+      if (cleanPath.startsWith(`${bucketName}/`)) {
+        cleanPath = cleanPath.replace(`${bucketName}/`, '');
+        console.log("Stripped bucket prefix, clean path:", cleanPath);
+      }
+      
+      // Generate public URL using the bucket_id from database
       const { data } = supabase.storage
-        .from('client-content') // Use the Supabase bucket name
-        .getPublicUrl(contentDetails.eye_tracking_path);
+        .from(bucketName)
+        .getPublicUrl(cleanPath);
       
       console.log("Generated eye tracking URL:", data?.publicUrl);
       return data?.publicUrl;
     }
     console.log("No eye_tracking_path found for content");
     return null;
-  }, [contentDetails?.eye_tracking_path]);
+  }, [contentDetails?.eye_tracking_path, contentDetails?.bucket_id]);
 
   // Generate characteristics data from scores where check_sub_category is 'Characteristics'
   const characteristicsData = React.useMemo((): CharacteristicData[] => {
