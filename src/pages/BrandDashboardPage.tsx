@@ -65,7 +65,8 @@ export default function BrandDashboardPage() {
       </header>
 
       {/* Brand Strategy Section */}
-      <BrandDetails />
+      {/* <BrandDetails /> */} 
+      {/* hidden for now ask if we need it */}
 
       {/* Overall Brand Effectiveness */}
       <div className="mb-6">
