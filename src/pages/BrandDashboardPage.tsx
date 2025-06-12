@@ -2,7 +2,6 @@ import React from "react";
 import { useBrand } from "@/contexts/BrandContext";
 
 // Import the new dashboard components
-import { BrandDetails } from "@/components/views/brand-dashboard/BrandDetails";
 import { ScoreCard } from "@/components/views/brand-dashboard/ScoreCard";
 import { StrategyEffectiveness } from "@/components/views/brand-dashboard/StrategyEffectiveness";
 import { CampaignCard } from "@/components/views/brand-dashboard/CampaignCard";
@@ -63,10 +62,6 @@ export default function BrandDashboardPage() {
           Monitor your brand effectiveness and campaign performance for {brandData.profile.name} in {selectedRegion}
         </p>
       </header>
-
-      {/* Brand Strategy Section */}
-      {/* <BrandDetails /> */} 
-      {/* hidden for now ask if we need it */}
 
       {/* Overall Brand Effectiveness */}
       <div className="mb-6">
