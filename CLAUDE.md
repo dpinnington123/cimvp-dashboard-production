@@ -75,6 +75,7 @@ src/
 ### Key Architectural Patterns
 
 1. **Service Layer Pattern**: All Supabase operations are abstracted in `/services/`:
+   - `brandService.ts` - **Enhanced brand management and analytics** 
    - `contentService.ts` - Content CRUD operations
    - `contentProcessingService.ts` - Content processing workflows
    - `scoreService.ts` - Score calculations
@@ -105,16 +106,27 @@ src/
 
 ### Important Implementation Details
 
-1. **Multi-Brand Support**: The app supports multiple brands with context switching via `BrandContext`
+1. **Enhanced Brand Management**: Complete brand analytics platform with:
+   - **Market Analysis** - Market size, growth rates, competitive landscape
+   - **Customer Intelligence** - Segmentation, journey mapping, personas with scoring
+   - **Performance Tracking** - Historical metrics, channel-specific scores, funnel data
+   - **Content Management** - Campaign-linked content with multi-dimensional scoring
+   - **SWOT Analysis** - Comprehensive competitive positioning
 
-2. **File Processing**: Content processing happens through:
+2. **Multi-Brand Support**: The app supports multiple brands with context switching via `BrandContext`
+
+3. **File Processing**: Content processing happens through:
    - Upload to Supabase Storage
    - Processing via `contentProcessingService`
    - Results stored in PostgreSQL
 
-3. **Export Capabilities**: Supports PDF (jspdf) and PowerPoint (pptxgenjs) exports
+4. **Export Capabilities**: Supports PDF (jspdf) and PowerPoint (pptxgenjs) exports
 
-4. **Real-time Updates**: Using React Query's refetch and invalidation for data freshness
+5. **Real-time Updates**: Using React Query's refetch and invalidation for data freshness
+
+6. **Database Architecture**: Dual-mode support:
+   - **Database Mode** (`VITE_USE_DATABASE_BRANDS=true`) - Production-ready with 20+ tables
+   - **Static Mode** (`VITE_USE_DATABASE_BRANDS=false`) - Development fallback
 
 ### Development Guidelines
 
@@ -148,12 +160,18 @@ Follow the comprehensive guidelines in `.cursorrules` which emphasizes:
    - Feature components in `/components/views/[feature]/`
    - Shared components in `/components/common/`
 
-4. **Working with Supabase**:
+4. **Working with Brand Data**:
+   - Use `brandService.ts` for all brand operations
+   - Access via `brand_full_data` view for efficient queries
+   - Support for market analysis, competitors, SWOT, customer segments
+   - Historical performance tracking and persona management
+
+5. **Working with Supabase**:
    - Client is initialized in `/lib/supabase.ts`
    - Always use service layer for operations
    - Handle errors consistently
 
-5. **Styling**:
+6. **Styling**:
    - Use Tailwind CSS classes
    - Follow shadcn/ui patterns
    - Dark mode is supported via `next-themes`

@@ -2,7 +2,21 @@
 // This service provides all brand-related database operations
 
 import { supabase } from '@/lib/supabaseClient';
-import type { BrandData } from '@/types/brand';
+import type { 
+  BrandData, 
+  DatabaseBrandData,
+  BrandMarketAnalysis,
+  BrandCompetitor,
+  BrandSWOT,
+  BrandCustomerSegment,
+  BrandCustomerJourney,
+  BrandPersona,
+  BrandContent,
+  BrandOverallScores,
+  BrandChannelScores,
+  BrandFunnelData,
+  BrandPerformanceHistory
+} from '@/types/brand';
 
 export interface DatabaseBrand {
   id: string;
@@ -158,11 +172,15 @@ class BrandService {
    * This ensures compatibility with existing components
    */
   private async transformToBrandData(dbData: any): Promise<BrandData> {
+    // Get primary region from regions array
+    const primaryRegion = dbData.regions?.find((r: any) => r.is_primary)?.region || 
+                         dbData.regions?.[0]?.region || 'Global';
+
     return {
       profile: {
         id: dbData.slug,
         name: dbData.name,
-        region: dbData.primary_region || 'Global',
+        region: primaryRegion,
         businessArea: dbData.business_area || '',
         financials: dbData.financials ? {
           annualSales: dbData.financials.annual_sales || '$0',
@@ -174,7 +192,11 @@ class BrandService {
           growth: '0%'
         }
       },
-      voice: dbData.voice || [],
+      voice: (dbData.voice_attributes || []).map((voice: any) => ({
+        id: voice.id,
+        title: voice.title,
+        description: voice.description
+      })),
       objectives: dbData.objectives || [],
       messages: dbData.messages || [],
       audiences: (dbData.audiences || []).map((audience: any) => ({
@@ -197,18 +219,99 @@ class BrandService {
         audience: campaign.audience || '',
         campaignDetails: campaign.campaign_details || '',
         budget: campaign.budget || 0,
-        keyActions: [], // Would need additional table for actions
-        agencies: [] // Would need additional table for agencies
+        keyActions: [],
+        agencies: []
       })),
-      content: await this.getBrandContent(dbData.id),
-      overallScores: await this.getBrandOverallScores(dbData.id),
-      channelScores: await this.getBrandChannelScores(dbData.id),
-      funnelData: await this.getBrandFunnelData(dbData.id),
-      // Optional fields that might not exist in database yet
-      marketAnalysis: undefined,
-      customerAnalysis: undefined,
-      personas: undefined,
-      performanceTimeData: undefined
+      content: (dbData.content || []).map((content: any) => ({
+        id: content.content_id || content.id,
+        name: content.name,
+        campaign: '', // Would need to lookup campaign name
+        format: content.format || '',
+        type: content.type || 'driver',
+        status: content.status || 'draft',
+        scores: {
+          overall: content.overall_score || 0,
+          strategic: content.strategic_score || 0,
+          customer: content.customer_score || 0,
+          execution: content.execution_score || 0
+        },
+        qualityScore: content.quality_score,
+        description: content.description,
+        cost: content.cost,
+        campaignScores: {
+          overallEffectiveness: content.campaign_overall_effectiveness || 0,
+          strategicAlignment: content.campaign_strategic_alignment || 0,
+          customerAlignment: content.campaign_customer_alignment || 0,
+          contentEffectiveness: content.campaign_content_effectiveness || 0
+        },
+        audience: content.audience,
+        keyActions: content.key_actions || [],
+        agencies: content.agencies || []
+      })),
+      overallScores: dbData.overall_scores ? {
+        overall: dbData.overall_scores.overall_score || 0,
+        strategic: dbData.overall_scores.strategic_score || 0,
+        customer: dbData.overall_scores.customer_score || 0,
+        content: dbData.overall_scores.content_score || 0
+      } : { overall: 0, strategic: 0, customer: 0, content: 0 },
+      channelScores: this.transformChannelScores(dbData.channel_scores),
+      funnelData: (dbData.funnel_data || []).map((funnel: any) => ({
+        name: funnel.stage_name,
+        value: funnel.value || 0
+      })),
+      marketAnalysis: dbData.market_analysis && dbData.competitors && dbData.swot ? {
+        marketSize: dbData.market_analysis.market_size || '',
+        growthRate: dbData.market_analysis.growth_rate || '',
+        competitorAnalysis: dbData.competitors || [],
+        swot: dbData.swot || { strengths: [], weaknesses: [], opportunities: [], threats: [] }
+      } : undefined,
+      customerAnalysis: dbData.customer_segments && dbData.customer_journey ? {
+        segments: (dbData.customer_segments || []).map((segment: any) => ({
+          name: segment.name,
+          size: segment.size_percentage || '',
+          description: segment.description || '',
+          needs: segment.needs || [],
+          painPoints: segment.pain_points || []
+        })),
+        customerJourney: (dbData.customer_journey || []).map((journey: any) => ({
+          stage: journey.stage,
+          touchpoints: journey.touchpoints || [],
+          opportunities: journey.opportunities || []
+        }))
+      } : undefined,
+      personas: (dbData.personas || []).map((persona: any) => ({
+        name: persona.name,
+        description: persona.description || '',
+        icon: persona.icon as any,
+        scores: {
+          overall: persona.overall_score || 0,
+          strategic: persona.strategic_score || 0,
+          customer: persona.customer_score || 0,
+          execution: persona.execution_score || 0
+        }
+      })),
+      performanceTimeData: (dbData.performance_history || []).map((history: any) => ({
+        month: history.month,
+        year: history.year,
+        overall: history.overall_score || 0,
+        strategic: history.strategic_score || 0,
+        customer: history.customer_score || 0,
+        content: history.content_score || 0
+      }))
+    };
+  }
+
+  /**
+   * Transform channel scores from database format
+   */
+  private transformChannelScores(channelScores: any) {
+    const defaultChannelScore = { overall: 0, strategic: 0, customer: 0, execution: 0 };
+    
+    return {
+      social: channelScores?.social || defaultChannelScore,
+      email: channelScores?.email || defaultChannelScore,
+      website: channelScores?.website || defaultChannelScore,
+      digital: channelScores?.digital || defaultChannelScore
     };
   }
 
@@ -359,6 +462,222 @@ class BrandService {
     if (error) {
       console.error('Error updating brand:', error);
       throw new Error(`Failed to update brand: ${error.message}`);
+    }
+
+    return data;
+  }
+
+  // ==========================================
+  // NEW DATA STRUCTURE METHODS
+  // ==========================================
+
+  /**
+   * Market Analysis Operations
+   */
+  async getBrandMarketAnalysis(brandId: string): Promise<BrandMarketAnalysis | null> {
+    const { data, error } = await supabase
+      .from('brand_market_analysis')
+      .select('*')
+      .eq('brand_id', brandId)
+      .order('analysis_year', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      console.error('Error fetching market analysis:', error);
+      throw new Error(`Failed to fetch market analysis: ${error.message}`);
+    }
+
+    return data;
+  }
+
+  async upsertBrandMarketAnalysis(brandId: string, data: Omit<BrandMarketAnalysis, 'id'>): Promise<BrandMarketAnalysis> {
+    const { data: result, error } = await supabase
+      .from('brand_market_analysis')
+      .upsert({ brand_id: brandId, ...data })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error upserting market analysis:', error);
+      throw new Error(`Failed to update market analysis: ${error.message}`);
+    }
+
+    return result;
+  }
+
+  /**
+   * Competitor Operations
+   */
+  async getBrandCompetitors(brandId: string): Promise<BrandCompetitor[]> {
+    const { data, error } = await supabase
+      .from('brand_competitors')
+      .select('*')
+      .eq('brand_id', brandId)
+      .order('order_index');
+
+    if (error) {
+      console.error('Error fetching competitors:', error);
+      throw new Error(`Failed to fetch competitors: ${error.message}`);
+    }
+
+    return data || [];
+  }
+
+  async createBrandCompetitor(brandId: string, competitor: Omit<BrandCompetitor, 'id'>): Promise<BrandCompetitor> {
+    const { data, error } = await supabase
+      .from('brand_competitors')
+      .insert({ brand_id: brandId, ...competitor })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating competitor:', error);
+      throw new Error(`Failed to create competitor: ${error.message}`);
+    }
+
+    return data;
+  }
+
+  /**
+   * SWOT Analysis Operations
+   */
+  async getBrandSWOT(brandId: string): Promise<BrandSWOT | null> {
+    const { data, error } = await supabase
+      .from('brand_swot')
+      .select('*')
+      .eq('brand_id', brandId)
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      console.error('Error fetching SWOT:', error);
+      throw new Error(`Failed to fetch SWOT analysis: ${error.message}`);
+    }
+
+    return data;
+  }
+
+  async upsertBrandSWOT(brandId: string, swot: Omit<BrandSWOT, 'id'>): Promise<BrandSWOT> {
+    const { data, error } = await supabase
+      .from('brand_swot')
+      .upsert({ brand_id: brandId, ...swot })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error upserting SWOT:', error);
+      throw new Error(`Failed to update SWOT analysis: ${error.message}`);
+    }
+
+    return data;
+  }
+
+  /**
+   * Customer Segments Operations
+   */
+  async getBrandCustomerSegments(brandId: string): Promise<BrandCustomerSegment[]> {
+    const { data, error } = await supabase
+      .from('brand_customer_segments')
+      .select('*')
+      .eq('brand_id', brandId)
+      .order('order_index');
+
+    if (error) {
+      console.error('Error fetching customer segments:', error);
+      throw new Error(`Failed to fetch customer segments: ${error.message}`);
+    }
+
+    return data || [];
+  }
+
+  /**
+   * Customer Journey Operations
+   */
+  async getBrandCustomerJourney(brandId: string): Promise<BrandCustomerJourney[]> {
+    const { data, error } = await supabase
+      .from('brand_customer_journey')
+      .select('*')
+      .eq('brand_id', brandId)
+      .order('order_index');
+
+    if (error) {
+      console.error('Error fetching customer journey:', error);
+      throw new Error(`Failed to fetch customer journey: ${error.message}`);
+    }
+
+    return data || [];
+  }
+
+  /**
+   * Personas Operations
+   */
+  async getBrandPersonas(brandId: string): Promise<BrandPersona[]> {
+    const { data, error } = await supabase
+      .from('brand_personas')
+      .select('*')
+      .eq('brand_id', brandId)
+      .order('order_index');
+
+    if (error) {
+      console.error('Error fetching personas:', error);
+      throw new Error(`Failed to fetch personas: ${error.message}`);
+    }
+
+    return data || [];
+  }
+
+  /**
+   * Performance History Operations
+   */
+  async getBrandPerformanceHistory(brandId: string, limit = 12): Promise<BrandPerformanceHistory[]> {
+    const { data, error } = await supabase
+      .from('brand_performance_history')
+      .select('*')
+      .eq('brand_id', brandId)
+      .order('year', { ascending: false })
+      .order('month', { ascending: false })
+      .limit(limit);
+
+    if (error) {
+      console.error('Error fetching performance history:', error);
+      throw new Error(`Failed to fetch performance history: ${error.message}`);
+    }
+
+    return data || [];
+  }
+
+  async addBrandPerformanceHistory(brandId: string, history: Omit<BrandPerformanceHistory, 'id'>): Promise<BrandPerformanceHistory> {
+    const { data, error } = await supabase
+      .from('brand_performance_history')
+      .insert({ brand_id: brandId, ...history })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error adding performance history:', error);
+      throw new Error(`Failed to add performance history: ${error.message}`);
+    }
+
+    return data;
+  }
+
+  /**
+   * Get complete database brand data (for debugging/admin)
+   */
+  async getDatabaseBrandData(slug: string): Promise<DatabaseBrandData | null> {
+    const { data, error } = await supabase
+      .from('brand_full_data')
+      .select('*')
+      .eq('slug', slug)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return null; // Brand not found
+      }
+      console.error('Error fetching database brand data:', error);
+      throw new Error(`Failed to fetch database brand data: ${error.message}`);
     }
 
     return data;

@@ -12,8 +12,31 @@ ALTER TABLE brand_messages DISABLE ROW LEVEL SECURITY;
 ALTER TABLE brand_audiences DISABLE ROW LEVEL SECURITY;
 ALTER TABLE brand_strategies DISABLE ROW LEVEL SECURITY;
 ALTER TABLE brand_campaigns DISABLE ROW LEVEL SECURITY;
+-- New tables
+ALTER TABLE brand_market_analysis DISABLE ROW LEVEL SECURITY;
+ALTER TABLE brand_competitors DISABLE ROW LEVEL SECURITY;
+ALTER TABLE brand_swot DISABLE ROW LEVEL SECURITY;
+ALTER TABLE brand_customer_segments DISABLE ROW LEVEL SECURITY;
+ALTER TABLE brand_customer_journey DISABLE ROW LEVEL SECURITY;
+ALTER TABLE brand_personas DISABLE ROW LEVEL SECURITY;
+ALTER TABLE brand_content DISABLE ROW LEVEL SECURITY;
+ALTER TABLE brand_overall_scores DISABLE ROW LEVEL SECURITY;
+ALTER TABLE brand_channel_scores DISABLE ROW LEVEL SECURITY;
+ALTER TABLE brand_funnel_data DISABLE ROW LEVEL SECURITY;
+ALTER TABLE brand_performance_history DISABLE ROW LEVEL SECURITY;
 
--- Clear existing data if any
+-- Clear existing data if any (in correct order due to foreign keys)
+TRUNCATE TABLE brand_performance_history CASCADE;
+TRUNCATE TABLE brand_funnel_data CASCADE;
+TRUNCATE TABLE brand_channel_scores CASCADE;
+TRUNCATE TABLE brand_overall_scores CASCADE;
+TRUNCATE TABLE brand_content CASCADE;
+TRUNCATE TABLE brand_personas CASCADE;
+TRUNCATE TABLE brand_customer_journey CASCADE;
+TRUNCATE TABLE brand_customer_segments CASCADE;
+TRUNCATE TABLE brand_swot CASCADE;
+TRUNCATE TABLE brand_competitors CASCADE;
+TRUNCATE TABLE brand_market_analysis CASCADE;
 TRUNCATE TABLE brand_campaigns CASCADE;
 TRUNCATE TABLE brand_strategies CASCADE;
 TRUNCATE TABLE brand_audiences CASCADE;
@@ -142,6 +165,88 @@ INSERT INTO brand_strategies (brand_id, name, description, score) VALUES
 INSERT INTO brand_campaigns (brand_id, name, status, timeframe, strategic_objective, audience, campaign_details, budget, overall_score, strategic_score, customer_score, execution_score) VALUES 
 ('33333333-3333-3333-3333-333333333333', 'New Year, New You', 'completed', 'Jan 1 - Feb 14, 2024', 'Capitalize on New Year wellness resolutions to drive user acquisition', 'Health-conscious individuals starting wellness journeys', 'Comprehensive campaign targeting New Year resolution makers', 85000, 81, 84, 83, 76);
 
+-- ==========================================
+-- Enhanced Data Structures (Market Analysis, Customer Intelligence, etc.)
+-- ==========================================
+
+-- Market Analysis for EcoSolutions
+INSERT INTO brand_market_analysis (brand_id, market_size, growth_rate, analysis_year) VALUES 
+('11111111-1111-1111-1111-111111111111', '$4.6 Billion', '12.3% CAGR', 2023);
+
+-- Competitors for EcoSolutions
+INSERT INTO brand_competitors (brand_id, name, market_share, strengths, weaknesses, order_index) VALUES 
+('11111111-1111-1111-1111-111111111111', 'GreenLife', '18%', ARRAY['Strong retail presence', 'Wide product range'], ARRAY['Higher price point', 'Less digital engagement'], 0),
+('11111111-1111-1111-1111-111111111111', 'EarthWise', '15%', ARRAY['Strong brand recognition', 'Celebrity endorsements'], ARRAY['Limited product innovation', 'Supply chain issues'], 1);
+
+-- SWOT Analysis for EcoSolutions
+INSERT INTO brand_swot (brand_id, strengths, weaknesses, opportunities, threats) VALUES 
+('11111111-1111-1111-1111-111111111111', 
+  ARRAY['Product innovation', 'Transparent supply chain', 'Strong digital presence'],
+  ARRAY['Limited retail distribution', 'Lower brand awareness', 'Manufacturing capacity'],
+  ARRAY['Growing eco-conscious market', 'Corporate partnerships', 'International expansion'],
+  ARRAY['Price competition', 'Greenwashing by competitors', 'Raw material costs']);
+
+-- Customer Segments for EcoSolutions
+INSERT INTO brand_customer_segments (brand_id, name, size_percentage, description, needs, pain_points, order_index) VALUES 
+('11111111-1111-1111-1111-111111111111', 'Eco Enthusiasts', '35%', 'Deeply committed to sustainable lifestyle', ARRAY['Product efficacy', 'Zero waste', 'Transparent sourcing'], ARRAY['Price sensitivity', 'Greenwashing concerns', 'Availability'], 0),
+('11111111-1111-1111-1111-111111111111', 'Green Curious', '45%', 'Interested in sustainability but pragmatic', ARRAY['Ease of use', 'Value for money', 'Educational content'], ARRAY['Confusion about benefits', 'Effort required', 'Skepticism'], 1);
+
+-- Customer Journey for EcoSolutions
+INSERT INTO brand_customer_journey (brand_id, stage, touchpoints, opportunities, order_index) VALUES 
+('11111111-1111-1111-1111-111111111111', 'Awareness', ARRAY['Social media', 'Influencer content', 'Search'], ARRAY['Educational content', 'Social proof', 'Problem framing'], 0),
+('11111111-1111-1111-1111-111111111111', 'Consideration', ARRAY['Website', 'Reviews', 'Comparison content'], ARRAY['Clear value proposition', 'Sustainability metrics', 'Use cases'], 1),
+('11111111-1111-1111-1111-111111111111', 'Purchase', ARRAY['E-commerce', 'Retail partners', 'Direct sales'], ARRAY['Simplified checkout', 'Bundle offerings', 'Subscription options'], 2);
+
+-- Personas for EcoSolutions
+INSERT INTO brand_personas (brand_id, name, description, icon, overall_score, strategic_score, customer_score, execution_score, order_index) VALUES 
+('11111111-1111-1111-1111-111111111111', 'Eco Warriors', 'Career-focused individuals aged 25-35 who prioritize quality and convenience', 'User', 83, 87, 82, 81, 0),
+('11111111-1111-1111-1111-111111111111', 'Sustainable Families', 'Family-oriented consumers aged 30-45 seeking reliable and valuable solutions', 'MessageSquare', 80, 76, 84, 78, 1),
+('11111111-1111-1111-1111-111111111111', 'Green Innovators', 'Early adopters aged 20-40 who embrace new technologies and experiences', 'Star', 78, 80, 74, 70, 2);
+
+-- Overall Scores for EcoSolutions
+INSERT INTO brand_overall_scores (brand_id, overall_score, strategic_score, customer_score, content_score) VALUES 
+('11111111-1111-1111-1111-111111111111', 81, 88, 79, 76);
+
+-- Channel Scores for EcoSolutions
+INSERT INTO brand_channel_scores (brand_id, channel, overall_score, strategic_score, customer_score, execution_score) VALUES 
+('11111111-1111-1111-1111-111111111111', 'social', 85, 88, 90, 78),
+('11111111-1111-1111-1111-111111111111', 'email', 79, 82, 76, 78),
+('11111111-1111-1111-1111-111111111111', 'website', 80, 73, 85, 81),
+('11111111-1111-1111-1111-111111111111', 'digital', 83, 80, 76, 90);
+
+-- Funnel Data for EcoSolutions
+INSERT INTO brand_funnel_data (brand_id, stage_name, value, order_index) VALUES 
+('11111111-1111-1111-1111-111111111111', 'Awareness to Consider', 82, 0),
+('11111111-1111-1111-1111-111111111111', 'Consider to Purchase', 68, 1),
+('11111111-1111-1111-1111-111111111111', 'Purchase to Growth', 58, 2);
+
+-- Performance History for EcoSolutions
+INSERT INTO brand_performance_history (brand_id, month, year, overall_score, strategic_score, customer_score, content_score) VALUES 
+('11111111-1111-1111-1111-111111111111', 'Jan', 2023, 63, 60, 65, 62),
+('11111111-1111-1111-1111-111111111111', 'Feb', 2023, 66, 64, 68, 65),
+('11111111-1111-1111-1111-111111111111', 'Mar', 2023, 70, 69, 71, 70),
+('11111111-1111-1111-1111-111111111111', 'Apr', 2023, 72, 71, 74, 71),
+('11111111-1111-1111-1111-111111111111', 'May', 2023, 76, 75, 78, 75),
+('11111111-1111-1111-1111-111111111111', 'Jun', 2023, 79, 77, 81, 78),
+('11111111-1111-1111-1111-111111111111', 'Jul', 2023, 83, 82, 84, 82),
+('11111111-1111-1111-1111-111111111111', 'Aug', 2023, 87, 85, 89, 86);
+
+-- Market Analysis for TechNova
+INSERT INTO brand_market_analysis (brand_id, market_size, growth_rate, analysis_year) VALUES 
+('22222222-2222-2222-2222-222222222222', '$12.3 Billion', '18.5% CAGR', 2023);
+
+-- Overall Scores for TechNova
+INSERT INTO brand_overall_scores (brand_id, overall_score, strategic_score, customer_score, content_score) VALUES 
+('22222222-2222-2222-2222-222222222222', 85, 89, 83, 82);
+
+-- Market Analysis for VitalWellness
+INSERT INTO brand_market_analysis (brand_id, market_size, growth_rate, analysis_year) VALUES 
+('33333333-3333-3333-3333-333333333333', '$8.7 Billion', '9.2% CAGR', 2023);
+
+-- Overall Scores for VitalWellness
+INSERT INTO brand_overall_scores (brand_id, overall_score, strategic_score, customer_score, content_score) VALUES 
+('33333333-3333-3333-3333-333333333333', 79, 82, 77, 78);
+
 -- Re-enable RLS after seeding
 ALTER TABLE brands ENABLE ROW LEVEL SECURITY;
 ALTER TABLE brand_regions ENABLE ROW LEVEL SECURITY;
@@ -151,4 +256,16 @@ ALTER TABLE brand_objectives ENABLE ROW LEVEL SECURITY;
 ALTER TABLE brand_messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE brand_audiences ENABLE ROW LEVEL SECURITY;
 ALTER TABLE brand_strategies ENABLE ROW LEVEL SECURITY;
-ALTER TABLE brand_campaigns ENABLE ROW LEVEL SECURITY; 
+ALTER TABLE brand_campaigns ENABLE ROW LEVEL SECURITY;
+-- New tables
+ALTER TABLE brand_market_analysis ENABLE ROW LEVEL SECURITY;
+ALTER TABLE brand_competitors ENABLE ROW LEVEL SECURITY;
+ALTER TABLE brand_swot ENABLE ROW LEVEL SECURITY;
+ALTER TABLE brand_customer_segments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE brand_customer_journey ENABLE ROW LEVEL SECURITY;
+ALTER TABLE brand_personas ENABLE ROW LEVEL SECURITY;
+ALTER TABLE brand_content ENABLE ROW LEVEL SECURITY;
+ALTER TABLE brand_overall_scores ENABLE ROW LEVEL SECURITY;
+ALTER TABLE brand_channel_scores ENABLE ROW LEVEL SECURITY;
+ALTER TABLE brand_funnel_data ENABLE ROW LEVEL SECURITY;
+ALTER TABLE brand_performance_history ENABLE ROW LEVEL SECURITY; 
