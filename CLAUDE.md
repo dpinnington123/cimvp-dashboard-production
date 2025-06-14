@@ -126,6 +126,11 @@ Follow the comprehensive guidelines in `.cursorrules` which emphasizes:
 - Security-first mindset
 - Clear commit messages
 
+**Code Writing Philosophy**: 
+- Write only what is absolutely necessary - no extra features, utilities, or code beyond what is specifically requested
+- Always include clear, helpful comments that explain what the code is doing for other developers
+- Focus on the minimal viable solution that solves the exact problem at hand
+
 ### Common Tasks
 
 1. **Adding a new page/route**:

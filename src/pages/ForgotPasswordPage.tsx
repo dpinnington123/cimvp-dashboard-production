@@ -20,15 +20,35 @@ export default function ForgotPasswordPage() {
 
     try {
       const { error } = await resetPassword(email);
-      if (error) throw error;
+      if (error) {
+        console.error("Password reset request failed:", error);
+        
+        // Show specific error for rate limiting or other issues
+        if (error.message?.includes('rate') || error.message?.includes('limit')) {
+          toast.error("Too Many Reset Requests", { 
+            description: "Please wait before requesting another password reset" 
+          });
+          return;
+        }
+        
+        if (error.message?.includes('Invalid') || error.message?.includes('invalid')) {
+          toast.error("Invalid Email", { 
+            description: "Please check your email address and try again" 
+          });
+          return;
+        }
+        
+        // For other errors, still show generic success for security
+        console.warn("Showing generic success message for error:", error.message);
+      }
       
       setSubmitted(true);
       toast.success("Reset Link Sent", { 
         description: "If an account exists with this email, you'll receive a password reset link" 
       });
     } catch (error: any) {
-      console.error("Password reset request failed:", error);
-      // Still show success message for security reasons (don't reveal if email exists)
+      console.error("Password reset request failed with exception:", error);
+      // Show generic success message for security reasons
       setSubmitted(true);
       toast.success("Reset Link Sent", { 
         description: "If an account exists with this email, you'll receive a password reset link" 

@@ -147,14 +147,14 @@ class BrandService {
     }
 
     // Transform database format to BrandData format
-    return this.transformToBrandData(data);
+    return await this.transformToBrandData(data);
   }
 
   /**
    * Transform database format to legacy BrandData format
    * This ensures compatibility with existing components
    */
-  private transformToBrandData(dbData: any): BrandData {
+  private async transformToBrandData(dbData: any): Promise<BrandData> {
     return {
       profile: {
         id: dbData.slug,
@@ -252,7 +252,7 @@ class BrandService {
       overall: 85,
       strategic: 82,
       customer: 88,
-      execution: 84
+      content: 84
     };
   }
 
@@ -260,12 +260,12 @@ class BrandService {
    * Get brand channel scores (placeholder)
    */
   private async getBrandChannelScores(brandId: string) {
-    return [
-      { channel: 'Social Media', score: 88 },
-      { channel: 'Email', score: 85 },
-      { channel: 'Website', score: 82 },
-      { channel: 'Print', score: 75 }
-    ];
+    return {
+      social: { overall: 88, strategic: 85, customer: 92, execution: 80 },
+      email: { overall: 85, strategic: 88, customer: 85, execution: 85 },
+      website: { overall: 82, strategic: 80, customer: 88, execution: 78 },
+      digital: { overall: 86, strategic: 84, customer: 90, execution: 82 }
+    };
   }
 
   /**
@@ -273,11 +273,11 @@ class BrandService {
    */
   private async getBrandFunnelData(brandId: string) {
     return [
-      { stage: 'Awareness', value: 100, conversion: 25 },
-      { stage: 'Interest', value: 25, conversion: 60 },
-      { stage: 'Consideration', value: 15, conversion: 40 },
-      { stage: 'Purchase', value: 6, conversion: 80 },
-      { stage: 'Advocacy', value: 4.8, conversion: 100 }
+      { name: 'Awareness', value: 100 },
+      { name: 'Interest', value: 25 },
+      { name: 'Consideration', value: 15 },
+      { name: 'Purchase', value: 6 },
+      { name: 'Advocacy', value: 4.8 }
     ];
   }
 

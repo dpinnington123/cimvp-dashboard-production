@@ -134,9 +134,18 @@ export default function AuthProvider({ children }: AuthProviderProps) {
 
   const resetPassword = async (email: string) => {
     setLoading(true);
+    console.log('Attempting password reset for email:', email);
+    console.log('Redirect URL:', `${window.location.origin}/reset-password`);
+    
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/reset-password`,
     });
+    
+    if (error) {
+      console.error('Password reset error:', error);
+    } else {
+      console.log('Password reset email sent successfully');
+    }
     
     setLoading(false);
     
