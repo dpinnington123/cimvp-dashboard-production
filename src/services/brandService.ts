@@ -142,6 +142,9 @@ class BrandService {
       .single();
 
     if (error) {
+      if (error.code === 'PGRST116') {
+        return null; // Brand not found
+      }
       console.error('Error fetching full brand data:', error);
       throw new Error(`Failed to fetch brand data: ${error.message}`);
     }
@@ -180,7 +183,23 @@ class BrandService {
         notes: audience.notes || ''
       })),
       strategies: dbData.strategies || [],
-      campaigns: await this.enrichCampaignsData(dbData.id),
+      campaigns: (dbData.campaigns || []).map((campaign: any) => ({
+        name: campaign.name,
+        scores: {
+          overall: campaign.overall_score || 0,
+          strategic: campaign.strategic_score || 0,
+          customer: campaign.customer_score || 0,
+          execution: campaign.execution_score || 0
+        },
+        status: campaign.status || 'draft',
+        timeframe: campaign.timeframe || '',
+        strategicObjective: campaign.strategic_objective || '',
+        audience: campaign.audience || '',
+        campaignDetails: campaign.campaign_details || '',
+        budget: campaign.budget || 0,
+        keyActions: [], // Would need additional table for actions
+        agencies: [] // Would need additional table for agencies
+      })),
       content: await this.getBrandContent(dbData.id),
       overallScores: await this.getBrandOverallScores(dbData.id),
       channelScores: await this.getBrandChannelScores(dbData.id),
