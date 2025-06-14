@@ -125,4 +125,3 @@ ALTER TABLE brand_campaigns ENABLE ROW LEVEL SECURITY;
 -- Create policies for authenticated users
 CREATE POLICY "Users can read all brands" ON brands
     FOR SELECT USING (auth.role() = 'authenticated');
-EOF < /dev/null
