@@ -1,0 +1,24 @@
+CRITICAL UPDATE: I found that there is NO insert_content RPC function in the current database schema! The search results show:
+
+1. Main content table exists with fields like content_name, client_id, etc.
+2. RLS is enabled on the table  
+3. But NO insert_content RPC function exists anywhere in the migrations
+
+This means the RLS bypass in uploadService.ts (lines 242-246) is trying to call an RPC function that doesn't exist:
+
+```typescript
+const { data: rpcData, error: rpcError } = await supabase.rpc('insert_content', {
+  p_content_name: insertData.content_name,
+  p_client_id: insertData.client_id,
+  p_status: 'draft'
+});
+```
+
+This changes everything! The "workaround" is actually calling a non-existent function. The real issue is likely:
+1. The upsert operation is failing due to incorrect RLS policies
+2. The fallback to insert_content RPC would always fail (function doesn't exist)
+3. The original RLS error (42501) is the actual problem that needs fixing
+
+Based on the web search results about Supabase RLS for upsert operations, I now understand that upsert requires BOTH SELECT and INSERT policies to work properly.
+
+Can you help me analyze what the actual RLS policies are on the content table and develop a proper fix that doesn't rely on a non-existent RPC function?
