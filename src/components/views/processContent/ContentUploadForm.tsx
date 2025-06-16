@@ -16,9 +16,12 @@ import { ContentFile } from '@/services/uploadService';
 import useContent from '@/hooks/useContent';
 import useBrandFormOptions from '@/hooks/useBrandFormOptions';
 import { useBrand } from '@/contexts/BrandContext';
+import { supabase } from '@/lib/supabaseClient';
+import { useAuth } from '@/hooks/useAuth';
 
 type ContentFormState = {
   content_name: string;
+  job_id: string;
   agency: string;
   audience: string;
   campaign_aligned_to: string;
@@ -37,6 +40,7 @@ const ContentUploadForm: React.FC = () => {
   const { useUploadContentMutation } = useContent();
   const uploadContentMutation = useUploadContentMutation();
   const { selectedBrand } = useBrand();
+  const { user } = useAuth();
   
   // Use the brand form options hook to get dropdown options
   const { 
@@ -54,6 +58,7 @@ const ContentUploadForm: React.FC = () => {
   const [currentTag, setCurrentTag] = useState('');
   const [metadata, setMetadata] = useState<ContentFormState>({
     content_name: '',
+    job_id: '',
     agency: '',
     audience: '',
     campaign_aligned_to: '',
@@ -121,11 +126,38 @@ const ContentUploadForm: React.FC = () => {
       });
       return;
     }
+    if (!metadata.job_id) {
+      toast({
+        title: "Job ID required",
+        description: "Please provide a job ID for processing tracking.",
+        variant: "destructive"
+      });
+      return;
+    }
     
     try {
+      // Check if job_id already exists to prevent overwrites
+      const { data: existingContent } = await supabase
+        .from('content')
+        .select('id, content_name, created_at')
+        .eq('job_id', metadata.job_id)
+        .eq('client_id', user?.id)
+        .single();
+
+      if (existingContent) {
+        const createdDate = new Date(existingContent.created_at).toLocaleDateString();
+        toast({
+          title: "Job ID already exists",
+          description: `Job ID "${metadata.job_id}" is already used by "${existingContent.content_name}" (created ${createdDate}). Please choose a different Job ID.`,
+          variant: "destructive"
+        });
+        return;
+      }
+
       // Map the form fields to the ContentMetadata type
       const mappedMetadata = {
         title: metadata.content_name, // REQUIRED
+        jobId: metadata.job_id, // REQUIRED - User-provided job identifier
         description: "", // Not in form but required by interface
         category: "", // Not in form but required by interface
         audience: metadata.audience,
@@ -169,6 +201,7 @@ const ContentUploadForm: React.FC = () => {
       setFiles([]);
       setMetadata({
         content_name: '',
+        job_id: '',
         agency: '',
         audience: '',
         campaign_aligned_to: '',
@@ -288,6 +321,20 @@ const ContentUploadForm: React.FC = () => {
                     placeholder="Enter a title for your content" 
                     value={metadata.content_name} 
                     onChange={e => handleMetadataChange('content_name', e.target.value)} 
+                    className="focus-ring" 
+                    required 
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="job_id" className="flex items-center gap-2">
+                    <Tag className="h-4 w-4" /> Job ID <span className="text-destructive">*</span>
+                  </Label>
+                  <Input 
+                    id="job_id" 
+                    placeholder="Enter a unique job identifier (e.g., PROJECT-001-V2)" 
+                    value={metadata.job_id} 
+                    onChange={e => handleMetadataChange('job_id', e.target.value)} 
                     className="focus-ring" 
                     required 
                   />

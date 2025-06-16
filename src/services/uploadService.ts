@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 export interface ContentMetadata {
   title: string;
+  jobId: string;
   description: string;
   category: string;
   audience: string;
@@ -195,6 +196,7 @@ export const storeContentMetadata = async (
     const insertData = {
       // Required fields
       content_name: metadata.title || 'Untitled Content', // REQUIRED FIELD
+      job_id: metadata.jobId, // REQUIRED - User-provided job identifier
       
       // Optional fields
       agency: metadata.agency || null,
@@ -209,15 +211,16 @@ export const storeContentMetadata = async (
       funnel_alignment: metadata.campaign || null,
       strategy_aligned_to: metadata.businessObjective || null,
       status: 'draft',
+      processing_status: 'pending', // Initial processing status
       type: metadata.contentType || null
     };
     
     console.log('Content data being inserted:', JSON.stringify(insertData, null, 2));
     
-    // Try an upsert in case the issue is with insert specifically
+    // Use insert to prevent accidental overwrites - frontend handles duplicate checking
     const { data, error } = await supabase
       .from('content')
-      .upsert(insertData)
+      .insert(insertData)
       .select('*')
       .single();
 
@@ -234,48 +237,11 @@ export const storeContentMetadata = async (
         console.error('Check if client_id and auth.uid() match EXACTLY (including format)');
         console.error('Check required fields: content_name must not be null');
         
-        // Try a fallback approach using a raw SQL query via RPC
-        console.log('Attempting fallback insertion via RPC...');
-        
-        // Warning: This is a last resort and should be replaced with a proper solution
-        try {
-          const { data: rpcData, error: rpcError } = await supabase.rpc('insert_content', {
-            p_content_name: insertData.content_name,
-            p_client_id: insertData.client_id,
-            p_status: 'draft'
-          });
-          
-          if (rpcError) {
-            console.error('RPC insertion failed:', rpcError);
-            throw rpcError;
-          }
-          
-          console.log('RPC insertion successful:', rpcData);
-          
-          // If RPC worked, query the newly inserted content
-          const { data: newContent, error: fetchError } = await supabase
-            .from('content')
-            .select('*')
-            .eq('content_name', insertData.content_name)
-            .eq('client_id', insertData.client_id)
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .single();
-            
-          if (fetchError) {
-            console.error('Failed to fetch newly inserted content:', fetchError);
-            throw fetchError;
-          }
-          
-          // Use the fetched data instead of modifying the constant
-          return processContentData(newContent, files);
-        } catch (rpcAttemptError) {
-          console.error('All insertion attempts failed:', rpcAttemptError);
-          throw error; // Throw the original error
-        }
-      } else {
-        throw error;
+        // RLS policies are correctly configured - this error indicates a legitimate access control issue
+        // The client_id field should match auth.uid() exactly
       }
+      
+      throw error;
     }
 
     // If we get here, we have successful data
@@ -300,6 +266,7 @@ function processContentData(
     id: data?.id?.toString() || '0', // Convert integer ID to string for consistency
     metadata: {
       title: data?.content_name || "",
+      jobId: data?.job_id || "", // Add job_id to metadata
       description: "", // Not in DB schema
       category: "", // Not in DB schema
       audience: data?.audience || "",
@@ -445,6 +412,7 @@ export const getProcessedContent = async (
         id: item.id.toString(),
         metadata: {
           title: item.content_name || "",
+          jobId: item.job_id || "", // Add job_id to metadata
           description: "", // Not in DB schema
           category: "", // Not in DB schema
           audience: item.audience || "",
