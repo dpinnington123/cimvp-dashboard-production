@@ -225,7 +225,7 @@ class BrandService {
       content: (dbData.content || []).map((content: any) => ({
         id: content.content_id || content.id,
         name: content.name,
-        campaign: '', // Would need to lookup campaign name
+        campaign: content.campaign_name || '', // Use campaign name from join or lookup
         format: content.format || '',
         type: content.type || 'driver',
         status: content.status || 'draft',
@@ -472,30 +472,32 @@ class BrandService {
   // ==========================================
 
   /**
-   * Market Analysis Operations
+   * Market Analysis Operations (JSONB)
    */
   async getBrandMarketAnalysis(brandId: string): Promise<BrandMarketAnalysis | null> {
     const { data, error } = await supabase
-      .from('brand_market_analysis')
-      .select('*')
-      .eq('brand_id', brandId)
-      .order('analysis_year', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .from('brands')
+      .select('market_analysis')
+      .eq('id', brandId)
+      .single();
 
     if (error) {
       console.error('Error fetching market analysis:', error);
       throw new Error(`Failed to fetch market analysis: ${error.message}`);
     }
 
-    return data;
+    return data?.market_analysis || null;
   }
 
   async upsertBrandMarketAnalysis(brandId: string, data: Omit<BrandMarketAnalysis, 'id'>): Promise<BrandMarketAnalysis> {
     const { data: result, error } = await supabase
-      .from('brand_market_analysis')
-      .upsert({ brand_id: brandId, ...data })
-      .select()
+      .from('brands')
+      .update({ 
+        market_analysis: data,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', brandId)
+      .select('market_analysis')
       .single();
 
     if (error) {
@@ -503,7 +505,7 @@ class BrandService {
       throw new Error(`Failed to update market analysis: ${error.message}`);
     }
 
-    return result;
+    return result.market_analysis;
   }
 
   /**
@@ -540,29 +542,32 @@ class BrandService {
   }
 
   /**
-   * SWOT Analysis Operations
+   * SWOT Analysis Operations (JSONB)
    */
   async getBrandSWOT(brandId: string): Promise<BrandSWOT | null> {
     const { data, error } = await supabase
-      .from('brand_swot')
-      .select('*')
-      .eq('brand_id', brandId)
-      .limit(1)
-      .maybeSingle();
+      .from('brands')
+      .select('swot_data')
+      .eq('id', brandId)
+      .single();
 
     if (error) {
       console.error('Error fetching SWOT:', error);
       throw new Error(`Failed to fetch SWOT analysis: ${error.message}`);
     }
 
-    return data;
+    return data?.swot_data || null;
   }
 
   async upsertBrandSWOT(brandId: string, swot: Omit<BrandSWOT, 'id'>): Promise<BrandSWOT> {
     const { data, error } = await supabase
-      .from('brand_swot')
-      .upsert({ brand_id: brandId, ...swot })
-      .select()
+      .from('brands')
+      .update({ 
+        swot_data: swot,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', brandId)
+      .select('swot_data')
       .single();
 
     if (error) {
@@ -570,61 +575,61 @@ class BrandService {
       throw new Error(`Failed to update SWOT analysis: ${error.message}`);
     }
 
-    return data;
+    return data.swot_data;
   }
 
   /**
-   * Customer Segments Operations
+   * Customer Segments Operations (JSONB)
    */
   async getBrandCustomerSegments(brandId: string): Promise<BrandCustomerSegment[]> {
     const { data, error } = await supabase
-      .from('brand_customer_segments')
-      .select('*')
-      .eq('brand_id', brandId)
-      .order('order_index');
+      .from('brands')
+      .select('customer_segments')
+      .eq('id', brandId)
+      .single();
 
     if (error) {
       console.error('Error fetching customer segments:', error);
       throw new Error(`Failed to fetch customer segments: ${error.message}`);
     }
 
-    return data || [];
+    return data?.customer_segments || [];
   }
 
   /**
-   * Customer Journey Operations
+   * Customer Journey Operations (JSONB)
    */
   async getBrandCustomerJourney(brandId: string): Promise<BrandCustomerJourney[]> {
     const { data, error } = await supabase
-      .from('brand_customer_journey')
-      .select('*')
-      .eq('brand_id', brandId)
-      .order('order_index');
+      .from('brands')
+      .select('customer_journey')
+      .eq('id', brandId)
+      .single();
 
     if (error) {
       console.error('Error fetching customer journey:', error);
       throw new Error(`Failed to fetch customer journey: ${error.message}`);
     }
 
-    return data || [];
+    return data?.customer_journey || [];
   }
 
   /**
-   * Personas Operations
+   * Personas Operations (JSONB)
    */
   async getBrandPersonas(brandId: string): Promise<BrandPersona[]> {
     const { data, error } = await supabase
-      .from('brand_personas')
-      .select('*')
-      .eq('brand_id', brandId)
-      .order('order_index');
+      .from('brands')
+      .select('personas')
+      .eq('id', brandId)
+      .single();
 
     if (error) {
       console.error('Error fetching personas:', error);
       throw new Error(`Failed to fetch personas: ${error.message}`);
     }
 
-    return data || [];
+    return data?.personas || [];
   }
 
   /**

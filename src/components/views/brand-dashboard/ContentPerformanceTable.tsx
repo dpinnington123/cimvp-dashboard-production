@@ -76,9 +76,9 @@ export function ContentPerformanceTable({ items, campaignFilter }: ContentPerfor
     return matchesCampaign && matchesFormat && matchesType && matchesStatus && matchesSearch;
   });
 
-  // Extract unique campaigns, formats
-  const campaigns = Array.from(new Set(items.map((item) => item.campaign)));
-  const formats = Array.from(new Set(items.map((item) => item.format)));
+  // Extract unique campaigns, formats (filter out empty strings)
+  const campaigns = Array.from(new Set(items.map((item) => item.campaign))).filter(Boolean);
+  const formats = Array.from(new Set(items.map((item) => item.format))).filter(Boolean);
 
   const handleRowClick = (item: ContentPerformanceItem) => {
     setSelectedContent(item);
