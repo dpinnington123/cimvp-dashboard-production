@@ -1,27 +1,32 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import DashboardLayout from './components/layout/DashboardLayout';
-import DashboardOverview from './pages/DashboardOverview';
-import ContentReportsPage from './pages/ContentReportsPage';
-import BrandDashboardPage from './pages/BrandDashboardPage';
-import StrategicDashboardPage from './pages/StrategicDashboardPage';
-import BrandStrategyPage from './pages/BrandStrategyPage';
-import LoginPage from './pages/LoginPage';
-import SignUpPage from './pages/SignUpPage';
-import ForgotPasswordPage from './pages/ForgotPasswordPage';
-import ResetPasswordPage from './pages/ResetPasswordPage';
-import CheckEmailPage from './pages/CheckEmailPage';
-import NotFound from './pages/NotFound';
-import ProcessContentPage from './pages/ProcessContentPage';
-import ContentProcessingPage from './pages/ContentProcessingPage';
-import CampaignPlannerPage from './pages/CampaignPlannerPage';
-import HomePage from './pages/HomePage';
-import ProfilePage from './pages/ProfilePage';
 import { Toaster } from "@/components/ui/sonner";
 import AuthProvider, { useAuth } from './hooks/useAuth';
 import LoadingSpinner from './components/common/LoadingSpinner';
 import { BrandProvider } from './contexts/BrandContext';
+
+// Keep DashboardLayout as a regular import since it's used everywhere
+import DashboardLayout from './components/layout/DashboardLayout';
+
+// Lazy load all page components for code splitting
+const HomePage = React.lazy(() => import('./pages/HomePage.tsx'));
+const LoginPage = React.lazy(() => import('./pages/LoginPage.tsx'));
+const SignUpPage = React.lazy(() => import('./pages/SignUpPage.tsx'));
+const ForgotPasswordPage = React.lazy(() => import('./pages/ForgotPasswordPage.tsx'));
+const ResetPasswordPage = React.lazy(() => import('./pages/ResetPasswordPage.tsx'));
+const CheckEmailPage = React.lazy(() => import('./pages/CheckEmailPage.tsx'));
+const NotFound = React.lazy(() => import('./pages/NotFound.tsx'));
+const ProfilePage = React.lazy(() => import('./pages/ProfilePage.tsx'));
+
+// Dashboard pages - these benefit most from code splitting
+const BrandDashboardPage = React.lazy(() => import('./pages/BrandDashboardPage.tsx'));
+const ContentReportsPage = React.lazy(() => import('./pages/ContentReportsPage.tsx'));
+const StrategicDashboardPage = React.lazy(() => import('./pages/StrategicDashboardPage.tsx'));
+const BrandStrategyPage = React.lazy(() => import('./pages/BrandStrategyPage.tsx'));
+const ProcessContentPage = React.lazy(() => import('./pages/ProcessContentPage.tsx'));
+const ContentProcessingPage = React.lazy(() => import('./pages/ContentProcessingPage.tsx'));
+const CampaignPlannerPage = React.lazy(() => import('./pages/CampaignPlannerPage.tsx'));
 
 const queryClient = new QueryClient();
 
@@ -63,13 +68,14 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 function AppRoutes() {
   return (
-    <Routes>
-      {/* Public Routes */}
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/signup" element={<SignUpPage />} />
-      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-      <Route path="/reset-password" element={<ResetPasswordPage />} />
-      <Route path="/check-email" element={<CheckEmailPage />} />
+    <Suspense fallback={<LoadingSpinner />}>
+      <Routes>
+        {/* Public Routes */}
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignUpPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/check-email" element={<CheckEmailPage />} />
 
       {/* Protected Routes */}
       <Route
@@ -196,6 +202,7 @@ function AppRoutes() {
       {/* Not Found Route */}
       <Route path="*" element={<NotFound />} />
     </Routes>
+    </Suspense>
   );
 }
 

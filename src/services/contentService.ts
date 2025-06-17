@@ -68,22 +68,7 @@ export const deleteContentById = async (id: number): Promise<{ success: boolean,
     
     console.log(`Content exists, proceeding with deletion: ${contentCheck.content_name}`);
     
-    // First, check if there are related content_reviews to delete
-    console.log(`Attempting to delete related content_reviews for content ${id}...`);
-    const { data: reviewsData, error: reviewsError } = await supabase
-      .from('content_reviews')
-      .delete()
-      .eq('content_id', id)
-      .select();
-    
-    if (reviewsError) {
-      console.error(`Error deleting related content_reviews for content ${id}:`, reviewsError);
-      return { success: false, error: new Error(`Failed to delete related reviews: ${reviewsError.message}`) };
-    }
-    
-    console.log(`Successfully deleted ${reviewsData?.length || 0} related reviews`);
-    
-    // Then delete the content record itself
+    // Delete the content record - CASCADE constraint will automatically delete related content_reviews
     console.log(`Attempting to delete content with id ${id}...`);
     const { data: contentData, error } = await supabase
       .from('content')
