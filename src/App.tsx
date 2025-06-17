@@ -28,6 +28,10 @@ const ProcessContentPage = React.lazy(() => import('./pages/ProcessContentPage.t
 const ContentProcessingPage = React.lazy(() => import('./pages/ContentProcessingPage.tsx'));
 const CampaignPlannerPage = React.lazy(() => import('./pages/CampaignPlannerPage.tsx'));
 
+// Tools pages
+const AIMarketResearchPage = React.lazy(() => import('./pages/tools/AIMarketResearch.tsx'));
+const AIMessageTestingPage = React.lazy(() => import('./pages/tools/AIMessageTesting.tsx'));
+
 const queryClient = new QueryClient();
 
 function App() {
@@ -197,6 +201,29 @@ function AppRoutes() {
       >
         <Route index element={<ContentReportsPage />} />
         <Route path=":contentId" element={<ContentReportsPage />} />
+      </Route>
+
+      {/* Tools Routes */}
+      <Route
+        path="/tools/ai-market-research"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<AIMarketResearchPage />} />
+      </Route>
+
+      <Route
+        path="/tools/ai-message-testing"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<AIMessageTestingPage />} />
       </Route>
 
       {/* Not Found Route */}
