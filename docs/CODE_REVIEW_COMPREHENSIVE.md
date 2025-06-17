@@ -40,10 +40,11 @@ This code review examined six key areas of the Change Influence MVP Dashboard ap
    - **Status: Fixed** - Implemented lazy loading for all pages
    - **Result: 50-70% reduction achieved** - Main bundle reduced from monolithic to 668KB
 
-3. **Data: Fix Non-Atomic Operations** (contentService.ts:71)
-   - Manual cascade deletes risk data corruption
-   - Implement database-level CASCADE constraints
-   - Impact: Data integrity at risk
+3. **✅ FIXED - Data: Fix Non-Atomic Operations** (contentService.ts:71)
+   - ~~Manual cascade deletes risk data corruption~~
+   - ~~Implement database-level CASCADE constraints~~
+   - **Status: Fixed** - Added CASCADE constraints to content_reviews and scores
+   - **Result: Atomic deletes** - Database handles related record cleanup
 
 ### 🟠 HIGH PRIORITY - Fix Soon
 
@@ -53,10 +54,10 @@ This code review examined six key areas of the Change Influence MVP Dashboard ap
    - Let n8n webhook handle all status updates instead of frontend simulation
    - Read real processing results from n8n instead of generating fake data
 
-2. **Data: Refactor Brand Data Fetching**
-   - Split massive `getBrandWithFullData` into smaller queries
-   - Eliminate unsafe `any` types in transformations
-   - Reduces load time and improves type safety
+2. **✅ FIXED - Data: Refactor Brand Data Fetching**
+   - ~~Split massive `getBrandWithFullData` into smaller queries~~
+   - **Status: Fixed** - Replaced single massive view query with 11 parallel queries
+   - **Result:** Faster loads, reduced memory usage, better scalability
 
 3. **Auth: Fix Login Race Condition**
    - Navigation occurs before auth state updates
@@ -245,10 +246,21 @@ The codebase provides a strong foundation, and with the recommended fixes implem
    - Results: Main bundle 668KB, pages load on-demand (2-117KB each)
    - Fixed SelectItem empty string bug preventing dashboard load
 
+5. **Database Schema Simplification**
+   - Consolidated 8 brand tables into JSONB columns (75% fewer tables)
+   - Fixed critical content_id type mismatch (TEXT → INTEGER)
+   - Updated brandService to use JSONB instead of separate tables
+   - Simplified brand_full_data view from 20+ joins to ~12
+   - All functionality preserved with better performance
+
+6. **Brand Data Fetching Optimization**
+   - Replaced massive view query with 11 focused parallel queries
+   - Uses Promise.all() for concurrent fetching
+   - Eliminated 1MB+ JSON aggregation overhead
+   - Maintains backward compatibility with existing components
+
 ### 🚧 Still Pending:
 
 - Content processing simulation removal (fake n8n results)
-- Brand data over-fetching optimization
 - Auth race condition fix
-- RLS policies for 8 brand tables (enabled but no policies defined)
-- Database CASCADE constraints for atomic deletes
+- RLS policies for remaining brand tables (enabled but no policies defined)

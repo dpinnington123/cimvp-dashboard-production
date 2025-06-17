@@ -144,27 +144,101 @@ class BrandService {
    * Get brand with all related data (for dashboard/detailed views)
    */
   async getBrandWithFullData(slug: string): Promise<BrandData | null> {
-    // First get the brand
-    const brand = await this.getBrandBySlug(slug);
-    if (!brand) return null;
-
-    // Use the database view for efficient data retrieval
-    const { data, error } = await supabase
-      .from('brand_full_data')
-      .select('*')
-      .eq('slug', slug)
-      .single();
-
-    if (error) {
-      if (error.code === 'PGRST116') {
-        return null; // Brand not found
-      }
-      console.error('Error fetching full brand data:', error);
-      throw new Error(`Failed to fetch brand data: ${error.message}`);
+    if (!slug) {
+      console.error('getBrandWithFullData called with empty slug');
+      return null;
     }
 
-    // Transform database format to BrandData format
-    return await this.transformToBrandData(data);
+    try {
+      // First get the brand ID and core data
+      const { data: brand, error: brandError } = await supabase
+        .from('brands')
+        .select(`
+          id, slug, name, business_area,
+          voice_attributes, objectives, messages,
+          swot_data, personas, market_analysis,
+          customer_segments, customer_journey
+        `)
+        .eq('slug', slug)
+        .single();
+
+      if (brandError || !brand) {
+        if (brandError?.code === 'PGRST116') {
+          return null; // Brand not found
+        }
+        throw new Error(`Failed to fetch brand: ${brandError?.message}`);
+      }
+
+      // Fetch related data in parallel for better performance
+      const [
+        regions,
+        financials, 
+        scores,
+        channelScores,
+        performanceHistory,
+        funnelData,
+        strategies,
+        campaigns,
+        content,
+        audiences,
+        competitors
+      ] = await Promise.all([
+        // Regions
+        supabase.from('brand_regions').select('*').eq('brand_id', brand.id),
+        // Latest financials
+        supabase.from('brand_financials').select('*').eq('brand_id', brand.id)
+          .order('year', { ascending: false }).limit(1),
+        // Latest overall scores
+        supabase.from('brand_overall_scores').select('*').eq('brand_id', brand.id)
+          .order('created_at', { ascending: false }).limit(1),
+        // Channel scores
+        supabase.from('brand_channel_scores').select('*').eq('brand_id', brand.id),
+        // Performance history (last 12 months)
+        supabase.from('brand_performance_history').select('*').eq('brand_id', brand.id)
+          .order('year', { ascending: false }).limit(12),
+        // Funnel data
+        supabase.from('brand_funnel_data').select('*').eq('brand_id', brand.id)
+          .order('order_index'),
+        // Strategies
+        supabase.from('brand_strategies').select('*').eq('brand_id', brand.id)
+          .order('created_at'),
+        // Campaigns
+        supabase.from('brand_campaigns').select('*').eq('brand_id', brand.id)
+          .order('created_at'),
+        // Content (limited to 50)
+        supabase.from('brand_content').select('*').eq('brand_id', brand.id)
+          .order('created_at', { ascending: false }).limit(50),
+        // Audiences
+        supabase.from('brand_audiences').select('*').eq('brand_id', brand.id)
+          .order('order_index'),
+        // Competitors
+        supabase.from('brand_competitors').select('*').eq('brand_id', brand.id)
+          .order('order_index')
+      ]);
+
+      // Construct the data object similar to the view structure
+      const viewData = {
+        ...brand,
+        swot: brand.swot_data, // Map JSONB column names to expected names
+        regions: regions.data || [],
+        financials: financials.data?.[0] || {},
+        overall_scores: scores.data?.[0] || {},
+        channel_scores: channelScores.data || [],
+        performance_history: performanceHistory.data || [],
+        funnel_data: funnelData.data || [],
+        strategies: strategies.data || [],
+        campaigns: campaigns.data || [],
+        content: content.data || [],
+        audiences: audiences.data || [],
+        competitors: competitors.data || []
+      };
+
+      // Transform to BrandData format
+      return await this.transformToBrandData(viewData);
+    } catch (error) {
+      console.error('Error in optimized getBrandWithFullData:', error);
+      throw error;
+    }
   }
 
   /**
