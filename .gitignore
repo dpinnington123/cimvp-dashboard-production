@@ -25,3 +25,7 @@ dist-ssr
 
 # MCP configuration
 mcp.json
+
+# Package manager lock files (we use yarn)
+package-lock.json
+pnpm-lock.yaml
