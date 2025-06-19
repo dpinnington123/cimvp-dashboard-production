@@ -15,9 +15,10 @@ import { useBrand } from '@/contexts/BrandContext';
 interface ContentJourneyPlannerProps {
   contentItems: ContentItem[];
   brandName: string;
+  campaigns: Array<{ id: string; name: string; }>;
 }
 
-const ContentJourneyPlanner: React.FC<ContentJourneyPlannerProps> = ({ contentItems, brandName }) => {
+const ContentJourneyPlanner: React.FC<ContentJourneyPlannerProps> = ({ contentItems, brandName, campaigns }) => {
   const [selectedCampaign, setSelectedCampaign] = useState<string>('All Campaigns');
   const [journeyMap, setJourneyMap] = useState<JourneyMap>({
     nodes: [],
@@ -26,25 +27,18 @@ const ContentJourneyPlanner: React.FC<ContentJourneyPlannerProps> = ({ contentIt
   });
   const [addedContentIds, setAddedContentIds] = useState<string[]>([]);
   
-  // Use the brand context to detect brand changes
   const { selectedBrand } = useBrand();
-  
-  // Add debugging log at component render
-  console.log(`[ContentJourneyPlanner] Rendering with brandName: ${brandName}, selectedBrand: ${selectedBrand}, contentItems: ${contentItems.length}`);
   
   // Use brand name in local storage key to keep journey maps separate for each brand
   const storageKey = `journey-${brandName}-${selectedCampaign}`;
   
   // Reset to "All Campaigns" whenever the selected brand changes
   useEffect(() => {
-    console.log(`[ContentJourneyPlanner] selectedBrand changed to: ${selectedBrand}`);
     setSelectedCampaign('All Campaigns');
   }, [selectedBrand]);
   
-  // NEW: Complete state reset when brandName changes
+  // Complete state reset when brandName changes
   useEffect(() => {
-    console.log(`[ContentJourneyPlanner] brandName changed to: ${brandName}`);
-    
     // Reset to default state for the new brand
     setSelectedCampaign('All Campaigns');
     setJourneyMap({
@@ -53,21 +47,13 @@ const ContentJourneyPlanner: React.FC<ContentJourneyPlannerProps> = ({ contentIt
       title: "Campaign Journey"
     });
     setAddedContentIds([]);
-    
-    // Clear any localStorage data for the previous brand that might interfere
-    const previousBrandKeys = Object.keys(localStorage).filter(key => 
-      key.startsWith('journey-') && !key.startsWith(`journey-${brandName}`)
-    );
-    console.log(`[ContentJourneyPlanner] Cleaning up previous brand localStorage keys: ${previousBrandKeys.length}`);
   }, [brandName]);
   
   useEffect(() => {
-    console.log(`[ContentJourneyPlanner] Loading from localStorage with key: ${storageKey}`);
     const savedJourney = localStorage.getItem(storageKey);
     if (savedJourney) {
       try {
         const parsedJourney = JSON.parse(savedJourney);
-        console.log(`[ContentJourneyPlanner] Found saved journey with ${parsedJourney.nodes.length} nodes`);
         setJourneyMap(parsedJourney);
         
         // Extract content IDs from the loaded journey
@@ -84,7 +70,6 @@ const ContentJourneyPlanner: React.FC<ContentJourneyPlannerProps> = ({ contentIt
         setAddedContentIds([]);
       }
     } else {
-      console.log(`[ContentJourneyPlanner] No saved journey found, creating new one for ${brandName}, ${selectedCampaign}`);
       setJourneyMap({
         nodes: [],
         connections: [],
@@ -95,49 +80,25 @@ const ContentJourneyPlanner: React.FC<ContentJourneyPlannerProps> = ({ contentIt
   }, [selectedCampaign, brandName, storageKey]);
   
   useEffect(() => {
-    console.log(`[ContentJourneyPlanner] Saving to localStorage with key: ${storageKey}`);
     localStorage.setItem(storageKey, JSON.stringify(journeyMap));
   }, [journeyMap, storageKey]);
 
   // Create the filtered content items based on the selected campaign
   const filteredContentItems = contentItems.filter(item => {
-    // For debugging purposes
-    console.log(`Filtering: Item ${item.name}, Campaign: "${item.campaign}", Selected: "${selectedCampaign}"`);
-    
-    // Handle "All Campaigns" case
     if (selectedCampaign === 'All Campaigns') {
       return true;
     }
-    
-    // Handle cases where campaign might be undefined or not exactly matching
-    if (!item.campaign) {
-      return false;
-    }
-    
-    // First try exact match (case insensitive)
-    if (item.campaign.toLowerCase() === selectedCampaign.toLowerCase()) {
-      return true;
-    }
-    
-    // If no exact match, try partial matching (for sub-campaigns or variations in naming)
-    // This helps with potential discrepancies in how campaigns are named in the data
-    const itemCampaignLower = item.campaign.toLowerCase();
-    const selectedCampaignLower = selectedCampaign.toLowerCase();
-    
-    return itemCampaignLower.includes(selectedCampaignLower) || 
-           selectedCampaignLower.includes(itemCampaignLower);
+    return item.campaign === selectedCampaign;
   });
   
-  // Log the filtered content items for debugging
-  console.log(`Found ${filteredContentItems.length} items for campaign "${selectedCampaign}"`);
-  
   const handleCampaignChange = (campaign: string) => {
-    console.log(`Changing campaign to: ${campaign}`);
     setSelectedCampaign(campaign);
     setJourneyMap(prev => ({
       ...prev,
       title: campaign === 'All Campaigns' ? 'Campaign Journey' : `${campaign} Journey`
     }));
+    // Clear added content IDs when switching campaigns
+    setAddedContentIds([]);
   };
   
   const handleTitleChange = (title: string) => {
@@ -334,7 +295,7 @@ const ContentJourneyPlanner: React.FC<ContentJourneyPlannerProps> = ({ contentIt
 
         <div className="flex gap-6">
           <div className="shrink-0">
-            <CampaignTabs onCampaignChange={handleCampaignChange} campaigns={contentItems} />
+            <CampaignTabs onCampaignChange={handleCampaignChange} campaigns={campaigns} />
           </div>
           
           <div className="flex-1 space-y-6">
