@@ -100,6 +100,65 @@ export const deleteContentById = async (id: number): Promise<{ success: boolean,
 // These functions look up IDs from text values for proper foreign key relationships
 
 /**
+ * Look up brand ID by name
+ */
+export const getBrandIdByName = async (brandName: string): Promise<string | null> => {
+  if (!brandName) return null;
+  
+  console.log('Looking up brand:', brandName);
+  
+  // First try exact match
+  const { data, error } = await supabase
+    .from('brands')
+    .select('id')
+    .eq('name', brandName)
+    .single();
+    
+  if (!error && data) {
+    console.log('Found brand with exact match:', data.id);
+    return data.id;
+  }
+  
+  // If exact match failed, try case-insensitive search
+  console.log('Exact match failed, trying case-insensitive search');
+  const { data: fuzzyData, error: fuzzyError } = await supabase
+    .from('brands')
+    .select('id')
+    .ilike('name', `%${brandName}%`)
+    .single();
+    
+  if (!fuzzyError && fuzzyData) {
+    console.log('Found brand with case-insensitive match:', fuzzyData.id);
+    return fuzzyData.id;
+  }
+  
+  // Try common variations
+  const variations = [
+    brandName.replace(/-/g, ''), // Remove hyphens
+    brandName.replace(/-/g, ' '), // Replace hyphens with spaces
+    brandName.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(''), // CamelCase
+  ];
+  
+  console.log('Trying variations:', variations);
+  
+  for (const variation of variations) {
+    const { data: varData, error: varError } = await supabase
+      .from('brands')
+      .select('id')
+      .ilike('name', variation)
+      .single();
+      
+    if (!varError && varData) {
+      console.log(`Found brand with variation "${variation}":`, varData.id);
+      return varData.id;
+    }
+  }
+  
+  console.error('Brand not found after trying all variations');
+  return null;
+};
+
+/**
  * Look up campaign ID by name for a specific brand
  */
 export const getCampaignIdByName = async (campaignName: string, brandId: string): Promise<string | null> => {

@@ -162,12 +162,13 @@ export default function ContentReportsPage() {
   // State to track removed improvement areas (only for the current session)
   const [removedImprovements, setRemovedImprovements] = useState<Set<number>>(new Set());
 
-  // State to track hidden content items (UI-only removal)
-  const [hiddenContentIds, setHiddenContentIds] = useState<Set<number>>(() => {
-    // Initialize from localStorage if available
-    const savedHiddenIds = localStorage.getItem('hiddenContentIds');
-    return savedHiddenIds ? new Set(JSON.parse(savedHiddenIds)) : new Set<number>();
-  });
+  // TODO: Replace with actual database deletion functionality
+  // State to track hidden content items (UI-only removal) - DEPRECATED
+  // const [hiddenContentIds, setHiddenContentIds] = useState<Set<number>>(() => {
+  //   // Initialize from localStorage if available
+  //   const savedHiddenIds = localStorage.getItem('hiddenContentIds');
+  //   return savedHiddenIds ? new Set(JSON.parse(savedHiddenIds)) : new Set<number>();
+  // });
   
   // State to track if the eye tracking modal is open
   const [isEyeTrackingModalOpen, setIsEyeTrackingModalOpen] = useState(false);
@@ -185,10 +186,11 @@ export default function ContentReportsPage() {
     setIsEyeTrackingModalOpen(false);
   };
 
+  // TODO: Remove this when implementing actual database deletion
   // Save hidden content IDs to localStorage whenever they change
-  useEffect(() => {
-    localStorage.setItem('hiddenContentIds', JSON.stringify(Array.from(hiddenContentIds)));
-  }, [hiddenContentIds]);
+  // useEffect(() => {
+  //   localStorage.setItem('hiddenContentIds', JSON.stringify(Array.from(hiddenContentIds)));
+  // }, [hiddenContentIds]);
 
   // Function to handle saving an improvement
   const handleSaveImprovement = (id: string | number) => {
@@ -220,27 +222,21 @@ export default function ContentReportsPage() {
     });
   };
 
-  // Function to handle UI-only removal of content
+  // TODO: Implement actual database deletion
+  // Function to handle removal of content
   const handleHideContent = (id: number) => {
-    console.log(`Hiding content with ID: ${id} from UI only`);
+    console.log(`TODO: Delete content with ID: ${id} from database`);
     
-    // Add to hidden set
-    setHiddenContentIds(prev => {
-      const newSet = new Set(prev);
-      newSet.add(id);
-      return newSet;
-    });
-    
-    // Show success toast
+    // TODO: Call delete API here
+    // For now, just show a message that this feature is coming soon
     toast({
-      title: "Report hidden",
-      description: "The report has been removed from your view.",
+      title: "Coming Soon",
+      description: "Content deletion will be available in the next update.",
+      variant: "default"
     });
     
-    // If we're in detail view, navigate back to the list
-    if (isDetailView) {
-      navigate('/content-reports');
-    }
+    // TODO: After successful deletion, refetch the content list
+    // refetchList();
   };
 
   // --- Data Fetching ---
@@ -497,9 +493,8 @@ export default function ContentReportsPage() {
     return <ErrorDisplay error={error} message="Failed to load content data." />;
   }
 
-  // Filter out hidden content items for list view and sort by most recent first
-  const filteredContentList = contentList?.filter(item => !hiddenContentIds.has(item.id))
-    .sort((a, b) => {
+  // Sort content items by most recent first (removed filtering for hidden items)
+  const filteredContentList = contentList?.sort((a, b) => {
       // Sort by created_at date in descending order (most recent first)
       const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
       const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
@@ -570,15 +565,15 @@ export default function ContentReportsPage() {
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                               <AlertDialogHeader>
-                                <AlertDialogTitle>Hide Content Report</AlertDialogTitle>
+                                <AlertDialogTitle>Delete Content Report</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  Are you sure you want to hide this content report? You won't see it in the list anymore.
+                                  This feature is coming soon. Content deletion from the database will be available in the next update.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                                 <AlertDialogAction onClick={() => handleHideContent(item.id)}>
-                                  Hide
+                                  OK
                                 </AlertDialogAction>
                               </AlertDialogFooter>
                             </AlertDialogContent>
@@ -602,21 +597,8 @@ export default function ContentReportsPage() {
     );
   }
 
-  // For detail view, check if this content is hidden (if in URL directly)
-  if (contentId && hiddenContentIds.has(contentId)) {
-    return (
-      <div className="p-6">
-        <h1 className="text-2xl font-semibold mb-4">Report Hidden</h1>
-        <p>This content report has been hidden from your view.</p>
-        <Link 
-          to="/content-reports"
-          className="mt-4 inline-block px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-        >
-          Return to Content List
-        </Link>
-      </div>
-    );
-  }
+  // TODO: Add check for deleted content when implementing database deletion
+  // For now, removed the hidden content check
 
   // Handle case where contentId is invalid (for detail view)
   if (isDetailView && !isValidId) {
@@ -684,16 +666,15 @@ export default function ContentReportsPage() {
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Hide Content Report</AlertDialogTitle>
+                <AlertDialogTitle>Delete Content Report</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Are you sure you want to hide "{contentDetails?.content_name || 'this content report'}"? 
-                  You won't see it in the list anymore.
+                  This feature is coming soon. Deletion of "{contentDetails?.content_name || 'this content report'}" from the database will be available in the next update.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                 <AlertDialogAction onClick={() => handleHideContent(contentId!)}>
-                  Hide
+                  OK
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>

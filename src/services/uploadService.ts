@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabaseClient';
 import { v4 as uuidv4 } from 'uuid';
 import { 
+  getBrandIdByName,
   getCampaignIdByName, 
   getAudienceIdByName, 
   getStrategyIdByName,
@@ -206,6 +207,7 @@ export const storeContentMetadata = async (
     
     // Look up IDs for foreign key fields
     // If the value is already a UUID, use it directly. Otherwise, look it up.
+    let brand_id: string | null = null;
     let campaign_id: string | null = null;
     let audience_id: string | null = null;
     let strategy_id: string | null = null;
@@ -213,19 +215,37 @@ export const storeContentMetadata = async (
     let format_id: string | null = null;
     let type_id: string | null = null;
     
-    // Campaign ID lookup
+    // Brand ID lookup - MUST be done first as other lookups depend on it
+    if (metadata.brandId) {
+      brand_id = isUUID(metadata.brandId) ? metadata.brandId : await getBrandIdByName(metadata.brandId);
+      if (!brand_id) {
+        console.error(`Brand not found: ${metadata.brandId}`);
+        throw new Error(`Brand "${metadata.brandId}" not found in the database`);
+      }
+    } else {
+      throw new Error('Brand ID is required for content upload');
+    }
+    
+    // Campaign ID lookup (use the resolved brand_id)
     if (metadata.campaign) {
-      campaign_id = isUUID(metadata.campaign) ? metadata.campaign : await getCampaignIdByName(metadata.campaign, metadata.brandId);
+      campaign_id = isUUID(metadata.campaign) ? metadata.campaign : await getCampaignIdByName(metadata.campaign, brand_id);
     }
     
-    // Audience ID lookup
+    // Audience ID lookup (use the resolved brand_id)
     if (metadata.audience) {
-      audience_id = isUUID(metadata.audience) ? metadata.audience : await getAudienceIdByName(metadata.audience, metadata.brandId);
+      audience_id = isUUID(metadata.audience) ? metadata.audience : await getAudienceIdByName(metadata.audience, brand_id);
     }
     
-    // Strategy ID lookup (using businessObjective field)
+    // Strategy ID lookup (using businessObjective field, use the resolved brand_id)
     if (metadata.businessObjective) {
-      strategy_id = isUUID(metadata.businessObjective) ? metadata.businessObjective : await getStrategyIdByName(metadata.businessObjective, metadata.brandId);
+      strategy_id = isUUID(metadata.businessObjective) ? metadata.businessObjective : await getStrategyIdByName(metadata.businessObjective, brand_id);
+      // Only use the strategy_id if it's actually found
+      if (strategy_id) {
+        console.log('Found strategy ID:', strategy_id);
+      } else {
+        console.log('Strategy not found for:', metadata.businessObjective);
+        strategy_id = null; // Explicitly set to null if not found
+      }
     }
     
     // Agency ID lookup (global)
@@ -244,11 +264,11 @@ export const storeContentMetadata = async (
     }
     
     // Create insert data structure matching ONLY the actual database schema fields
-    const insertData = {
+    const insertData: any = {
       // Required fields
       content_name: metadata.title || 'Untitled Content', // REQUIRED FIELD
       job_id: metadata.jobId, // REQUIRED - User-provided job identifier
-      brand_id: metadata.brandId, // REQUIRED - Brand this content belongs to
+      brand_id: brand_id, // REQUIRED - Resolved brand UUID
       
       // Optional text fields (keep for backward compatibility)
       agency: metadata.agency || null,
@@ -265,15 +285,15 @@ export const storeContentMetadata = async (
       status: 'draft',
       processing_status: 'pending', // Initial processing status
       type: metadata.contentType || null,
-      
-      // Foreign key fields (populated from lookups)
-      campaign_id,
-      audience_id,
-      strategy_id,
-      agency_id,
-      format_id,
-      type_id
     };
+    
+    // Only add foreign key fields if they have valid values
+    if (campaign_id) insertData.campaign_id = campaign_id;
+    if (audience_id) insertData.audience_id = audience_id;
+    if (strategy_id) insertData.strategy_id = strategy_id;
+    if (agency_id) insertData.agency_id = agency_id;
+    if (format_id) insertData.format_id = format_id;
+    if (type_id) insertData.type_id = type_id;
     
     console.log('Content data being inserted:', JSON.stringify(insertData, null, 2));
     
