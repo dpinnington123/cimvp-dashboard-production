@@ -2,27 +2,119 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Essential Commands
+## 🎓 Educational Approach - IMPORTANT
 
-### Development
+**The user is learning to code and wants to understand everything you do.** When working on this codebase:
+
+1. **Explain Every Decision**: Before making changes, explain:
+   - What you're about to do and why
+   - What alternatives exist and why you chose this approach
+   - Any trade-offs or considerations
+
+2. **Break Down Complex Concepts**: When you encounter:
+   - New patterns or techniques
+   - Framework-specific features
+   - Best practices or conventions
+   - Explain them in simple terms with analogies when helpful
+
+3. **Provide Learning Context**: For each code change:
+   - Explain what the code does
+   - Point out important patterns or concepts being used
+   - Suggest resources or terms to research for deeper understanding
+
+4. **Use Clear, Professional Comments**: Keep code comments descriptive and helpful:
+   ```javascript
+   // Fetch brand data with caching and automatic refetching
+   const useBrandData = (brandId: string) => {
+     return useQuery({
+       queryKey: ['brand', brandId],
+       queryFn: () => brandService.getBrand(brandId),
+     });
+   };
+   ```
+
+5. **Explain the "Why" Not Just the "What"**:
+   - Bad: "I'm adding a try-catch block"
+   - Good: "I'm adding a try-catch block here to handle potential errors when fetching data. This prevents the app from crashing and lets us show a friendly error message to users instead"
+
+6. **Connect to Bigger Picture**: Show how changes fit into:
+   - The overall architecture
+   - Common web development patterns
+   - Industry best practices
+
+## Table of Contents
+1. [Educational Approach](#educational-approach)
+2. [Project Philosophy & Constraints](#philosophy)
+3. [Essential Commands](#commands)
+4. [Technology Stack](#tech-stack)
+5. [Directory Architecture](#directory-architecture)
+6. [Key Architectural Patterns](#patterns)
+7. [Anti-Patterns to Avoid](#anti-patterns)
+8. [Testing Philosophy](#testing)
+9. [Common Tasks](#common-tasks)
+
+## Project Philosophy & Constraints <a name="philosophy"></a>
+
+**This section defines the core rules and principles for this project:**
+
+1. **Dependency Policy**: 
+   - Do NOT add new dependencies without explicit approval
+   - Always check if existing libraries can solve the problem first
+   - If a new dependency is needed, explain why and propose it first
+
+2. **Code Style & Quality**:
+   - Follow existing patterns in the codebase
+   - Run `yarn lint` before committing any changes
+   - Keep components under 300 lines
+   - Extract reusable logic into hooks or utilities
+
+3. **Architectural Mandates**:
+   - Business logic MUST reside in the `/services` layer
+   - Components should only handle presentation and user interaction
+   - All Supabase operations go through the service layer
+   - Use TanStack Query for server state, Context for local state
+
+4. **Performance Requirements**:
+   - Lazy load route components
+   - Use React.memo sparingly and only when measurable impact
+   - Images should be optimized before upload
+
+5. **Security First**:
+   - Never expose API keys or secrets in code
+   - All user inputs must be validated with Zod
+   - Use Row Level Security (RLS) in Supabase
+   - Sanitize any user-generated content
+
+## Essential Commands <a name="commands"></a>
+
+### Development Workflow (Golden Path)
 ```bash
-# Install dependencies
+# 1. Install dependencies
 yarn install
 
-# Start development server
+# 2. Start development server
 yarn dev
 
-# Build for production
-yarn build
+# 3. Run linter before committing
+yarn lint
 
-# Build with TypeScript type checking
+# 4. Build for production (includes type checking)
 yarn build:with-types
 
-# Preview production build
+# 5. Preview production build locally
 yarn preview
+```
 
-# Run linter
-yarn lint
+### Additional Commands
+```bash
+# Run TypeScript compiler check only
+yarn tsc --noEmit
+
+# Clean build artifacts
+rm -rf dist
+
+# Update dependencies (use with caution)
+yarn upgrade-interactive
 ```
 
 ### Environment Setup
@@ -35,18 +127,44 @@ cp env.example .env.local
 # VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
 
+### Development Login Credentials
+```
+# Local development login
+Email: farlen@enny.ai
+Password: someshit1989
+
+# Access the app at: http://localhost:5173
+```
+
 ## High-Level Architecture
 
 ### Project Overview
 This is the **Change Influence MVP Dashboard** - a content management and analytics platform built with React 19, TypeScript, and Vite. It provides tools for brand strategy, campaign planning, and content effectiveness analysis.
 
-### Technology Stack
-- **Frontend**: React 19 + TypeScript + Vite
-- **Backend**: Supabase (PostgreSQL + Auth + Storage)
+### Technology Stack <a name="tech-stack"></a>
+- **Frontend**: React 19 + TypeScript 5.7 + Vite 6.0
+  - React 19: Latest features including improved SSR and concurrent features
+  - TypeScript: Type safety and better developer experience
+  - Vite: Lightning-fast HMR and optimized builds
+  
+- **Backend**: Supabase (PostgreSQL 15 + Auth + Storage)
+  - Chosen for rapid development, built-in auth, and real-time capabilities
+  - Row Level Security (RLS) for data protection
+  
 - **Styling**: Tailwind CSS v4 + shadcn/ui components
-- **State Management**: TanStack Query (server state) + React Context (local state)
-- **Forms**: React Hook Form + Zod validation
+  - Tailwind v4: Utility-first CSS with improved performance
+  - shadcn/ui: Copy-paste components that we own and can customize
+  
+- **State Management**: 
+  - TanStack Query v5: Server state caching and synchronization
+  - React Context: Simple local state (no Redux needed for this scale)
+  
+- **Forms**: React Hook Form v7 + Zod v3
+  - RHF: Performant forms with minimal re-renders
+  - Zod: Type-safe schema validation
+  
 - **Routing**: React Router v6
+  - Industry standard with great TypeScript support
 
 ### Directory Architecture
 The project uses a hybrid architectural pattern combining feature-based and layer-based organization:
@@ -127,6 +245,55 @@ src/
 6. **Database Architecture**: Dual-mode support:
    - **Database Mode** (`VITE_USE_DATABASE_BRANDS=true`) - Production-ready with 20+ tables
    - **Static Mode** (`VITE_USE_DATABASE_BRANDS=false`) - Development fallback
+
+## Anti-Patterns to Avoid <a name="anti-patterns"></a>
+
+**❌ These patterns are explicitly forbidden in this codebase:**
+
+1. **Data Fetching Anti-Patterns**:
+   - ❌ Never use `useEffect` for data fetching - use TanStack Query hooks
+   - ❌ Don't make direct Supabase calls in components - use the service layer
+   - ❌ Avoid storing server data in component state - let TanStack Query handle it
+
+2. **State Management Anti-Patterns**:
+   - ❌ Don't use Redux or Zustand - we use Context API for simplicity
+   - ❌ Avoid prop drilling beyond 2 levels - use Context instead
+   - ❌ Never store sensitive data in localStorage - use secure session storage
+
+3. **Component Anti-Patterns**:
+   - ❌ Don't create components over 300 lines - split into smaller pieces
+   - ❌ Avoid inline styles - use Tailwind CSS classes
+   - ❌ Never import CSS files - all styling via Tailwind
+
+4. **Security Anti-Patterns**:
+   - ❌ Never hard-code API keys or secrets
+   - ❌ Don't trust user input - always validate with Zod
+   - ❌ Avoid direct DOM manipulation - use React's declarative approach
+
+5. **Performance Anti-Patterns**:
+   - ❌ Don't use React.memo without measuring impact
+   - ❌ Avoid large bundle imports - use dynamic imports for heavy libraries
+   - ❌ Never load all data at once - implement pagination
+
+## Testing Philosophy <a name="testing"></a>
+
+**Our testing approach focuses on confidence and maintainability:**
+
+1. **What to Test**:
+   - Business logic in `/services` - unit tests with Jest
+   - Critical user flows - integration tests with React Testing Library
+   - Component interactions - focus on user behavior, not implementation
+
+2. **Test Organization**:
+   - Test files co-located: `ComponentName.test.tsx`
+   - Test utilities in `/tests/utils`
+   - Mock data in `/tests/mocks`
+
+3. **Testing Guidelines**:
+   - Write tests that give confidence the feature works
+   - Don't test implementation details
+   - Use MSW for API mocking, not manual fetch mocks
+   - Aim for 80% coverage on critical paths, not 100% everywhere
 
 ### Development Guidelines
 

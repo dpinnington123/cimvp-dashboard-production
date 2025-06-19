@@ -39,8 +39,12 @@ const ContentUploadForm: React.FC = () => {
   const navigate = useNavigate();
   const { useUploadContentMutation } = useContent();
   const uploadContentMutation = useUploadContentMutation();
-  const { selectedBrand } = useBrand();
+  const { selectedBrand, getBrandData } = useBrand();
   const { user } = useAuth();
+  
+  // Get the current brand's ID
+  const brandData = getBrandData();
+  const brandId = brandData?.profile?.id;
   
   // Use the brand form options hook to get dropdown options
   const { 
@@ -154,10 +158,21 @@ const ContentUploadForm: React.FC = () => {
         return;
       }
 
+      // Ensure we have a brand ID
+      if (!brandId) {
+        toast({
+          title: "No brand selected",
+          description: "Please select a brand before uploading content.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
       // Map the form fields to the ContentMetadata type
       const mappedMetadata = {
         title: metadata.content_name, // REQUIRED
         jobId: metadata.job_id, // REQUIRED - User-provided job identifier
+        brandId: brandId, // REQUIRED - Current brand ID
         description: "", // Not in form but required by interface
         category: "", // Not in form but required by interface
         audience: metadata.audience,

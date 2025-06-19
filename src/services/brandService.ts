@@ -205,9 +205,17 @@ class BrandService {
         // Campaigns
         supabase.from('brand_campaigns').select('*').eq('brand_id', brand.id)
           .order('created_at'),
-        // Content (limited to 50)
-        supabase.from('brand_content').select('*').eq('brand_id', brand.id)
-          .order('created_at', { ascending: false }).limit(50),
+        // Content with campaign names (limited to 50)
+        supabase.from('brand_content')
+          .select(`
+            *,
+            brand_campaigns!campaign_id (
+              name
+            )
+          `)
+          .eq('brand_id', brand.id)
+          .order('created_at', { ascending: false })
+          .limit(50),
         // Audiences
         supabase.from('brand_audiences').select('*').eq('brand_id', brand.id)
           .order('order_index'),
@@ -278,8 +286,13 @@ class BrandService {
         text: audience.name,
         notes: audience.notes || ''
       })),
-      strategies: dbData.strategies || [],
+      strategies: (dbData.strategies || []).map((strategy: any) => ({
+        id: strategy.id, // Include the ID for form dropdowns
+        name: strategy.name,
+        description: strategy.description || ''
+      })),
       campaigns: (dbData.campaigns || []).map((campaign: any) => ({
+        id: campaign.id, // Include the ID for form dropdowns
         name: campaign.name,
         scores: {
           overall: campaign.overall_score || 0,
@@ -299,7 +312,7 @@ class BrandService {
       content: (dbData.content || []).map((content: any) => ({
         id: content.content_id || content.id,
         name: content.name,
-        campaign: content.campaign_name || '', // Use campaign name from join or lookup
+        campaign: content.brand_campaigns?.name || '', // Use campaign name from join
         format: content.format || '',
         type: content.type || 'driver',
         status: content.status || 'draft',

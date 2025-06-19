@@ -12,6 +12,11 @@
     "puppeteer": {
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-puppeteer"]
-    }
+    },
+    "ccusage": {
+			"command": "npx",
+			"args": ["ccusage@latest", "mcp"],
+			"env": {}
+		}
   }
 }
