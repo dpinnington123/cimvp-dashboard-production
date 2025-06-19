@@ -21,7 +21,7 @@ export const useBrandFormOptions = () => {
     if (!brandData?.campaigns?.length) return [];
     
     return brandData.campaigns.map(campaign => ({
-      value: campaign.name,
+      value: (campaign as any).id || campaign.name, // Use ID if available, fallback to name
       label: campaign.name
     }));
   }, [brandData?.campaigns]);

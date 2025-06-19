@@ -94,4 +94,137 @@ export const deleteContentById = async (id: number): Promise<{ success: boolean,
   }
 };
 
-// Add other content-related functions as needed (e.g., create, update, delete) 
+// Add other content-related functions as needed (e.g., create, update, delete)
+
+// ID Lookup Functions for Content Upload
+// These functions look up IDs from text values for proper foreign key relationships
+
+/**
+ * Look up campaign ID by name for a specific brand
+ */
+export const getCampaignIdByName = async (campaignName: string, brandId: string): Promise<string | null> => {
+  if (!campaignName || !brandId) return null;
+  
+  const { data, error } = await supabase
+    .from('brand_campaigns')
+    .select('id')
+    .eq('name', campaignName)
+    .eq('brand_id', brandId)
+    .single();
+    
+  if (error) {
+    // Not found is not an error, just return null
+    if (error.code === 'PGRST116') return null;
+    console.error('Error looking up campaign ID:', error);
+    return null;
+  }
+  
+  return data?.id || null;
+};
+
+/**
+ * Look up audience ID by name for a specific brand
+ */
+export const getAudienceIdByName = async (audienceName: string, brandId: string): Promise<string | null> => {
+  if (!audienceName || !brandId) return null;
+  
+  const { data, error } = await supabase
+    .from('brand_audiences')
+    .select('id')
+    .eq('name', audienceName)
+    .eq('brand_id', brandId)
+    .single();
+    
+  if (error) {
+    if (error.code === 'PGRST116') return null;
+    console.error('Error looking up audience ID:', error);
+    return null;
+  }
+  
+  return data?.id || null;
+};
+
+/**
+ * Look up strategy ID by name for a specific brand
+ */
+export const getStrategyIdByName = async (strategyName: string, brandId: string): Promise<string | null> => {
+  if (!strategyName || !brandId) return null;
+  
+  const { data, error } = await supabase
+    .from('brand_strategies')
+    .select('id')
+    .eq('name', strategyName)
+    .eq('brand_id', brandId)
+    .single();
+    
+  if (error) {
+    if (error.code === 'PGRST116') return null;
+    console.error('Error looking up strategy ID:', error);
+    return null;
+  }
+  
+  return data?.id || null;
+};
+
+/**
+ * Look up agency ID by name (global lookup)
+ */
+export const getAgencyIdByName = async (agencyName: string): Promise<string | null> => {
+  if (!agencyName) return null;
+  
+  const { data, error } = await supabase
+    .from('agencies')
+    .select('id')
+    .eq('name', agencyName)
+    .single();
+    
+  if (error) {
+    if (error.code === 'PGRST116') return null;
+    console.error('Error looking up agency ID:', error);
+    return null;
+  }
+  
+  return data?.id || null;
+};
+
+/**
+ * Look up content format ID by name (global lookup)
+ */
+export const getFormatIdByName = async (formatName: string): Promise<string | null> => {
+  if (!formatName) return null;
+  
+  const { data, error } = await supabase
+    .from('content_formats')
+    .select('id')
+    .eq('name', formatName)
+    .single();
+    
+  if (error) {
+    if (error.code === 'PGRST116') return null;
+    console.error('Error looking up format ID:', error);
+    return null;
+  }
+  
+  return data?.id || null;
+};
+
+/**
+ * Look up content type ID by name (global lookup)
+ */
+export const getTypeIdByName = async (typeName: string): Promise<string | null> => {
+  if (!typeName) return null;
+  
+  const { data, error } = await supabase
+    .from('content_types')
+    .select('id')
+    .eq('name', typeName)
+    .single();
+    
+  if (error) {
+    if (error.code === 'PGRST116') return null;
+    console.error('Error looking up type ID:', error);
+    return null;
+  }
+  
+  return data?.id || null;
+}; 

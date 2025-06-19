@@ -1,9 +1,18 @@
 import { supabase } from '@/lib/supabaseClient';
 import { v4 as uuidv4 } from 'uuid';
+import { 
+  getCampaignIdByName, 
+  getAudienceIdByName, 
+  getStrategyIdByName,
+  getAgencyIdByName,
+  getFormatIdByName,
+  getTypeIdByName 
+} from '@/services/contentService';
 
 export interface ContentMetadata {
   title: string;
   jobId: string;
+  brandId: string; // REQUIRED - Brand this content belongs to
   description: string;
   category: string;
   audience: string;
@@ -192,13 +201,56 @@ export const storeContentMetadata = async (
     
     console.log('Test table access result:', testResult);
     
+    // Helper function to check if a string is a UUID
+    const isUUID = (str: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+    
+    // Look up IDs for foreign key fields
+    // If the value is already a UUID, use it directly. Otherwise, look it up.
+    let campaign_id: string | null = null;
+    let audience_id: string | null = null;
+    let strategy_id: string | null = null;
+    let agency_id: string | null = null;
+    let format_id: string | null = null;
+    let type_id: string | null = null;
+    
+    // Campaign ID lookup
+    if (metadata.campaign) {
+      campaign_id = isUUID(metadata.campaign) ? metadata.campaign : await getCampaignIdByName(metadata.campaign, metadata.brandId);
+    }
+    
+    // Audience ID lookup
+    if (metadata.audience) {
+      audience_id = isUUID(metadata.audience) ? metadata.audience : await getAudienceIdByName(metadata.audience, metadata.brandId);
+    }
+    
+    // Strategy ID lookup (using businessObjective field)
+    if (metadata.businessObjective) {
+      strategy_id = isUUID(metadata.businessObjective) ? metadata.businessObjective : await getStrategyIdByName(metadata.businessObjective, metadata.brandId);
+    }
+    
+    // Agency ID lookup (global)
+    if (metadata.agency) {
+      agency_id = await getAgencyIdByName(metadata.agency);
+    }
+    
+    // Format ID lookup (global)
+    if (metadata.contentFormat) {
+      format_id = await getFormatIdByName(metadata.contentFormat);
+    }
+    
+    // Type ID lookup (global)
+    if (metadata.contentType) {
+      type_id = await getTypeIdByName(metadata.contentType);
+    }
+    
     // Create insert data structure matching ONLY the actual database schema fields
     const insertData = {
       // Required fields
       content_name: metadata.title || 'Untitled Content', // REQUIRED FIELD
       job_id: metadata.jobId, // REQUIRED - User-provided job identifier
+      brand_id: metadata.brandId, // REQUIRED - Brand this content belongs to
       
-      // Optional fields
+      // Optional text fields (keep for backward compatibility)
       agency: metadata.agency || null,
       audience: metadata.audience || null,
       bucket_id: bucketId,
@@ -212,7 +264,15 @@ export const storeContentMetadata = async (
       strategy_aligned_to: metadata.businessObjective || null,
       status: 'draft',
       processing_status: 'pending', // Initial processing status
-      type: metadata.contentType || null
+      type: metadata.contentType || null,
+      
+      // Foreign key fields (populated from lookups)
+      campaign_id,
+      audience_id,
+      strategy_id,
+      agency_id,
+      format_id,
+      type_id
     };
     
     console.log('Content data being inserted:', JSON.stringify(insertData, null, 2));
@@ -247,6 +307,48 @@ export const storeContentMetadata = async (
     // If we get here, we have successful data
     console.log('Content record created successfully:', data?.id);
     
+    // Create brand_content record to link content to brand and campaign
+    if (data?.id && metadata.brandId) {
+      try {
+        const brandContentData = {
+          brand_id: metadata.brandId,
+          campaign_id: campaign_id, // Use the looked-up campaign ID
+          content_id: data.id, // The ID of the content we just created
+          name: metadata.title || 'Untitled Content',
+          format: metadata.contentFormat || null,
+          type: metadata.contentType || null,
+          status: 'draft',
+          description: metadata.description || null,
+          audience: metadata.audience || null,
+          agencies: metadata.agency ? [metadata.agency] : [],
+          // Scores will be populated later by the scoring pipeline
+          overall_score: null,
+          strategic_score: null,
+          customer_score: null,
+          execution_score: null
+        };
+        
+        console.log('Creating brand_content record:', brandContentData);
+        
+        const { data: brandContent, error: brandContentError } = await supabase
+          .from('brand_content')
+          .insert(brandContentData)
+          .select('*')
+          .single();
+          
+        if (brandContentError) {
+          console.error('Error creating brand_content record:', brandContentError);
+          // Don't fail the upload if brand_content creation fails
+          // The content is already uploaded successfully
+        } else {
+          console.log('Brand_content record created successfully:', brandContent?.id);
+        }
+      } catch (error) {
+        console.error('Exception creating brand_content record:', error);
+        // Don't fail the upload if brand_content creation fails
+      }
+    }
+    
     return processContentData(data, files);
   } catch (error) {
     console.error('Error storing content metadata:', error);
@@ -267,6 +369,7 @@ function processContentData(
     metadata: {
       title: data?.content_name || "",
       jobId: data?.job_id || "", // Add job_id to metadata
+      brandId: data?.brand_id || "", // REQUIRED - Add brand_id from database
       description: "", // Not in DB schema
       category: "", // Not in DB schema
       audience: data?.audience || "",
@@ -413,6 +516,7 @@ export const getProcessedContent = async (
         metadata: {
           title: item.content_name || "",
           jobId: item.job_id || "", // Add job_id to metadata
+          brandId: item.brand_id || "", // REQUIRED - Add brand_id from database
           description: "", // Not in DB schema
           category: "", // Not in DB schema
           audience: item.audience || "",
