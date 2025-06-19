@@ -4,6 +4,7 @@ export interface ContentItem {
   format: string;
   type: string;
   campaign?: string;
+  campaignId?: string;
   status: 'live' | 'draft' | 'planned';
   qualityScore?: number;
   description?: string;

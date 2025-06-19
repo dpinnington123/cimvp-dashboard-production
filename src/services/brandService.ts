@@ -209,7 +209,7 @@ class BrandService {
         supabase.from('brand_content')
           .select(`
             *,
-            brand_campaigns!campaign_id (
+            brand_campaigns!brand_content_campaign_id_fkey (
               name
             )
           `)
@@ -309,32 +309,35 @@ class BrandService {
         keyActions: [],
         agencies: []
       })),
-      content: (dbData.content || []).map((content: any) => ({
-        id: content.content_id || content.id,
-        name: content.name,
-        campaign: content.brand_campaigns?.name || '', // Use campaign name from join
-        format: content.format || '',
-        type: content.type || 'driver',
-        status: content.status || 'draft',
-        scores: {
-          overall: content.overall_score || 0,
-          strategic: content.strategic_score || 0,
-          customer: content.customer_score || 0,
-          execution: content.execution_score || 0
-        },
-        qualityScore: content.quality_score,
-        description: content.description,
-        cost: content.cost,
-        campaignScores: {
-          overallEffectiveness: content.campaign_overall_effectiveness || 0,
-          strategicAlignment: content.campaign_strategic_alignment || 0,
-          customerAlignment: content.campaign_customer_alignment || 0,
-          contentEffectiveness: content.campaign_content_effectiveness || 0
-        },
-        audience: content.audience,
-        keyActions: content.key_actions || [],
-        agencies: content.agencies || []
-      })),
+      content: (dbData.content || []).map((content: any) => {
+        return {
+          id: content.content_id || content.id,
+          name: content.name,
+          campaign: content.brand_campaigns?.name || '', // Use campaign name from join
+          campaign_id: content.campaign_id, // Include campaign_id for mapping
+          format: content.format || '',
+          type: content.type || 'driver',
+          status: content.status || 'draft',
+          scores: {
+            overall: content.overall_score || 0,
+            strategic: content.strategic_score || 0,
+            customer: content.customer_score || 0,
+            execution: content.execution_score || 0
+          },
+          qualityScore: content.quality_score,
+          description: content.description,
+          cost: content.cost,
+          campaignScores: {
+            overallEffectiveness: content.campaign_overall_effectiveness || 0,
+            strategicAlignment: content.campaign_strategic_alignment || 0,
+            customerAlignment: content.campaign_customer_alignment || 0,
+            contentEffectiveness: content.campaign_content_effectiveness || 0
+          },
+          audience: content.audience,
+          keyActions: content.key_actions || [],
+          agencies: content.agencies || []
+        };
+      }),
       overallScores: dbData.overall_scores ? {
         overall: dbData.overall_scores.overall_score || 0,
         strategic: dbData.overall_scores.strategic_score || 0,

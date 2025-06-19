@@ -6,8 +6,20 @@ type Score = Database['public']['Tables']['scores']['Row'];
 type ContentReview = Database['public']['Tables']['content_reviews']['Row']; // Added type for content_reviews
 type CategoryReviewSummary = Database['public']['Tables']['category_review_summaries']['Row'];
 
-// Added type for check details
-type CheckDetails = Database['public']['Tables']['checks']['Row'];
+// Define CheckDetails type manually since it's in the backend schema
+type CheckDetails = {
+  check_id: number;
+  category_id: number | null;
+  check_name: string;
+  what_it_measures: string;
+  good_score: string;
+  bad_score: string;
+  how_to_analyze: string;
+  created_at: string | null;
+  updated_at: string | null;
+  scoring_scale: string | null;
+  sub_group: string | null;
+};
 
 // Export the type so it can be used elsewhere
 export type { CategoryReviewSummary };

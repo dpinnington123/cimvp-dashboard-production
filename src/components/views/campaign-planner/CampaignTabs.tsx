@@ -1,54 +1,21 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import { ContentItem } from '@/types/content';
 import { toast } from "sonner";
 import { useBrand } from '@/contexts/BrandContext';
 
 interface CampaignTabsProps {
   onCampaignChange: (campaign: string) => void;
-  campaigns: ContentItem[];
+  campaigns: Array<{ id: string; name: string; }>;
 }
 
 const CampaignTabs: React.FC<CampaignTabsProps> = ({ onCampaignChange, campaigns }) => {
   const { selectedBrand } = useBrand();
   
-  // Log that the campaign tabs component is rendering
-  console.log(`[CampaignTabs] Rendering with ${campaigns.length} content items for brand: ${selectedBrand}`);
+  // Get campaign names from the campaigns array
+  const campaignNames = ['All Campaigns', ...campaigns.map(c => c.name)];
   
-  // Get unique campaigns from content items
-  // First extract all campaign names and normalize them
-  const allCampaignNames = campaigns
-    .map(item => {
-      const campaign = item.campaign || '';
-      console.log(`Campaign extraction: ${item.name} - Campaign: "${campaign}"`);
-      return campaign;
-    })
-    .filter(Boolean);
-  
-  // Get unique normalized campaign names
-  const uniqueCampaignNames = [...new Set(allCampaignNames)];
-  
-  // Add 'All Campaigns' at the beginning
-  const campaignNames = ['All Campaigns', ...uniqueCampaignNames];
-  
-  console.log('Available campaigns:', campaignNames);
-  
-  // Log campaign stats at component mount
-  useEffect(() => {
-    console.log('Campaign statistics:');
-    campaignNames.forEach(campaign => {
-      if (campaign === 'All Campaigns') return;
-      
-      const count = campaigns.filter(item => {
-        const itemCampaign = item.campaign || '';
-        return itemCampaign === campaign;
-      }).length;
-      
-      console.log(`  - "${campaign}": ${count} items`);
-    });
-  }, [campaigns, campaignNames]);
 
   const handleNewCampaign = () => {
     toast("Create New Campaign", {
