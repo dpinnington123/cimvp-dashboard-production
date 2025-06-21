@@ -46,12 +46,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 1. [Educational Approach](#educational-approach)
 2. [Project Philosophy & Constraints](#philosophy)
 3. [Essential Commands](#commands)
-4. [Technology Stack](#tech-stack)
-5. [Directory Architecture](#directory-architecture)
-6. [Key Architectural Patterns](#patterns)
-7. [Anti-Patterns to Avoid](#anti-patterns)
-8. [Testing Philosophy](#testing)
-9. [Common Tasks](#common-tasks)
+4. [Git Workflow](#git-workflow)
+5. [Technology Stack](#tech-stack)
+6. [Directory Architecture](#directory-architecture)
+7. [Key Architectural Patterns](#patterns)
+8. [Anti-Patterns to Avoid](#anti-patterns)
+9. [Testing Philosophy](#testing)
+10. [Common Tasks](#common-tasks)
 
 ## Project Philosophy & Constraints <a name="philosophy"></a>
 
@@ -135,6 +136,79 @@ Password: someshit1989
 
 # Access the app at: http://localhost:5173
 ```
+
+## Git Workflow <a name="git-workflow"></a>
+
+### Regular Commit and Push Practice
+
+**IMPORTANT: Claude should regularly commit and push changes to maintain a clean git history and prevent data loss.**
+
+#### When to Commit
+1. **After each logical unit of work**:
+   - Completing a feature or bug fix
+   - Finishing a component implementation
+   - Making significant structural changes
+   - Refactoring code sections
+
+2. **Before major changes**:
+   - Creating a checkpoint before risky modifications
+   - Before switching to work on a different feature
+   - Before experimental changes
+
+#### Commit Workflow
+```bash
+# 1. Check current status to see what has changed
+git status
+
+# 2. Review the actual changes
+git diff
+
+# 3. Add specific files (recommended) or all changes
+git add [specific-files]  # Preferred: Add specific files
+# OR
+git add .  # Add all changes (use with caution)
+
+# 4. Create a descriptive commit
+git commit -m "feat: Add user authentication flow
+
+- Implement login/logout functionality
+- Add session management
+- Create protected route wrapper"
+
+# 5. Push to remote repository
+git push origin feature/database-schema-setup
+```
+
+#### Commit Message Format
+Follow conventional commits specification:
+- `feat:` New feature
+- `fix:` Bug fix
+- `docs:` Documentation changes
+- `style:` Code style changes (formatting, semicolons, etc)
+- `refactor:` Code refactoring
+- `test:` Adding or updating tests
+- `chore:` Maintenance tasks
+
+**Examples:**
+```bash
+git commit -m "feat: Add campaign dashboard filtering"
+git commit -m "fix: Resolve date formatting in reports"
+git commit -m "refactor: Extract reusable chart components"
+```
+
+#### Best Practices
+1. **Commit frequently**: Small, focused commits are better than large, complex ones
+2. **Write clear messages**: Future developers (including yourself) will thank you
+3. **Test before committing**: Run `yarn lint` and ensure the app builds
+4. **Never commit secrets**: Double-check for API keys or sensitive data
+5. **Push regularly**: Don't let local commits pile up - push to remote often
+
+#### Educational Note for Learning Developers
+Regular commits serve multiple purposes:
+- **Version Control**: Each commit is a snapshot you can return to
+- **Collaboration**: Others can see your progress and changes
+- **Documentation**: Commit messages document the evolution of the code
+- **Safety Net**: If something breaks, you can revert to a working state
 
 ## High-Level Architecture
 
