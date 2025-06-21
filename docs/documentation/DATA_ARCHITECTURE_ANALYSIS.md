@@ -6,7 +6,7 @@ This document provides a comprehensive analysis of the **Change Influence MVP Da
 
 The Change Influence MVP Dashboard is a sophisticated **brand marketing effectiveness platform** that helps companies:
 - **Analyze brand performance** across multiple channels and regions
-- **Process and analyze marketing content** for effectiveness scoring
+- **Process and analyze marketing content** for effectiveness scoring¹
 - **Track campaign performance** and strategic alignment
 - **Manage brand strategies** and customer engagement metrics
 
@@ -30,7 +30,7 @@ graph TB
         Auth[Supabase Auth]
     end
     
-    subgraph "Service Layer"
+    subgraph "Service Layer"²
         BS["brandService.ts<br/>getAllBrands()<br/>getBrandWithFullData()<br/>getBrandMarketAnalysis()"]
         CS["contentService.ts<br/>getContent()<br/>getContentById()<br/>deleteContentById()"]
         US["uploadService.ts<br/>uploadFile()<br/>storeContentMetadata()<br/>uploadContent()"]
@@ -91,7 +91,7 @@ graph TB
 
 The **Service Layer** (`src/services/`) handles all database operations and provides a clean interface between the application and Supabase:
 
-#### 1. **brandService.ts** (23KB, 782 lines)
+#### 1. **brandService.ts** (23.3KB, 782+ lines)³
 - **Core Functions:**
   - `getAllBrands()` - Fetch available brands for selection
   - `getAllRegions()` - Fetch available regions
@@ -104,7 +104,7 @@ The **Service Layer** (`src/services/`) handles all database operations and prov
   - Parallel data fetching for performance optimization
   - Complex relational data assembly from multiple tables
 
-#### 2. **contentService.ts** (8.6KB, 289 lines)
+#### 2. **contentService.ts** (8.6KB, 289 lines)⁴
 - **Content CRUD Operations:**
   - `getContent()` - List all content with filtering
   - `getContentById()` - Single content item retrieval
@@ -138,7 +138,7 @@ The **Service Layer** (`src/services/`) handles all database operations and prov
 
 ## Hook Usage Across Pages
 
-### Hook Distribution Pattern
+### Hook Distribution Pattern⁵
 
 ```mermaid
 graph LR
@@ -329,7 +329,7 @@ graph TB
 
 ### BrandContext Features
 
-The `BrandContext` (`src/contexts/BrandContext.tsx`) implements a **sophisticated dual-provider system**:
+The `BrandContext` (`src/contexts/BrandContext.tsx`) implements a **sophisticated dual-provider system**⁶:
 
 #### **1. DatabaseBrandProvider**
 - Uses **React Query** to fetch real brand data from Supabase
@@ -374,7 +374,7 @@ interface AuthContextType {
 
 ## Content Processing Workflow
 
-### Upload to Analysis Pipeline
+### Upload to Analysis Pipeline⁷
 
 ```mermaid
 sequenceDiagram
@@ -582,7 +582,7 @@ async getAllBrands(): Promise<DatabaseBrand[]> {
 
 ### **3. Performance Optimizations**
 
-#### **React Query Caching**
+#### **React Query Caching**⁸
 ```typescript
 // Brand data caching configuration
 const { data: brandData, isLoading, error } = useQuery({
@@ -620,7 +620,7 @@ const ContentReportsPage = React.lazy(() => import('./pages/ContentReportsPage.t
 - **Token refresh** handling
 - **Session persistence** with secure storage
 
-## Database Schema Overview
+## Database Schema Overview⁹
 
 ### **Core Tables**
 
@@ -670,4 +670,139 @@ The Change Influence MVP Dashboard demonstrates a **well-architected React appli
 - **Performance optimizations** for user experience
 - **Security best practices** implementation
 
-This architecture provides a **solid foundation** for a complex brand analytics platform while maintaining excellent user experience through efficient data management and real-time updates. The modular design allows for easy extension and maintenance as the platform evolves. 
+This architecture provides a **solid foundation** for a complex brand analytics platform while maintaining excellent user experience through efficient data management and real-time updates. The modular design allows for easy extension and maintenance as the platform evolves.
+
+---
+
+## Implementation Notes & Details
+
+### ¹ Content Processing Implementation Status
+The content analysis feature is currently implemented as a **simulation** for development purposes:
+- Progress updates occur in 10% increments every 1.5 seconds
+- Mock analysis results are generated with randomized scores
+- Production implementation would integrate with actual AI/ML services
+
+### ² Service Layer - Additional Services
+The service layer includes additional functionality beyond what's shown in the diagram:
+- Authentication operations integrated into the `useAuth` hook
+- Various utility services embedded within main service files
+
+### ³ brandService.ts - Complete Function Listing
+**brandService.ts** includes 30+ functions:
+```typescript
+// Brand CRUD Operations
+getAllBrands(), getBrandBySlug(), createBrand(), updateBrand(), deleteBrand()
+
+// Brand Analytics
+getBrandWithFullData(), getBrandMarketAnalysis(), getBrandCompetitors()
+getBrandSWOT(), getBrandCustomerSegments(), getBrandPersonas()
+getBrandPerformanceHistory(), getBrandFunnelData()
+
+// Brand Content Management
+getBrandMessages(), getBrandObjectives(), getBrandStrategies()
+getBrandCampaigns(), getBrandAudiences(), getBrandVoiceAttributes()
+
+// Utility Functions
+transformToBrandData() (private), various update functions for each entity type
+```
+
+### ⁴ contentService.ts - Complete Function Listing
+**contentService.ts** includes 14+ functions:
+```typescript
+// Content CRUD
+getContent(), getContentById(), deleteContentById()
+
+// Foreign Key Lookups (for name-to-ID resolution)
+getBrandIdByName(), getCampaignIdByName(), getAudienceIdByName()
+getStrategyIdByName(), getAgencyIdByName(), getFormatIdByName()
+getTypeIdByName()
+
+// Utility Functions
+Various helper methods for data transformation
+```
+
+### ⁵ Additional Hooks Available
+Beyond the core hooks shown in diagrams:
+```typescript
+// Utility Hooks
+useContentProcessing() - Manages content processing workflows
+useScores() - Score calculation and management
+useCheckDetails() - Validation check details
+useBrandFormOptions() - Dynamic form options based on brand data
+use-mobile() - Responsive design detection
+use-toast() - Toast notification system
+```
+
+Additional pages not shown in the diagram:
+- `ContentProcessingPage.tsx` - Separate content processing view
+- `AIMarketResearch.tsx` - AI-powered market research tool
+- `AIMessageTesting.tsx` - AI message testing interface
+- `NotFound.tsx` - 404 error page
+
+### ⁶ Environment Configuration
+The dual-provider system is controlled by:
+```bash
+# .env.local
+VITE_USE_DATABASE_BRANDS=true  # Current setting uses database mode
+```
+
+When `false`, the system falls back to static data for offline development.
+
+### ⁷ Content Analysis Mock Implementation
+Current implementation details:
+- Uses `setTimeout` to simulate processing delays
+- Generates random scores between 60-95
+- Creates placeholder recommendations
+- Stores results in `content_analysis` table
+- Would be replaced with actual API calls to analysis services
+
+### ⁸ React Query Configuration Issues
+**Current State**: Using default QueryClient configuration
+**Recommended Implementation**:
+```typescript
+// In App.tsx
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000,    // 5 minutes
+      gcTime: 10 * 60 * 1000,      // 10 minutes (formerly cacheTime)
+      retry: 3,
+      retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
+    },
+  },
+});
+```
+
+### ⁹ Database Schema Completeness
+**Type Definition Status**:
+- `src/types/supabase.ts` - Contains only content-related tables
+- `src/types/supabase-generated.ts` - Currently empty
+- Missing type definitions for 20+ brand-related tables
+
+**Complete Brand Tables List**:
+- `brands`, `brand_regions`, `brand_financials`
+- `brand_voice_attributes`, `brand_objectives`, `brand_messages`
+- `brand_audiences`, `brand_strategies`, `brand_campaigns`
+- `brand_overall_scores`, `brand_channel_scores`, `brand_performance_history`
+- `brand_funnel_data`, `brand_content`, `brand_market_analysis`
+- `brand_competitors`, `brand_swot`, `brand_customer_segments`
+- `brand_customer_journey`, `brand_personas`
+
+**To regenerate types**:
+```bash
+npx supabase gen types typescript --project-id [your-project-id] > src/types/supabase-generated.ts
+```
+
+### Additional Implementation Considerations
+
+1. **Security**: All content operations include user_id checks for RLS compliance
+2. **File Storage**: Uses `client-content` bucket with user-scoped paths (`userId/fileName`)
+3. **Error Handling**: Specific handling for RLS violations (error code 42501)
+4. **Migration Status**: Recent migration added foreign key relationships between content and brand tables
+5. **Brand Data View**: Uses `brand_full_data` view for efficient querying of complete brand information
+
+---
+
+**Document Version**: 1.1  
+**Last Updated**: January 2025  
+**Next Review**: When React Query configuration is implemented
