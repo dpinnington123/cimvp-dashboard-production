@@ -30,7 +30,7 @@ graph TB
         Auth[Supabase Auth]
     end
     
-    subgraph "Service Layer"²
+    subgraph "Service Layer"
         BS["brandService.ts<br/>getAllBrands()<br/>getBrandWithFullData()<br/>getBrandMarketAnalysis()"]
         CS["contentService.ts<br/>getContent()<br/>getContentById()<br/>deleteContentById()"]
         US["uploadService.ts<br/>uploadFile()<br/>storeContentMetadata()<br/>uploadContent()"]
