@@ -22,17 +22,17 @@ export const CampaignPlannerPage = () => {
         format: item.format,
         type: item.type || 'driver',
         status: item.status || 'draft',
-        qualityScore: item.qualityScore || Math.floor(Math.random() * 30) + 70,
+        qualityScore: item.qualityScore || 0, // Now populated from database
         description: item.description,
         cost: item.cost,
         audience: item.audience,
         keyActions: item.keyActions,
         agencies: item.agencies,
         campaignScores: {
-          overallEffectiveness: item.scores?.overall || Math.floor(Math.random() * 20) + 60,
-          strategicAlignment: item.scores?.strategic || Math.floor(Math.random() * 20) + 60, 
-          customerAlignment: item.scores?.customer || Math.floor(Math.random() * 20) + 60,
-          contentEffectiveness: item.scores?.execution || Math.floor(Math.random() * 20) + 60,
+          overallEffectiveness: item.scores?.overall || 0, // Now populated from database
+          strategicAlignment: item.scores?.strategic || 0, // Now populated from database
+          customerAlignment: item.scores?.customer || 0, // Now populated from database
+          contentEffectiveness: item.scores?.execution || 0, // Now populated from database
         }
       };
     });

@@ -399,32 +399,29 @@ export default function ContentReportsPage() {
 
       let averageScore = 0;
 
-      // Find if there's a pre-calculated summary for this categoryDisplayName in categoryReviewSummaries.
-      const summary = categoryReviewSummaries?.find(s => {
-        if (!s.category_name) return false;
-
-        // Attempt to map the summary's database category name to a canonical display name.
-        const mappedSummaryDisplayName = categoryDisplayMap[s.category_name] ||
-                                        categoryDisplayMap[s.category_name.toLowerCase()];
+      // Get score from brand_content table based on category
+      if (contentDetails?.brand_content && Array.isArray(contentDetails.brand_content) && contentDetails.brand_content.length > 0) {
+        const brandContent = contentDetails.brand_content[0];
         
-        if (mappedSummaryDisplayName) {
-          // Compare the mapped display name (from summary) with the current target categoryDisplayName.
-          return mappedSummaryDisplayName.toLowerCase().replace(/[-_\s]+/g, ' ') === 
-                 categoryDisplayName.toLowerCase().replace(/[-_\s]+/g, ' ');
+        // Map category display names to brand_content score fields
+        switch (categoryDisplayName) {
+          case "Strategic Alignment":
+            averageScore = brandContent.strategic_score || 0;
+            break;
+          case "Customer Alignment":
+            averageScore = brandContent.customer_score || 0;
+            break;
+          case "Content Effectiveness":
+            averageScore = brandContent.execution_score || 0;
+            break;
+          default:
+            averageScore = 0;
         }
-        return false;
-      });
-
-      if (summary && summary.category_score !== null && !isNaN(summary.category_score)) {
-        // If a valid summary score exists, use it.
-        averageScore = Math.round(summary.category_score);
       } else {
-        // Otherwise, calculate the average from the collected categoryChecks.
+        // Fallback: calculate from individual checks if brand_content not available
         if (categoryChecks.length > 0) {
           const sum = categoryChecks.reduce((acc, check) => acc + convertScoreToPercentage(check.score_value), 0);
           averageScore = Math.round(sum / categoryChecks.length);
-        } else {
-          averageScore = 0; // Default to 0 if no checks and no valid summary.
         }
       }
 
@@ -435,22 +432,17 @@ export default function ContentReportsPage() {
     });
 
     return result;
-  }, [contentScores, categoryReviewSummaries, categoryDisplayMap]);
+  }, [contentScores, categoryReviewSummaries, categoryDisplayMap, contentDetails]);
 
   // --- Calculations & Helpers (Moved Up) ---
-  // Calculate overall score (average of all scores) - MUST BE CALLED UNCONDITIONALLY
+  // Get overall score from brand_content table (calculated by Supabase)
   const overallScore = React.useMemo(() => {
-    // Calculation depends on contentScores, handle case where it might be undefined initially
-    if (!contentScores || contentScores.length === 0) return 0;
-    
-    const sum = contentScores.reduce((acc: number, score: Score) => {
-      // Convert score from 0-5 scale to 0-100 percentage
-      return acc + convertScoreToPercentage(score.score_value);
-    }, 0);
-    
-    // Avoid division by zero if length is 0 (though checked above)
-    return contentScores.length > 0 ? Math.round(sum / contentScores.length) : 0;
-  }, [contentScores]); // Dependency array is correct
+    // Check if we have brand_content data with overall_score
+    if (contentDetails?.brand_content && Array.isArray(contentDetails.brand_content) && contentDetails.brand_content.length > 0) {
+      return contentDetails.brand_content[0].overall_score || 0;
+    }
+    return 0;
+  }, [contentDetails]); // Now depends on contentDetails instead of contentScores
 
   // Helper function to get score label based on value
   const getScoreLabel = (score: number) => {

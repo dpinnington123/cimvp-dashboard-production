@@ -311,7 +311,7 @@ class BrandService {
       })),
       content: (dbData.content || []).map((content: any) => {
         return {
-          id: content.content_id || content.id,
+          id: content.id || content.content_id, // Use UUID id first, fallback to content_id
           name: content.name,
           campaign: content.brand_campaigns?.name || '', // Use campaign name from join
           campaign_id: content.campaign_id, // Include campaign_id for mapping

@@ -28,7 +28,16 @@ export const getContentById = async (id: number): Promise<Content | null> => { /
   // TODO: Implement actual Supabase query
   const { data, error } = await supabase
     .from('content') // Use the actual table name
-    .select('*')
+    .select(`
+      *,
+      brand_content (
+        overall_score,
+        strategic_score,
+        customer_score,
+        execution_score,
+        quality_score
+      )
+    `)
     .eq('id', id)      // Use the actual column name
     .single(); // Use .single() if expecting one result
 
@@ -91,6 +100,91 @@ export const deleteContentById = async (id: number): Promise<{ success: boolean,
   } catch (error) {
     console.error(`Unexpected error deleting content with id ${id}:`, error);
     return { success: false, error: error as Error };
+  }
+};
+
+// Update content status in brand_content table
+export const updateContentStatus = async (
+  contentId: string | number, 
+  status: 'live' | 'draft' | 'planned' | 'active'
+): Promise<{ success: boolean, error: Error | null }> => {
+  console.log(`Updating status for content ${contentId} to ${status}`);
+  
+  // Map 'live' to 'active' for database compatibility
+  const dbStatus = status === 'live' ? 'active' : status;
+  
+  try {
+    const { data, error } = await supabase
+      .from('brand_content')
+      .update({ status: dbStatus, updated_at: new Date().toISOString() })
+      .eq('id', contentId)
+      .select();
+    
+    if (error) {
+      console.error(`Error updating content status:`, error);
+      return { success: false, error: new Error(`Failed to update status: ${error.message}`) };
+    }
+    
+    if (!data || data.length === 0) {
+      console.warn(`No content updated - content may not exist or permission denied`);
+      return { success: false, error: new Error('Content not found or permission denied') };
+    }
+    
+    console.log(`Successfully updated content status:`, data);
+    return { success: true, error: null };
+  } catch (error) {
+    console.error(`Unexpected error updating content status:`, error);
+    return { success: false, error: error as Error };
+  }
+};
+
+// Comprehensive update for brand content
+export const updateBrandContent = async (
+  contentId: string | number,
+  updates: {
+    name?: string;
+    format?: string;
+    type?: string;
+    status?: 'live' | 'draft' | 'planned' | 'active';
+    description?: string;
+    quality_score?: number;
+    cost?: number;
+    audience?: string;
+    key_actions?: string[];
+    agencies?: string[];
+    overall_score?: number;
+    strategic_score?: number;
+    customer_score?: number;
+    execution_score?: number;
+  }
+): Promise<{ data: unknown | null; error: Error | null }> => {
+  console.log(`Updating brand content ${contentId} with:`, updates);
+  
+  try {
+    // Map 'live' to 'active' for database compatibility if status is being updated
+    const updateData = {
+      ...updates,
+      status: updates.status === 'live' ? 'active' : updates.status,
+      updated_at: new Date().toISOString()
+    };
+    
+    const { data, error } = await supabase
+      .from('brand_content')
+      .update(updateData)
+      .eq('id', contentId)
+      .select()
+      .single();
+    
+    if (error) {
+      console.error(`Error updating brand content:`, error);
+      return { data: null, error: new Error(`Failed to update content: ${error.message}`) };
+    }
+    
+    console.log(`Successfully updated brand content:`, data);
+    return { data, error: null };
+  } catch (error) {
+    console.error(`Unexpected error updating brand content:`, error);
+    return { data: null, error: error as Error };
   }
 };
 
