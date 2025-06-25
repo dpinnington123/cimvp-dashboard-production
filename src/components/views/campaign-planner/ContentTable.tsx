@@ -15,6 +15,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useUpdateContentStatus } from '@/hooks/useUpdateBrandContent';
 
 interface ContentTableProps {
   items: ContentItem[];
@@ -40,6 +41,9 @@ const ContentTable: React.FC<ContentTableProps> = ({
     format: '',
     type: '',
   });
+  
+  // Hook for updating content status
+  const updateContentStatus = useUpdateContentStatus();
 
   const filteredItems = useMemo(() => {
     return items.filter((item) => {
@@ -150,7 +154,7 @@ const ContentTable: React.FC<ContentTableProps> = ({
                           variant="outline" 
                           size="sm"
                           className={`px-3 py-1 h-7 font-normal text-xs ${
-                            item.status === 'live' 
+                            item.status === 'active' || item.status === 'live'
                               ? 'bg-green-100 hover:bg-green-200 text-green-800 border-green-200' 
                               : item.status === 'draft'
                                 ? 'bg-yellow-100 hover:bg-yellow-200 text-yellow-800 border-yellow-200'
@@ -165,12 +169,24 @@ const ContentTable: React.FC<ContentTableProps> = ({
                         <DropdownMenuItem 
                           onClick={() => {
                             const newStatus = "live" as const;
-                            const updatedItem = { ...item, status: newStatus };
+                            
+                            // Optimistically update the UI (use 'active' for display)
+                            const updatedItem = { ...item, status: 'active' };
                             setItems(prev => 
                               prev.map(i => i.id === item.id ? updatedItem : i)
                             );
-                            toast(`Status Updated`, {
-                              description: `Status changed to ${newStatus}`,
+                            
+                            // Update in database (service will map 'live' to 'active')
+                            updateContentStatus.mutate({
+                              contentId: item.id,
+                              status: newStatus
+                            }, {
+                              onError: () => {
+                                // Revert on error
+                                setItems(prev => 
+                                  prev.map(i => i.id === item.id ? item : i)
+                                );
+                              }
                             });
                           }}
                         >
@@ -179,12 +195,24 @@ const ContentTable: React.FC<ContentTableProps> = ({
                         <DropdownMenuItem 
                           onClick={() => {
                             const newStatus = "draft" as const;
+                            
+                            // Optimistically update the UI
                             const updatedItem = { ...item, status: newStatus };
                             setItems(prev => 
                               prev.map(i => i.id === item.id ? updatedItem : i)
                             );
-                            toast(`Status Updated`, {
-                              description: `Status changed to ${newStatus}`,
+                            
+                            // Update in database
+                            updateContentStatus.mutate({
+                              contentId: item.id,
+                              status: newStatus
+                            }, {
+                              onError: () => {
+                                // Revert on error
+                                setItems(prev => 
+                                  prev.map(i => i.id === item.id ? item : i)
+                                );
+                              }
                             });
                           }}
                         >
@@ -193,12 +221,24 @@ const ContentTable: React.FC<ContentTableProps> = ({
                         <DropdownMenuItem 
                           onClick={() => {
                             const newStatus = "planned" as const;
+                            
+                            // Optimistically update the UI
                             const updatedItem = { ...item, status: newStatus };
                             setItems(prev => 
                               prev.map(i => i.id === item.id ? updatedItem : i)
                             );
-                            toast(`Status Updated`, {
-                              description: `Status changed to ${newStatus}`,
+                            
+                            // Update in database
+                            updateContentStatus.mutate({
+                              contentId: item.id,
+                              status: newStatus
+                            }, {
+                              onError: () => {
+                                // Revert on error
+                                setItems(prev => 
+                                  prev.map(i => i.id === item.id ? item : i)
+                                );
+                              }
                             });
                           }}
                         >

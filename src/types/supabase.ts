@@ -35,7 +35,6 @@ export type Database = {
           id: number
           content_review_id: number
           category_name: string
-          category_score: number
           num_checks: number
           check_details: string | null
           summary_comment: string | null
@@ -47,7 +46,6 @@ export type Database = {
           id?: number
           content_review_id: number
           category_name: string
-          category_score: number
           num_checks: number
           check_details?: string | null
           summary_comment?: string | null
@@ -59,7 +57,6 @@ export type Database = {
           id?: number
           content_review_id?: number
           category_name?: string
-          category_score?: number
           num_checks?: number
           check_details?: string | null
           summary_comment?: string | null
