@@ -46,17 +46,17 @@ const BrandProfile = () => {
   const [editingProfile, setEditingProfile] = useState(false);
   
   // Voice attributes state
-  const [voiceAttributes, setVoiceAttributes] = useState<VoiceAttribute[]>(brandData.voice || []);
+  const [voiceAttributes, setVoiceAttributes] = useState<VoiceAttribute[]>([]);
 
   // Initial data - derived from our structured brand data
-  const [brandDetails, setBrandDetails] = useState<BrandDetailsType>({
-    brandName: brandData.profile.name,
-    region: selectedRegion,
-    businessArea: brandData.profile.businessArea,
-    annualSales: brandData.profile.financials.annualSales,
-    targetSales: brandData.profile.financials.targetSales,
-    growth: brandData.profile.financials.growth,
-  });
+  const [brandDetails, setBrandDetails] = useState<BrandDetailsType>(() => ({
+    brandName: brandData?.profile?.name || '',
+    region: brandData?.profile?.region || '',
+    businessArea: brandData?.profile?.businessArea || '',
+    annualSales: brandData?.profile?.financials?.annualSales || '$0',
+    targetSales: brandData?.profile?.financials?.targetSales || '$0',
+    growth: brandData?.profile?.financials?.growth || '0%',
+  }));
 
   // Brand profile comparison data
   const [profileAttributes, setProfileAttributes] = useState([
@@ -110,7 +110,7 @@ const BrandProfile = () => {
     if (brandData) {
       setBrandDetails({
         brandName: brandData.profile.name,
-        region: selectedRegion,
+        region: brandData.profile.region, // Use brand's region, not selectedRegion
         businessArea: brandData.profile.businessArea,
         annualSales: brandData.profile.financials.annualSales,
         targetSales: brandData.profile.financials.targetSales,
@@ -119,7 +119,7 @@ const BrandProfile = () => {
       
       setVoiceAttributes(brandData.voice || []);
     }
-  }, [selectedBrand, selectedRegion, brandData]);
+  }, [brandData]); // Remove selectedBrand and selectedRegion from dependencies
 
   // Form for brand details
   const detailsForm = useForm<BrandDetailsType>({
@@ -136,12 +136,12 @@ const BrandProfile = () => {
   // Update form values when the brand details change
   useEffect(() => {
     detailsForm.reset(brandDetails);
-  }, [brandDetails, detailsForm]);
+  }, [brandDetails]); // Remove detailsForm from dependencies
   
   // Update voice form values when voice attributes change
   useEffect(() => {
     voiceForm.reset({ voiceAttributes });
-  }, [voiceAttributes, voiceForm]);
+  }, [voiceAttributes]); // Remove voiceForm from dependencies
 
   // Handle saving brand details
   const handleSaveDetails = (data: BrandDetailsType) => {

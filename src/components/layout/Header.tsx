@@ -5,7 +5,9 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useNavigate } from 'react-router-dom';
 import { toast } from "sonner";
 import logoImage from '@/assets/ChangeInfluence-logo.png';
-import { useBrand, brandNames, regions } from '@/contexts/BrandContext';
+import { useBrand } from '@/contexts/BrandContext';
+import { useQuery } from '@tanstack/react-query';
+import { brandService } from '@/services/brandService';
 import {
   Select,
   SelectContent,
@@ -21,15 +23,38 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Globe, Building, User, Settings, LogOut, ChevronDown } from 'lucide-react';
-import { brandsData } from '@/contexts/data/index';
+import { Globe, Building, User, LogOut, ChevronDown } from 'lucide-react';
 // We'll add page title logic and user menu later
+
+interface Brand {
+  id: string;
+  slug: string;
+  name: string;
+  business_area?: string;
+  created_at?: string;
+  updated_at?: string;
+}
 
 export default function Header() {
   const { signOut, user } = useAuth(); // Get signOut and user
   const navigate = useNavigate();
-  const { selectedBrand, setSelectedBrand, selectedRegion, setSelectedRegion, getBrandData } = useBrand();
+  const { 
+    selectedBrand, 
+    setSelectedBrand, 
+    selectedRegion, 
+    setSelectedRegion, 
+    getBrandData,
+    availableRegions,
+    isLoading 
+  } = useBrand();
   const brandData = getBrandData();
+
+  // Fetch all brands to get their names
+  const { data: allBrands = [] } = useQuery<Brand[]>({
+    queryKey: ['brands'],
+    queryFn: brandService.getAllBrands,
+    staleTime: 15 * 60 * 1000,
+  });
 
   // Get user's name from metadata, fall back to email if not available
   const userDisplayName = user?.user_metadata?.full_name 
@@ -77,16 +102,16 @@ export default function Header() {
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
             <Building className="h-4 w-4 text-muted-foreground" />
-            <Select value={selectedBrand} onValueChange={setSelectedBrand}>
+            <Select value={selectedBrand} onValueChange={setSelectedBrand} disabled={isLoading}>
               <SelectTrigger className="h-8 w-40 text-sm">
                 <SelectValue>
-                  {brandData.profile.name}
+                  {isLoading ? 'Loading...' : brandData.profile.name}
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
-                {brandNames.map((brandKey) => (
-                  <SelectItem key={brandKey} value={brandKey}>
-                    {brandsData[brandKey].profile.name}
+                {allBrands.map((brand) => (
+                  <SelectItem key={brand.slug} value={brand.slug}>
+                    {brand.name}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -100,7 +125,7 @@ export default function Header() {
                 <SelectValue>{selectedRegion}</SelectValue>
               </SelectTrigger>
               <SelectContent>
-                {regions.map((region) => (
+                {availableRegions.map((region) => (
                   <SelectItem key={region} value={region}>
                     {region}
                   </SelectItem>
