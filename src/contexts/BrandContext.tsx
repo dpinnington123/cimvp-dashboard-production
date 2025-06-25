@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode, useMemo } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useMemo, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { brandService } from '@/services/brandService';
 import type { BrandData } from '@/types/brand';
@@ -27,8 +27,8 @@ interface BrandProviderProps {
   children: ReactNode;
 }
 
-// Empty brand data structure for loading states
-const getEmptyBrandData = (): BrandData => ({
+// Empty brand data structure for loading states - stable reference
+const EMPTY_BRAND_DATA: BrandData = {
   profile: {
     id: '',
     name: '',
@@ -55,7 +55,7 @@ const getEmptyBrandData = (): BrandData => ({
     digital: { overall: 0, strategic: 0, customer: 0, execution: 0 }
   },
   funnelData: []
-});
+};
 
 export const DatabaseBrandProvider = ({ children }: BrandProviderProps) => {
   const [selectedBrand, setSelectedBrand] = useState<string>('eco-solutions');
@@ -101,7 +101,7 @@ export const DatabaseBrandProvider = ({ children }: BrandProviderProps) => {
 
   const getBrandData = (): BrandData => {
     if (!brandData || isLoading) {
-      return getEmptyBrandData();
+      return EMPTY_BRAND_DATA;
     }
     return brandData as BrandData;
   };
