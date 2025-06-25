@@ -37,7 +37,7 @@ interface VoiceFormData {
 
 const BrandProfile = () => {
   // Get the current brand data from context
-  const { selectedBrand, selectedRegion, getBrandData } = useBrand();
+  const { selectedBrand, selectedRegion, getBrandData, isLoading } = useBrand();
   const brandData = getBrandData();
   
   // State for edit modes
@@ -105,12 +105,12 @@ const BrandProfile = () => {
     }
   }, [brandData]);
   
-  // Update state when brand changes
+  // Update state when selected brand changes or when brand data actually loads
   useEffect(() => {
-    if (brandData) {
+    if (brandData && brandData.profile.name) {
       setBrandDetails({
         brandName: brandData.profile.name,
-        region: brandData.profile.region, // Use brand's region, not selectedRegion
+        region: brandData.profile.region,
         businessArea: brandData.profile.businessArea,
         annualSales: brandData.profile.financials.annualSales,
         targetSales: brandData.profile.financials.targetSales,
@@ -119,7 +119,14 @@ const BrandProfile = () => {
       
       setVoiceAttributes(brandData.voice || []);
     }
-  }, [brandData]); // Remove selectedBrand and selectedRegion from dependencies
+  }, [
+    selectedBrand,
+    // Add specific brand data fields to avoid infinite loops but catch data loads
+    brandData.profile.name,
+    brandData.profile.financials.annualSales,
+    brandData.profile.financials.targetSales,
+    brandData.profile.financials.growth
+  ]);
 
   // Form for brand details
   const detailsForm = useForm<BrandDetailsType>({
@@ -177,6 +184,15 @@ const BrandProfile = () => {
       setVoiceAttributes(voiceAttributes.slice(0, -1));
     }
   };
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-gray-500">Loading brand data...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
