@@ -126,6 +126,7 @@ cp env.example .env.local
 # Required environment variables:
 # VITE_SUPABASE_URL=your_supabase_url
 # VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+# SUPABASE_PROJECT_ID=gbzrparwhkacvfasltbe (for Supabase MCP tool)
 ```
 
 ### Development Login Credentials
@@ -202,6 +203,7 @@ git commit -m "refactor: Extract reusable chart components"
 3. **Test before committing**: Run `yarn lint` and ensure the app builds
 4. **Never commit secrets**: Double-check for API keys or sensitive data
 5. **Push regularly**: Don't let local commits pile up - push to remote often
+6. **No AI attribution**: Never include "Generated with Claude Code" or similar AI attribution in commit messages
 
 #### Educational Note for Learning Developers
 Regular commits serve multiple purposes:

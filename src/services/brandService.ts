@@ -141,6 +141,27 @@ class BrandService {
   }
 
   /**
+   * Get brand ID by slug
+   */
+  async getBrandIdBySlug(slug: string): Promise<string | null> {
+    const { data, error } = await supabase
+      .from('brands')
+      .select('id')
+      .eq('slug', slug)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return null; // Brand not found
+      }
+      console.error('Error fetching brand ID:', error);
+      return null;
+    }
+
+    return data?.id || null;
+  }
+
+  /**
    * Get brand with all related data (for dashboard/detailed views)
    */
   async getBrandWithFullData(slug: string): Promise<BrandData | null> {
@@ -776,6 +797,205 @@ class BrandService {
     }
 
     return data;
+  }
+
+  /**
+   * Update brand objectives (JSONB field)
+   */
+  async updateBrandObjectives(brandId: string, objectives: any[]): Promise<void> {
+    const { error } = await supabase
+      .from('brands')
+      .update({ 
+        objectives,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', brandId);
+
+    if (error) {
+      console.error('Error updating objectives:', error);
+      throw new Error(`Failed to update objectives: ${error.message}`);
+    }
+  }
+
+  /**
+   * Update brand messages (JSONB field)
+   */
+  async updateBrandMessages(brandId: string, messages: any[]): Promise<void> {
+    const { error } = await supabase
+      .from('brands')
+      .update({ 
+        messages,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', brandId);
+
+    if (error) {
+      console.error('Error updating messages:', error);
+      throw new Error(`Failed to update messages: ${error.message}`);
+    }
+  }
+
+  /**
+   * Update brand voice attributes (JSONB field)
+   */
+  async updateBrandVoiceAttributes(brandId: string, voiceAttributes: any[]): Promise<void> {
+    const { error } = await supabase
+      .from('brands')
+      .update({ 
+        voice_attributes: voiceAttributes,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', brandId);
+
+    if (error) {
+      console.error('Error updating voice attributes:', error);
+      throw new Error(`Failed to update voice attributes: ${error.message}`);
+    }
+  }
+
+  /**
+   * Update brand audiences
+   */
+  async updateBrandAudiences(brandId: string, audiences: any[]): Promise<void> {
+    // First delete existing audiences
+    await supabase
+      .from('brand_audiences')
+      .delete()
+      .eq('brand_id', brandId);
+
+    // Then insert new ones
+    if (audiences.length > 0) {
+      const audiencesToInsert = audiences.map((audience, index) => ({
+        brand_id: brandId,
+        name: audience.text || audience.name,
+        notes: audience.notes,
+        demographics: audience.demographics || {},
+        order_index: index
+      }));
+
+      const { error } = await supabase
+        .from('brand_audiences')
+        .insert(audiencesToInsert);
+
+      if (error) {
+        console.error('Error updating audiences:', error);
+        throw new Error(`Failed to update audiences: ${error.message}`);
+      }
+    }
+  }
+
+  /**
+   * Update brand strategies
+   */
+  async updateBrandStrategies(brandId: string, strategies: any[]): Promise<void> {
+    // First delete existing strategies
+    await supabase
+      .from('brand_strategies')
+      .delete()
+      .eq('brand_id', brandId);
+
+    // Then insert new ones
+    if (strategies.length > 0) {
+      const strategiesToInsert = strategies.map((strategy) => ({
+        brand_id: brandId,
+        name: strategy.name,
+        description: strategy.description,
+        score: strategy.score || 0,
+        status: strategy.status || 'active'
+      }));
+
+      const { error } = await supabase
+        .from('brand_strategies')
+        .insert(strategiesToInsert);
+
+      if (error) {
+        console.error('Error updating strategies:', error);
+        throw new Error(`Failed to update strategies: ${error.message}`);
+      }
+    }
+  }
+
+  /**
+   * Update brand personas (JSONB field)
+   */
+  async updateBrandPersonas(brandId: string, personas: any[]): Promise<void> {
+    const { error } = await supabase
+      .from('brands')
+      .update({ 
+        personas,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', brandId);
+
+    if (error) {
+      console.error('Error updating personas:', error);
+      throw new Error(`Failed to update personas: ${error.message}`);
+    }
+  }
+
+  /**
+   * Update brand customer segments (JSONB field)
+   */
+  async updateBrandCustomerSegments(brandId: string, customerSegments: any[]): Promise<void> {
+    const { error } = await supabase
+      .from('brands')
+      .update({ 
+        customer_segments: customerSegments,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', brandId);
+
+    if (error) {
+      console.error('Error updating customer segments:', error);
+      throw new Error(`Failed to update customer segments: ${error.message}`);
+    }
+  }
+
+  /**
+   * Update brand customer journey (JSONB field)
+   */
+  async updateBrandCustomerJourney(brandId: string, customerJourney: any[]): Promise<void> {
+    const { error } = await supabase
+      .from('brands')
+      .update({ 
+        customer_journey: customerJourney,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', brandId);
+
+    if (error) {
+      console.error('Error updating customer journey:', error);
+      throw new Error(`Failed to update customer journey: ${error.message}`);
+    }
+  }
+
+  /**
+   * Update brand financials
+   */
+  async updateBrandFinancials(brandId: string, financials: {
+    annualSales: string;
+    targetSales: string; 
+    growthPercentage: number;
+  }): Promise<void> {
+    const currentYear = new Date().getFullYear();
+    
+    const { error } = await supabase
+      .from('brand_financials')
+      .upsert({
+        brand_id: brandId,
+        year: currentYear,
+        annual_sales: financials.annualSales,
+        target_sales: financials.targetSales,
+        growth_percentage: financials.growthPercentage,
+        updated_at: new Date().toISOString()
+      }, {
+        onConflict: 'brand_id,year'
+      });
+
+    if (error) {
+      console.error('Error updating financials:', error);
+      throw new Error(`Failed to update financials: ${error.message}`);
+    }
   }
 }
 

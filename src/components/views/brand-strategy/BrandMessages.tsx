@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Pencil, Save, X, Trash2 } from "lucide-react";
+import { PlusCircle, Pencil, Save, X, Trash2, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { 
@@ -17,6 +17,9 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useBrand } from "@/contexts/BrandContext";
+import { useUpdateBrandMessages } from "@/hooks/useUpdateBrandMessages";
+import { brandService } from "@/services/brandService";
+import { useToast } from "@/hooks/use-toast";
 
 // Define types for our brand message
 interface BrandMessage {
@@ -32,59 +35,44 @@ interface BrandMessage {
 }
 
 const BrandMessages = () => {
-  const { getBrandData } = useBrand();
+  const { getBrandData, selectedBrand } = useBrand();
   const brandData = getBrandData();
+  const updateMessages = useUpdateBrandMessages();
+  const { toast } = useToast();
   
   // Colors for different audience types
   const audienceColors = ["emerald", "blue", "purple", "amber"];
   
-  // Initial brand messages data
-  const [messages, setMessages] = useState<BrandMessage[]>([
-    {
-      id: "1",
-      audience: "General Market",
-      audienceColor: "emerald",
-      title: "Sustainability Innovation",
-      quote: "Innovation that improves everyday life while protecting our planet's future.",
-      narrative: "Our brand develops products that not only enhance daily experiences but also contribute positively to environmental sustainability through innovative design and materials.",
-      objective: "Market Share Growth",
-      behavioralChange: "From environmental indifference to conscious purchasing decisions that prioritize sustainability",
-      framing: "Problem-solution: Addressing environmental concerns through innovative products"
-    },
-    {
-      id: "2",
-      audience: "Urban Professionals",
-      audienceColor: "blue",
-      title: "Premium Efficiency",
-      quote: "Premium solutions that save time without compromising on quality or sustainability.",
-      narrative: "For busy professionals seeking efficiency without sacrifice, our products deliver exceptional performance while maintaining our core sustainability values.",
-      objective: "Brand Loyalty",
-      behavioralChange: "From convenience-first to valuing both convenience and sustainability equally",
-      framing: "Benefit-focused: Emphasizing time savings without compromise"
-    },
-    {
-      id: "3",
-      audience: "Families",
-      audienceColor: "purple",
-      title: "Family Durability",
-      quote: "Products designed with the whole family in mind - safe, reliable, and built to last.",
-      narrative: "Families can trust our products to withstand daily use while providing safe, effective solutions for everyone from children to adults.",
-      objective: "Customer Retention",
-      behavioralChange: "From disposable product mindset to investing in quality, long-lasting solutions",
-      framing: "Value-oriented: Highlighting durability and multi-user benefits"
-    },
-    {
-      id: "4",
-      audience: "Value Seekers",
-      audienceColor: "amber",
-      title: "Value Performance",
-      quote: "Exceptional quality and performance that delivers long-term value.",
-      narrative: "Our products may have a higher initial price point, but their longevity and performance provide superior value over time compared to less expensive alternatives.",
-      objective: "Market Penetration",
-      behavioralChange: "From price-focused purchasing to value-based decision making",
-      framing: "Comparative advantage: Demonstrating superior long-term economics"
-    }
-  ]);
+  // Brand ID state
+  const [brandId, setBrandId] = useState<string | null>(null);
+  const [isLoadingBrandId, setIsLoadingBrandId] = useState(false);
+  
+  // Messages state - will be populated from database
+  const [messages, setMessages] = useState<BrandMessage[]>([]);
+
+  // Fetch brand ID when selectedBrand changes
+  useEffect(() => {
+    const fetchBrandId = async () => {
+      if (selectedBrand) {
+        setIsLoadingBrandId(true);
+        try {
+          const id = await brandService.getBrandIdBySlug(selectedBrand);
+          setBrandId(id);
+        } catch (error) {
+          console.error('Failed to fetch brand ID:', error);
+          toast({
+            title: 'Error',
+            description: 'Failed to load brand information',
+            variant: 'destructive',
+          });
+        } finally {
+          setIsLoadingBrandId(false);
+        }
+      }
+    };
+
+    fetchBrandId();
+  }, [selectedBrand, toast]);
 
   // Update messages when brand data changes
   useEffect(() => {
@@ -126,13 +114,29 @@ const BrandMessages = () => {
   };
 
   // Save edited message
-  const handleSave = () => {
-    if (editingMessage) {
+  const handleSave = async () => {
+    if (editingMessage && brandId) {
+      // Update local state first
       setMessages(messages.map(msg => 
         msg.id === editingMessage.id ? editingMessage : msg
       ));
       setEditingId(null);
       setEditingMessage(null);
+
+      // Convert messages to database format
+      const dbMessages = messages.map(msg => ({
+        id: msg.id,
+        text: msg.quote,
+        notes: msg.narrative
+      }));
+
+      // Update in database
+      try {
+        await updateMessages.mutateAsync({ brandId, messages: dbMessages });
+      } catch (error) {
+        // Revert on error
+        console.error('Failed to save messages:', error);
+      }
     }
   };
 
@@ -143,8 +147,27 @@ const BrandMessages = () => {
   };
 
   // Delete a message
-  const handleDelete = (id: string) => {
-    setMessages(messages.filter(msg => msg.id !== id));
+  const handleDelete = async (id: string) => {
+    if (brandId) {
+      // Update local state first
+      const newMessages = messages.filter(msg => msg.id !== id);
+      setMessages(newMessages);
+
+      // Convert to database format and save
+      const dbMessages = newMessages.map(msg => ({
+        id: msg.id,
+        text: msg.quote,
+        notes: msg.narrative
+      }));
+
+      try {
+        await updateMessages.mutateAsync({ brandId, messages: dbMessages });
+      } catch (error) {
+        // Revert on error
+        console.error('Failed to delete message:', error);
+        setMessages(messages);
+      }
+    }
   };
 
   // Add a new message
@@ -175,6 +198,15 @@ const BrandMessages = () => {
       });
     }
   };
+
+  // Show loading state while fetching brand ID
+  if (isLoadingBrandId) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -209,8 +241,17 @@ const BrandMessages = () => {
                       <Button variant="ghost" size="sm" onClick={handleCancel}>
                         <X className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="sm" onClick={handleSave}>
-                        <Save className="h-4 w-4" />
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={handleSave}
+                        disabled={updateMessages.isPending}
+                      >
+                        {updateMessages.isPending ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Save className="h-4 w-4" />
+                        )}
                       </Button>
                     </div>
                   </div>
