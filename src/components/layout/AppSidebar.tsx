@@ -119,6 +119,11 @@ const navigationStructure = [
         icon: Target,
         path: "/brand-strategy",
       },
+      {
+        title: "Strategy Builder",
+        icon: Target,
+        path: "/brand-strategy-builder",
+      },
     ],
   },
 ];

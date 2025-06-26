@@ -24,6 +24,7 @@ const BrandDashboardPage = React.lazy(() => import('./pages/BrandDashboardPage.t
 const ContentReportsPage = React.lazy(() => import('./pages/ContentReportsPage.tsx'));
 const StrategicDashboardPage = React.lazy(() => import('./pages/StrategicDashboardPage.tsx'));
 const BrandStrategyPage = React.lazy(() => import('./pages/BrandStrategyPage.tsx'));
+const BrandStrategyBuilderPage = React.lazy(() => import('./pages/BrandStrategyBuilderPage.tsx'));
 const ProcessContentPage = React.lazy(() => import('./pages/ProcessContentPage.tsx'));
 const ContentProcessingPage = React.lazy(() => import('./pages/ContentProcessingPage.tsx'));
 const CampaignPlannerPage = React.lazy(() => import('./pages/CampaignPlannerPage.tsx'));
@@ -31,6 +32,14 @@ const CampaignPlannerPage = React.lazy(() => import('./pages/CampaignPlannerPage
 // Tools pages
 const AIMarketResearchPage = React.lazy(() => import('./pages/tools/AIMarketResearch.tsx'));
 const AIMessageTestingPage = React.lazy(() => import('./pages/tools/AIMessageTesting.tsx'));
+
+// Brand Strategy Builder sub-pages
+const MarketOverview = React.lazy(() => import('./pages/brand-strategy-builder/MarketOverview.tsx'));
+const BrandProfile = React.lazy(() => import('./pages/brand-strategy-builder/BrandProfile.tsx'));
+const Audiences = React.lazy(() => import('./pages/brand-strategy-builder/Audiences.tsx'));
+const StrategyMessages = React.lazy(() => import('./pages/brand-strategy-builder/StrategyMessages.tsx'));
+const MarketResearch = React.lazy(() => import('./pages/brand-strategy-builder/MarketResearch.tsx'));
+const StrategyDocument = React.lazy(() => import('./pages/brand-strategy-builder/StrategyDocument.tsx'));
 
 const queryClient = new QueryClient();
 
@@ -189,6 +198,23 @@ function AppRoutes() {
         }
       >
         <Route index element={<BrandStrategyPage />} />
+      </Route>
+
+      <Route
+        path="/brand-strategy-builder"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<BrandStrategyBuilderPage />} />
+        <Route path="market-overview" element={<MarketOverview />} />
+        <Route path="brand-profile" element={<BrandProfile />} />
+        <Route path="audiences" element={<Audiences />} />
+        <Route path="strategy-messages" element={<StrategyMessages />} />
+        <Route path="market-research" element={<MarketResearch />} />
+        <Route path="strategy-document" element={<StrategyDocument />} />
       </Route>
 
       <Route
