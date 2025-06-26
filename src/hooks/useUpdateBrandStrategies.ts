@@ -2,32 +2,32 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { brandService } from '@/services/brandService';
 import { useToast } from '@/hooks/use-toast';
 
-interface UpdateBrandObjectivesParams {
+interface UpdateBrandStrategiesParams {
   brandId: string;
-  objectives: any[];
+  strategies: any[];
 }
 
-export const useUpdateBrandObjectives = () => {
+export const useUpdateBrandStrategies = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: ({ brandId, objectives }: UpdateBrandObjectivesParams) =>
-      brandService.updateBrandObjectives(brandId, objectives),
+    mutationFn: ({ brandId, strategies }: UpdateBrandStrategiesParams) =>
+      brandService.updateBrandStrategies(brandId, strategies),
     onSuccess: (_, variables) => {
-      // Invalidate all brand-related queries to ensure UI updates
+      // Invalidate and refetch brand data
       queryClient.invalidateQueries({ queryKey: ['brand'] });
       queryClient.invalidateQueries({ queryKey: ['brands'] });
       
       toast({
         title: 'Success',
-        description: 'Objectives updated successfully',
+        description: 'Strategies updated successfully',
       });
     },
     onError: (error: Error) => {
       toast({
         title: 'Error',
-        description: error.message || 'Failed to update objectives',
+        description: error.message || 'Failed to update strategies',
         variant: 'destructive',
       });
     },
