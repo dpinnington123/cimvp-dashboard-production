@@ -427,4 +427,23 @@ $$ LANGUAGE plpgsql;
   - Added full CRUD operations: create, update, delete objectives
   - Added loading states and error handling
   - Objectives and strategies now persist to database on save/delete
+
+### 2024-06-26: Brand Objectives Table Migration
+- **Migrated**: Moved objectives from JSONB to dedicated `brand_objectives` table
+  - Created new table with columns: title, behavioral_change, target_audience_id, scenario, timeline, owner, kpis
+  - Added foreign key relationship to brand_audiences table
+  - Migrated existing JSONB data to new table structure
+  - Updated brandService to read/write from new table instead of JSONB
+  - Implemented RLS policies for the new table
+  - Target audience now uses dropdown linked to brand_audiences table
+
+### 2024-06-26: Fixed Objective Refresh Issue
+- **Fixed**: New objectives not appearing in UI after save
+  - Root cause: Query invalidation was using brand ID but context uses brand slug
+  - Updated `useUpdateBrandObjectives` to invalidate all brand queries
+  - Added explicit query invalidation in component after save
+  - Ensured proper brand ID is passed when saving objectives
+  - Added debug logging for troubleshooting
+  - Result: New objectives now appear immediately after saving
+
 - **Next**: CustomerAnalysis component (personas, segments, journey)
