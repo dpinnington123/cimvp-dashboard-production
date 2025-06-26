@@ -202,7 +202,8 @@ class BrandService {
         campaigns,
         content,
         audiences,
-        competitors
+        competitors,
+        objectives
       ] = await Promise.all([
         // Regions
         supabase.from('brand_regions').select('*').eq('brand_id', brand.id),
@@ -242,6 +243,9 @@ class BrandService {
           .order('order_index'),
         // Competitors
         supabase.from('brand_competitors').select('*').eq('brand_id', brand.id)
+          .order('order_index'),
+        // Objectives from new table
+        supabase.from('brand_objectives').select('*').eq('brand_id', brand.id)
           .order('order_index')
       ]);
 
@@ -259,7 +263,8 @@ class BrandService {
         campaigns: campaigns.data || [],
         content: content.data || [],
         audiences: audiences.data || [],
-        competitors: competitors.data || []
+        competitors: competitors.data || [],
+        objectives: objectives.data || [] // Use data from new table instead of JSONB
       };
 
       // Transform to BrandData format
@@ -300,7 +305,18 @@ class BrandService {
         title: voice.title,
         description: voice.description
       })),
-      objectives: dbData.objectives || [],
+      objectives: (dbData.objectives || []).map((obj: any) => ({
+        id: obj.id,
+        text: obj.title,
+        notes: obj.behavioral_change || '',
+        status: obj.status || 'active',
+        // Additional fields from new table
+        target_audience_id: obj.target_audience_id,
+        scenario: obj.scenario,
+        timeline: obj.timeline,
+        owner: obj.owner,
+        kpis: obj.kpis || []
+      })),
       messages: dbData.messages || [],
       audiences: (dbData.audiences || []).map((audience: any) => ({
         id: audience.id,
@@ -800,20 +816,59 @@ class BrandService {
   }
 
   /**
-   * Update brand objectives (JSONB field)
+   * Update brand objectives (now uses brand_objectives table)
    */
   async updateBrandObjectives(brandId: string, objectives: any[]): Promise<void> {
-    const { error } = await supabase
-      .from('brands')
-      .update({ 
-        objectives,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', brandId);
+    try {
+      // First check if there are existing objectives to delete
+      const { data: existingObjectives } = await supabase
+        .from('brand_objectives')
+        .select('id')
+        .eq('brand_id', brandId);
 
-    if (error) {
+      // Only delete if there are existing objectives
+      if (existingObjectives && existingObjectives.length > 0) {
+        const { error: deleteError } = await supabase
+          .from('brand_objectives')
+          .delete()
+          .eq('brand_id', brandId);
+
+        if (deleteError) {
+          console.error('Error deleting objectives:', deleteError);
+          throw new Error(`Failed to delete objectives: ${deleteError.message}`);
+        }
+      }
+
+      // Then insert new ones
+      if (objectives.length > 0) {
+        const objectivesToInsert = objectives.map((objective, index) => ({
+          brand_id: brandId,
+          title: objective.text || objective.title,
+          behavioral_change: objective.notes || objective.behavioral_change || objective.behavioralChange,
+          target_audience_id: objective.target_audience_id,
+          scenario: objective.scenario,
+          timeline: objective.timeline,
+          owner: objective.owner,
+          kpis: objective.kpis || [],
+          status: objective.status || 'active',
+          order_index: objective.order_index !== undefined ? objective.order_index : index
+        }));
+
+        const { error } = await supabase
+          .from('brand_objectives')
+          .insert(objectivesToInsert);
+
+        if (error) {
+          console.error('Error inserting objectives:', error);
+          throw new Error(`Failed to insert objectives: ${error.message}`);
+        }
+      }
+
+      // JSONB field no longer used - objectives are now in separate table
+        
+    } catch (error) {
       console.error('Error updating objectives:', error);
-      throw new Error(`Failed to update objectives: ${error.message}`);
+      throw error;
     }
   }
 
@@ -857,30 +912,48 @@ class BrandService {
    * Update brand audiences
    */
   async updateBrandAudiences(brandId: string, audiences: any[]): Promise<void> {
-    // First delete existing audiences
-    await supabase
-      .from('brand_audiences')
-      .delete()
-      .eq('brand_id', brandId);
-
-    // Then insert new ones
-    if (audiences.length > 0) {
-      const audiencesToInsert = audiences.map((audience, index) => ({
-        brand_id: brandId,
-        name: audience.text || audience.name,
-        notes: audience.notes,
-        demographics: audience.demographics || {},
-        order_index: index
-      }));
-
-      const { error } = await supabase
+    try {
+      // First check if there are existing audiences to delete
+      const { data: existingAudiences } = await supabase
         .from('brand_audiences')
-        .insert(audiencesToInsert);
+        .select('id')
+        .eq('brand_id', brandId);
 
-      if (error) {
-        console.error('Error updating audiences:', error);
-        throw new Error(`Failed to update audiences: ${error.message}`);
+      // Only delete if there are existing audiences
+      if (existingAudiences && existingAudiences.length > 0) {
+        const { error: deleteError } = await supabase
+          .from('brand_audiences')
+          .delete()
+          .eq('brand_id', brandId);
+
+        if (deleteError) {
+          console.error('Error deleting audiences:', deleteError);
+          throw new Error(`Failed to delete audiences: ${deleteError.message}`);
+        }
       }
+
+      // Then insert new ones
+      if (audiences.length > 0) {
+        const audiencesToInsert = audiences.map((audience, index) => ({
+          brand_id: brandId,
+          name: audience.text || audience.name,
+          notes: audience.notes,
+          demographics: audience.demographics || {},
+          order_index: index
+        }));
+
+        const { error } = await supabase
+          .from('brand_audiences')
+          .insert(audiencesToInsert);
+
+        if (error) {
+          console.error('Error inserting audiences:', error);
+          throw new Error(`Failed to insert audiences: ${error.message}`);
+        }
+      }
+    } catch (error) {
+      console.error('Error updating audiences:', error);
+      throw error;
     }
   }
 
@@ -888,30 +961,53 @@ class BrandService {
    * Update brand strategies
    */
   async updateBrandStrategies(brandId: string, strategies: any[]): Promise<void> {
-    // First delete existing strategies
-    await supabase
-      .from('brand_strategies')
-      .delete()
-      .eq('brand_id', brandId);
-
-    // Then insert new ones
-    if (strategies.length > 0) {
-      const strategiesToInsert = strategies.map((strategy) => ({
-        brand_id: brandId,
-        name: strategy.name,
-        description: strategy.description,
-        score: strategy.score || 0,
-        status: strategy.status || 'active'
-      }));
-
-      const { error } = await supabase
+    try {
+      // First check if there are existing strategies to delete
+      const { data: existingStrategies } = await supabase
         .from('brand_strategies')
-        .insert(strategiesToInsert);
+        .select('id')
+        .eq('brand_id', brandId);
 
-      if (error) {
-        console.error('Error updating strategies:', error);
-        throw new Error(`Failed to update strategies: ${error.message}`);
+      // Only delete if there are existing strategies
+      if (existingStrategies && existingStrategies.length > 0) {
+        const { error: deleteError } = await supabase
+          .from('brand_strategies')
+          .delete()
+          .eq('brand_id', brandId);
+
+        if (deleteError) {
+          console.error('Error deleting strategies:', deleteError);
+          throw new Error(`Failed to delete strategies: ${deleteError.message}`);
+        }
       }
+
+      // Then insert new ones
+      if (strategies.length > 0) {
+        // Don't include ID - let database generate it
+        const strategiesToInsert = strategies.map((strategy) => ({
+          brand_id: brandId,
+          name: strategy.name,
+          description: strategy.description || '',
+          score: strategy.score || 0,
+          status: strategy.status || 'active'
+        }));
+
+        const { error } = await supabase
+          .from('brand_strategies')
+          .insert(strategiesToInsert);
+
+        if (error) {
+          console.error('Error inserting strategies:', error);
+          // Check if it's a unique constraint violation
+          if (error.code === '23505') {
+            throw new Error('Duplicate strategy detected. Please refresh and try again.');
+          }
+          throw new Error(`Failed to insert strategies: ${error.message}`);
+        }
+      }
+    } catch (error) {
+      console.error('Error updating strategies:', error);
+      throw error;
     }
   }
 

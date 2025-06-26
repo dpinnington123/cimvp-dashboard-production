@@ -2,12 +2,17 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Calendar, Clock, Target, Users, Edit, Save, Trash2, Plus, X } from "lucide-react";
+import { Calendar, Clock, Target, Users, Edit, Save, Trash2, Plus, X, Loader2 } from "lucide-react";
 import { useBrand } from "@/contexts/BrandContext";
 import type { BrandObjective, BrandAudience, Strategy } from "@/types/brand";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useUpdateBrandObjectives } from "@/hooks/useUpdateBrandObjectives";
+import { useUpdateBrandStrategies } from "@/hooks/useUpdateBrandStrategies";
+import { brandService } from "@/services/brandService";
+import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
 
 // Enhanced strategy interface with audience connections
 interface EnhancedStrategy extends Strategy {
@@ -49,8 +54,16 @@ interface Objective {
 }
 
 const StrategicObjectives = () => {
-  const { getBrandData } = useBrand();
+  const { getBrandData, selectedBrand, isLoading } = useBrand();
   const brandData = getBrandData();
+  const updateObjectives = useUpdateBrandObjectives();
+  const updateStrategies = useUpdateBrandStrategies();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  
+  // Brand ID state
+  const [brandId, setBrandId] = useState<string | null>(null);
+  const [isLoadingBrandId, setIsLoadingBrandId] = useState(false);
   
   // Map brand data to objectives immediately for initial render
   const mapBrandDataToObjectives = (brandData: any): Objective[] => {
@@ -59,17 +72,13 @@ const StrategicObjectives = () => {
     }
     
     // Map each objective
-    return brandData.objectives.map((objective: BrandObjective, index: number) => {
-      // For type safety
-      const enhancedObjective = objective as EnhancedObjective;
-      
-      // Map connected audiences and strategies
+    return brandData.objectives.map((objective: any, index: number) => {
+      // Map connected audiences
       let audienceText = "General audience";
-      const audienceId = enhancedObjective.targetAudienceId;
       
-      // Connect to audience if possible
-      if (audienceId) {
-        const audience = brandData.audiences.find((a: BrandAudience) => a.id === audienceId);
+      // Check if objective has target_audience_id (from new table structure)
+      if (objective.target_audience_id) {
+        const audience = brandData.audiences.find((a: BrandAudience) => a.id === objective.target_audience_id);
         if (audience) {
           audienceText = audience.text;
         }
@@ -110,16 +119,16 @@ const StrategicObjectives = () => {
         }];
       }
       
-      // Build the complete objective
+      // Build the complete objective using data from the new table structure
       return {
         id: objective.id,
-        title: objective.text,
+        title: objective.text || objective.title,
         audience: audienceText,
-        scenario: brandData.profile.businessArea,
-        behavioralChange: objective.notes,
-        kpis: kpis,
-        timeline: `Q${index + 1} 2023`,
-        owner: "Marketing Team"
+        scenario: objective.scenario || brandData.profile.businessArea,
+        behavioralChange: objective.notes || objective.behavioral_change || '',
+        kpis: objective.kpis || kpis,
+        timeline: objective.timeline || `Q${index + 1} 2025`,
+        owner: objective.owner || "Marketing Team"
       };
     });
   };
@@ -156,8 +165,69 @@ const StrategicObjectives = () => {
     setIsAddingNew(false);
   }, [brandData]);
   
+  // Fetch brand ID when selectedBrand changes
+  useEffect(() => {
+    const fetchBrandId = async () => {
+      if (selectedBrand) {
+        setIsLoadingBrandId(true);
+        try {
+          const id = await brandService.getBrandIdBySlug(selectedBrand);
+          setBrandId(id);
+        } catch (error) {
+          console.error('Failed to fetch brand ID:', error);
+          toast({
+            title: 'Error',
+            description: 'Failed to load brand information',
+            variant: 'destructive',
+          });
+        } finally {
+          setIsLoadingBrandId(false);
+        }
+      }
+    };
+
+    fetchBrandId();
+  }, [selectedBrand, toast]);
+  
   // Toggle edit mode for an objective
-  const toggleEditMode = (id: string) => {
+  const toggleEditMode = async (id: string) => {
+    const isCurrentlyEditing = editMode[id];
+    
+    // If we're currently editing and toggling off, save the data
+    if (isCurrentlyEditing && brandId) {
+      // Convert objectives to database format with ALL fields
+      const dbObjectives = objectives.map((obj, index: number) => {
+        // Find the audience ID from the audience text
+        const audienceId = brandData.audiences.find((a: BrandAudience) => a.text === obj.audience)?.id;
+        
+        return {
+          id: obj.id,
+          title: obj.title,
+          behavioral_change: obj.behavioralChange,
+          target_audience_id: audienceId || null,
+          scenario: obj.scenario,
+          timeline: obj.timeline,
+          owner: obj.owner,
+          kpis: obj.kpis,
+          status: 'active',
+          order_index: index
+        };
+      });
+      
+      try {
+        // Update only objectives - strategies are managed separately
+        await updateObjectives.mutateAsync({ brandId, objectives: dbObjectives });
+      } catch (error) {
+        console.error('Failed to save changes:', error);
+        toast({
+          title: 'Error',
+          description: error instanceof Error ? error.message : 'Failed to save changes',
+          variant: 'destructive',
+        });
+        return; // Don't toggle edit mode if save failed
+      }
+    }
+    
     setEditMode(prev => ({
       ...prev,
       [id]: !prev[id]
@@ -242,7 +312,17 @@ const StrategicObjectives = () => {
   };
   
   // Delete objective
-  const deleteObjective = (id: string) => {
+  const deleteObjective = async (id: string) => {
+    if (!brandId) {
+      toast({
+        title: 'Error',
+        description: 'Brand information not loaded',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    // Remove from local state first
     setObjectives(prev => prev.filter(obj => obj.id !== id));
     // Also clear edit mode for this objective
     setEditMode(prev => {
@@ -250,6 +330,37 @@ const StrategicObjectives = () => {
       delete updated[id];
       return updated;
     });
+    
+    // Save to database
+    try {
+      // Get remaining objectives with all their data
+      const remainingObjectives = objectives
+        .filter(obj => obj.id !== id)
+        .map((obj, index) => {
+          const aud = brandData.audiences.find((a: BrandAudience) => a.text === obj.audience);
+          return {
+            id: obj.id,
+            title: obj.title,
+            behavioral_change: obj.behavioralChange,
+            target_audience_id: aud?.id || null,
+            scenario: obj.scenario,
+            timeline: obj.timeline,
+            owner: obj.owner,
+            kpis: obj.kpis,
+            status: 'active',
+            order_index: index
+          };
+        });
+      
+      await updateObjectives.mutateAsync({ brandId, objectives: remainingObjectives });
+    } catch (error) {
+      console.error('Failed to delete objective:', error);
+      // Restore to local state if delete failed
+      const originalObj = brandData.objectives.find((obj: BrandObjective) => obj.id === id);
+      if (originalObj) {
+        setObjectives(prev => [...prev, mapBrandDataToObjectives(brandData).find(o => o.id === id)!]);
+      }
+    }
   };
   
   // Handle adding new objective
@@ -325,21 +436,83 @@ const StrategicObjectives = () => {
   };
   
   // Save new objective
-  const saveNewObjective = () => {
+  const saveNewObjective = async () => {
     if (newObjective.title.trim() === "") {
-      // Simple validation
-      alert("Objective title cannot be empty");
+      toast({
+        title: 'Error',
+        description: 'Objective title cannot be empty',
+        variant: 'destructive',
+      });
       return;
     }
     
-    setObjectives(prev => [...prev, newObjective]);
-    setIsAddingNew(false);
+    if (!brandId) {
+      toast({
+        title: 'Error',
+        description: 'Brand information not loaded',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    // Save to database
+    try {
+      // Find the audience ID from the audience text
+      const audienceId = brandData.audiences.find((a: BrandAudience) => a.text === newObjective.audience)?.id;
+      
+      // Get all current objectives and add the new one
+      const allObjectives = [...objectives, newObjective];
+      const dbObjectives = allObjectives.map((obj, index) => {
+        const aud = brandData.audiences.find((a: BrandAudience) => a.text === obj.audience);
+        return {
+          id: obj.id,
+          title: obj.title,
+          behavioral_change: obj.behavioralChange,
+          target_audience_id: aud?.id || null,
+          scenario: obj.scenario,
+          timeline: obj.timeline,
+          owner: obj.owner,
+          kpis: obj.kpis,
+          status: 'active',
+          order_index: index
+        };
+      });
+      
+      // Log for debugging
+      console.log('Saving objectives for brand:', brandId, selectedBrand);
+      console.log('Objectives to save:', dbObjectives);
+      
+      await updateObjectives.mutateAsync({ brandId, objectives: dbObjectives });
+      
+      // Close the form after successful save
+      setIsAddingNew(false);
+      
+      // Force a refresh of brand data
+      queryClient.invalidateQueries({ queryKey: ['brand', selectedBrand] });
+      
+    } catch (error) {
+      console.error('Failed to save new objective:', error);
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to save objective',
+        variant: 'destructive',
+      });
+    }
   };
   
   // Cancel adding new objective
   const cancelAddingNew = () => {
     setIsAddingNew(false);
   };
+
+  // Show loading state
+  if (isLoading || isLoadingBrandId) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -387,11 +560,27 @@ const StrategicObjectives = () => {
                 <Users className="h-4 w-4 mt-2 text-gray-500" />
                 <div className="flex-1">
                   <p className="text-sm font-medium">Target Audience</p>
-                  <Input 
+                  <Select 
                     value={newObjective.audience}
-                    onChange={(e) => updateNewObjective('audience', e.target.value)}
-                    className="mt-1"
-                  />
+                    onValueChange={(value) => updateNewObjective('audience', value)}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Select audience" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {brandData.audiences.length > 0 ? (
+                        brandData.audiences.map((audience: BrandAudience) => (
+                          <SelectItem key={audience.id} value={audience.text}>
+                            {audience.text}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <div className="px-2 py-1 text-sm text-gray-500">
+                          No audiences defined
+                        </div>
+                      )}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               
@@ -488,8 +677,13 @@ const StrategicObjectives = () => {
             <Button 
               onClick={saveNewObjective}
               className="bg-emerald-600 hover:bg-emerald-700"
+              disabled={updateObjectives.isPending}
             >
-              <Save className="h-4 w-4 mr-2" />
+              {updateObjectives.isPending ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Save className="h-4 w-4 mr-2" />
+              )}
               Save Objective
             </Button>
           </CardFooter>
@@ -541,8 +735,13 @@ const StrategicObjectives = () => {
                     size="sm" 
                     className="h-8 w-8 p-0 text-emerald-600"
                     onClick={() => toggleEditMode(objective.id)}
+                    disabled={updateObjectives.isPending || updateStrategies.isPending}
                   >
-                    <Save className="h-4 w-4" />
+                    {updateObjectives.isPending || updateStrategies.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Save className="h-4 w-4" />
+                    )}
                   </Button>
                 )}
                 <Button 
@@ -562,11 +761,27 @@ const StrategicObjectives = () => {
                   <div className="flex-1">
                     <p className="text-sm font-medium">Target Audience</p>
                     {editMode[objective.id] ? (
-                      <Input 
+                      <Select 
                         value={objective.audience}
-                        onChange={(e) => updateObjective(objective.id, 'audience', e.target.value)}
-                        className="mt-1"
-                      />
+                        onValueChange={(value) => updateObjective(objective.id, 'audience', value)}
+                      >
+                        <SelectTrigger className="mt-1">
+                          <SelectValue placeholder="Select audience" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {brandData.audiences.length > 0 ? (
+                            brandData.audiences.map((audience: BrandAudience) => (
+                              <SelectItem key={audience.id} value={audience.text}>
+                                {audience.text}
+                              </SelectItem>
+                            ))
+                          ) : (
+                            <div className="px-2 py-1 text-sm text-gray-500">
+                              No audiences defined
+                            </div>
+                          )}
+                        </SelectContent>
+                      </Select>
                     ) : (
                       <p className="text-sm text-gray-500">{objective.audience}</p>
                     )}
