@@ -31,6 +31,13 @@ export interface BrandMessage {
   id: string;
   text: string;
   notes: string;
+  // Additional fields from new table
+  title?: string;
+  audience_id?: string;
+  objective_id?: string;
+  behavioral_change?: string;
+  framing?: string;
+  order_index?: number;
 }
 
 export interface BrandAudience {

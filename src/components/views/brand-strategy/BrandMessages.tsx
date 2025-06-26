@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { PlusCircle, Pencil, Save, X, Trash2, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -25,11 +26,13 @@ import { useToast } from "@/hooks/use-toast";
 interface BrandMessage {
   id: string;
   audience: string;
+  audienceId?: string;
   audienceColor: string;
   title: string;
   quote: string;
   narrative: string;
   objective: string;
+  objectiveId?: string;
   behavioralChange: string;
   framing: string;
 }
@@ -79,23 +82,36 @@ const BrandMessages = () => {
     if (brandData && brandData.messages && brandData.messages.length > 0) {
       // Map brand messages to the format expected by the component
       const brandMessages = brandData.messages.map((message, index) => {
-        // Get audience from the audiences array or use a default
-        const audience = brandData.audiences && brandData.audiences.length > index 
-          ? brandData.audiences[index].text
-          : "General Audience";
+        // Get audience name from ID if available
+        let audienceName = "General Audience";
+        if (message.audience_id && brandData.audiences) {
+          const audience = brandData.audiences.find(a => a.id === message.audience_id);
+          if (audience) {
+            audienceName = audience.text;
+          }
+        }
+        
+        // Get objective text from ID if available
+        let objectiveText = "Strategic Objective";
+        if (message.objective_id && brandData.objectives) {
+          const objective = brandData.objectives.find(o => o.id === message.objective_id);
+          if (objective) {
+            objectiveText = objective.text;
+          }
+        }
         
         return {
           id: message.id,
-          audience: audience,
+          audience: audienceName,
+          audienceId: message.audience_id || '',
           audienceColor: audienceColors[index % audienceColors.length],
-          title: `Message ${index + 1}`,
+          title: message.title || `Message ${index + 1}`,
           quote: message.text,
           narrative: message.notes || "No detailed narrative available.",
-          objective: brandData.objectives && brandData.objectives.length > 0 
-            ? brandData.objectives[0].text 
-            : "Strategic Objective",
-          behavioralChange: "Change customer behavior through effective messaging",
-          framing: "Strategic message framing"
+          objective: objectiveText,
+          objectiveId: message.objective_id || '',
+          behavioralChange: message.behavioral_change || "Change customer behavior through effective messaging",
+          framing: message.framing || "Strategic message framing"
         };
       });
       
@@ -124,11 +140,21 @@ const BrandMessages = () => {
       setEditingMessage(null);
 
       // Convert messages to database format
-      const dbMessages = messages.map(msg => ({
-        id: msg.id,
-        text: msg.quote,
-        notes: msg.narrative
-      }));
+      const dbMessages = messages.map(msg => {
+        // Update the message that was edited
+        const messageToSave = msg.id === editingMessage.id ? editingMessage : msg;
+        
+        return {
+          id: messageToSave.id,
+          title: messageToSave.title,
+          text: messageToSave.quote,
+          narrative: messageToSave.narrative,
+          audience_id: messageToSave.audienceId || null,
+          objective_id: messageToSave.objectiveId || null,
+          behavioral_change: messageToSave.behavioralChange,
+          framing: messageToSave.framing
+        };
+      });
 
       // Update in database
       try {
@@ -156,8 +182,13 @@ const BrandMessages = () => {
       // Convert to database format and save
       const dbMessages = newMessages.map(msg => ({
         id: msg.id,
+        title: msg.title,
         text: msg.quote,
-        notes: msg.narrative
+        narrative: msg.narrative,
+        audience_id: msg.audienceId || null,
+        objective_id: msg.objectiveId || null,
+        behavioral_change: msg.behavioralChange,
+        framing: msg.framing
       }));
 
       try {
@@ -231,11 +262,30 @@ const BrandMessages = () => {
                 <CardHeader className="pb-2">
                   <div className="flex justify-between items-center mb-2">
                     <div className="flex items-center gap-2">
-                      <Input 
-                        className={`bg-${editingMessage?.audienceColor}-100 text-${editingMessage?.audienceColor}-800 w-fit px-2 py-1 text-xs rounded-full`}
-                        value={editingMessage?.audience || ""}
-                        onChange={(e) => updateEditingField("audience", e.target.value)}
-                      />
+                      <Select
+                        value={editingMessage?.audienceId || ''}
+                        onValueChange={(value) => {
+                          const selectedAudience = brandData.audiences.find(a => a.id === value);
+                          if (selectedAudience && editingMessage) {
+                            setEditingMessage({
+                              ...editingMessage,
+                              audienceId: value,
+                              audience: selectedAudience.text
+                            });
+                          }
+                        }}
+                      >
+                        <SelectTrigger className={`bg-${editingMessage?.audienceColor}-100 text-${editingMessage?.audienceColor}-800 w-[200px] h-8`}>
+                          <SelectValue placeholder="Select audience" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {brandData.audiences && brandData.audiences.map((audience) => (
+                            <SelectItem key={audience.id} value={audience.id}>
+                              {audience.text}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div className="flex gap-2">
                       <Button variant="ghost" size="sm" onClick={handleCancel}>
@@ -282,11 +332,30 @@ const BrandMessages = () => {
                     
                     <div>
                       <h4 className="text-sm font-medium text-gray-700 mb-1">Strategic Objective:</h4>
-                      <Input
-                        value={editingMessage?.objective || ""}
-                        onChange={(e) => updateEditingField("objective", e.target.value)}
-                        className="text-sm text-gray-600"
-                      />
+                      <Select
+                        value={editingMessage?.objectiveId || ''}
+                        onValueChange={(value) => {
+                          const selectedObjective = brandData.objectives.find(o => o.id === value);
+                          if (selectedObjective && editingMessage) {
+                            setEditingMessage({
+                              ...editingMessage,
+                              objectiveId: value,
+                              objective: selectedObjective.text
+                            });
+                          }
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select objective" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {brandData.objectives && brandData.objectives.map((objective) => (
+                            <SelectItem key={objective.id} value={objective.id}>
+                              {objective.text}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                     
                     <div>

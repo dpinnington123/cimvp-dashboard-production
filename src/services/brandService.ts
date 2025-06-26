@@ -176,7 +176,7 @@ class BrandService {
         .from('brands')
         .select(`
           id, slug, name, business_area,
-          voice_attributes, objectives, messages,
+          voice_attributes, objectives,
           swot_data, personas, market_analysis,
           customer_segments, customer_journey
         `)
@@ -203,7 +203,8 @@ class BrandService {
         content,
         audiences,
         competitors,
-        objectives
+        objectives,
+        messages
       ] = await Promise.all([
         // Regions
         supabase.from('brand_regions').select('*').eq('brand_id', brand.id),
@@ -246,6 +247,9 @@ class BrandService {
           .order('order_index'),
         // Objectives from new table
         supabase.from('brand_objectives').select('*').eq('brand_id', brand.id)
+          .order('order_index'),
+        // Messages from new table
+        supabase.from('brand_messages').select('*').eq('brand_id', brand.id)
           .order('order_index')
       ]);
 
@@ -264,7 +268,8 @@ class BrandService {
         content: content.data || [],
         audiences: audiences.data || [],
         competitors: competitors.data || [],
-        objectives: objectives.data || [] // Use data from new table instead of JSONB
+        objectives: objectives.data || [], // Use data from new table instead of JSONB
+        messages: messages.data || [] // Use data from new table instead of JSONB
       };
 
       // Transform to BrandData format
@@ -317,7 +322,18 @@ class BrandService {
         owner: obj.owner,
         kpis: obj.kpis || []
       })),
-      messages: dbData.messages || [],
+      messages: (dbData.messages || []).map((msg: any) => ({
+        id: msg.id,
+        text: msg.text,
+        notes: msg.narrative || '',
+        // Additional fields from new table
+        title: msg.title,
+        audience_id: msg.audience_id,
+        objective_id: msg.objective_id,
+        behavioral_change: msg.behavioral_change,
+        framing: msg.framing,
+        order_index: msg.order_index
+      })),
       audiences: (dbData.audiences || []).map((audience: any) => ({
         id: audience.id,
         text: audience.name,
@@ -873,20 +889,48 @@ class BrandService {
   }
 
   /**
-   * Update brand messages (JSONB field)
+   * Update brand messages (now in separate table)
    */
   async updateBrandMessages(brandId: string, messages: any[]): Promise<void> {
-    const { error } = await supabase
-      .from('brands')
-      .update({ 
-        messages,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', brandId);
+    try {
+      // First, delete existing messages
+      const { error: deleteError } = await supabase
+        .from('brand_messages')
+        .delete()
+        .eq('brand_id', brandId);
 
-    if (error) {
+      if (deleteError) {
+        console.error('Error deleting messages:', deleteError);
+        throw new Error(`Failed to delete messages: ${deleteError.message}`);
+      }
+
+      // Then insert new ones if there are any
+      if (messages.length > 0) {
+        const messagesToInsert = messages.map((message, index) => ({
+          id: message.id || undefined, // Let DB generate if not provided
+          brand_id: brandId,
+          title: message.title || `Message ${index + 1}`,
+          text: message.text || message.quote || '',
+          narrative: message.notes || message.narrative || '',
+          audience_id: message.audience_id || null,
+          objective_id: message.objective_id || null,
+          behavioral_change: message.behavioral_change || message.behavioralChange || '',
+          framing: message.framing || '',
+          order_index: message.order_index !== undefined ? message.order_index : index
+        }));
+
+        const { error } = await supabase
+          .from('brand_messages')
+          .insert(messagesToInsert);
+
+        if (error) {
+          console.error('Error inserting messages:', error);
+          throw new Error(`Failed to insert messages: ${error.message}`);
+        }
+      }
+    } catch (error) {
       console.error('Error updating messages:', error);
-      throw new Error(`Failed to update messages: ${error.message}`);
+      throw error;
     }
   }
 
