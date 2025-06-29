@@ -2,18 +2,18 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { brandService } from '@/services/brandService';
 import { useToast } from '@/hooks/use-toast';
 
-interface UpdateBrandPersonasParams {
+interface UpdateBrandCustomerJourneyParams {
   brandId: string;
-  personas: any[];
+  customerJourney: any[];
 }
 
-export const useUpdateBrandPersonas = () => {
+export const useUpdateBrandCustomerJourney = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: ({ brandId, personas }: UpdateBrandPersonasParams) =>
-      brandService.updateBrandPersonas(brandId, personas),
+    mutationFn: ({ brandId, customerJourney }: UpdateBrandCustomerJourneyParams) =>
+      brandService.updateBrandCustomerJourney(brandId, customerJourney),
     onSuccess: (_, variables) => {
       // Invalidate all brand-related queries
       queryClient.invalidateQueries({ queryKey: ['brand'] });
@@ -21,13 +21,13 @@ export const useUpdateBrandPersonas = () => {
       
       toast({
         title: 'Success',
-        description: 'Personas updated successfully',
+        description: 'Customer journey updated successfully',
       });
     },
     onError: (error: Error) => {
       toast({
         title: 'Error',
-        description: error.message || 'Failed to update personas',
+        description: error.message || 'Failed to update customer journey',
         variant: 'destructive',
       });
     },

@@ -17,6 +17,7 @@ import type {
   BrandFunnelData,
   BrandPerformanceHistory
 } from '@/types/brand';
+import type { BrandStyleGuide } from '@/types/brandStyleGuide';
 
 export interface DatabaseBrand {
   id: string;
@@ -422,17 +423,7 @@ class BrandService {
           opportunities: journey.opportunities || []
         }))
       } : undefined,
-      personas: (dbData.personas || []).map((persona: any) => ({
-        name: persona.name,
-        description: persona.description || '',
-        icon: persona.icon as any,
-        scores: {
-          overall: persona.overall_score || 0,
-          strategic: persona.strategic_score || 0,
-          customer: persona.customer_score || 0,
-          execution: persona.execution_score || 0
-        }
-      })),
+      personas: dbData.personas || [],
       performanceTimeData: (dbData.performance_history || []).map((history: any) => ({
         month: history.month,
         year: history.year,
@@ -440,7 +431,10 @@ class BrandService {
         strategic: history.strategic_score || 0,
         customer: history.customer_score || 0,
         content: history.content_score || 0
-      }))
+      })),
+      // Also expose at top level for components that expect them there
+      customer_segments: dbData.customer_segments || [],
+      customer_journey: dbData.customer_journey || []
     };
   }
 
@@ -949,6 +943,39 @@ class BrandService {
     if (error) {
       console.error('Error updating voice attributes:', error);
       throw new Error(`Failed to update voice attributes: ${error.message}`);
+    }
+  }
+
+  /**
+   * Brand Style Guide Operations (JSONB)
+   */
+  async getBrandStyleGuide(brandId: string): Promise<BrandStyleGuide | null> {
+    const { data, error } = await supabase
+      .from('brands')
+      .select('style_guide')
+      .eq('id', brandId)
+      .single();
+
+    if (error) {
+      console.error('Error fetching style guide:', error);
+      throw new Error(`Failed to fetch style guide: ${error.message}`);
+    }
+
+    return data?.style_guide || null;
+  }
+
+  async updateBrandStyleGuide(brandId: string, styleGuide: BrandStyleGuide): Promise<void> {
+    const { error } = await supabase
+      .from('brands')
+      .update({ 
+        style_guide: styleGuide,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', brandId);
+
+    if (error) {
+      console.error('Error updating style guide:', error);
+      throw new Error(`Failed to update style guide: ${error.message}`);
     }
   }
 

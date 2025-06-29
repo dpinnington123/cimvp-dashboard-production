@@ -230,6 +230,14 @@ export interface BrandPersona {
   name: string;
   description?: string;
   icon?: string;
+  color?: string;
+  audience?: string;
+  profile?: string[];
+  painPoints?: string[];
+  interests?: string[];
+  intentions?: string[];
+  goals?: string[];
+  preferences?: string[];
   overall_score?: number;
   strategic_score?: number;
   customer_score?: number;
@@ -322,6 +330,9 @@ export interface BrandData {
   // New fields
   personas?: Persona[];
   performanceTimeData?: PerformanceTimeData[];
+  // Direct access to JSONB fields for components
+  customer_segments?: BrandCustomerSegment[];
+  customer_journey?: BrandCustomerJourney[];
 }
 
 // Enhanced BrandData interface for database operations
