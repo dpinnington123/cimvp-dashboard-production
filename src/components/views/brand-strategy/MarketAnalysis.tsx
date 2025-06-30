@@ -1,19 +1,9 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { Edit, Save, X } from "lucide-react";
-import {
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Edit, Save, X, Plus, Trash2, Check, Pencil } from "lucide-react";
 import {
   BarChart,
   Bar,
@@ -27,6 +17,15 @@ import {
   Line,
 } from "recharts";
 import { useBrand } from "@/contexts/BrandContext";
+import { useUpdateBrandMarketAnalysis } from "@/hooks/useUpdateBrandMarketAnalysis";
+import { 
+  useAddBrandCompetitor,
+  useUpdateBrandCompetitor,
+  useDeleteBrandCompetitor
+} from "@/hooks/useBrandCompetitorOperations";
+import { brandService } from "@/services/brandService";
+import { useToast } from "@/hooks/use-toast";
+import type { BrandMarketAnalysis, BrandCompetitor, BrandData } from "@/types/brand";
 
 // Define types for chart data
 interface MarketShareItem {
@@ -41,7 +40,7 @@ interface SalesDataItem {
 }
 
 // Helper function to generate market share data
-const generateMarketShareData = (brandData: any): MarketShareItem[] => {
+const generateMarketShareData = (brandData: BrandData): MarketShareItem[] => {
   const colors = ["#10b981", "#6366f1", "#f59e0b", "#ef4444", "#8b5cf6"];
   
   // Extract competitor info from brand data
@@ -57,7 +56,7 @@ const generateMarketShareData = (brandData: any): MarketShareItem[] => {
   ];
   
   // Add competitors
-  competitorData.forEach((competitor: any, index: number) => {
+  competitorData.forEach((competitor: { name: string; marketShare: string }, index: number) => {
     if (competitor.name) {
       marketShareData.push({
         name: competitor.name,
@@ -81,7 +80,7 @@ const generateMarketShareData = (brandData: any): MarketShareItem[] => {
 };
 
 // Helper function to generate sales data
-const generateSalesData = (brandData: any): SalesDataItem[] => {
+const generateSalesData = (): SalesDataItem[] => {
   // Mock quarterly sales data
   const thisYear = new Date().getFullYear();
   
@@ -98,8 +97,18 @@ const generateSalesData = (brandData: any): SalesDataItem[] => {
 };
 
 const MarketAnalysis = () => {
-  const { getBrandData } = useBrand();
+  const { getBrandData, selectedBrand } = useBrand();
   const brandData = getBrandData();
+  const { toast } = useToast();
+  
+  // Hooks for database updates
+  const updateMarketAnalysis = useUpdateBrandMarketAnalysis();
+  const addCompetitor = useAddBrandCompetitor();
+  const updateCompetitor = useUpdateBrandCompetitor();
+  const deleteCompetitor = useDeleteBrandCompetitor();
+  
+  // State for brand ID
+  const [brandId, setBrandId] = useState<string | null>(null);
   
   // State for market share data
   const [marketShareData, setMarketShareData] = useState<MarketShareItem[]>([]);
@@ -107,32 +116,54 @@ const MarketAnalysis = () => {
   // State for sales data
   const [salesData, setSalesData] = useState<SalesDataItem[]>([]);
   
-  // State for editable market overview
-  const [editingMarketOverview, setEditingMarketOverview] = useState(false);
-  const [marketOverview, setMarketOverview] = useState({
-    marketSize: brandData.marketAnalysis?.marketSize || "$4.6 Billion",
-    growthRate: brandData.marketAnalysis?.growthRate || "12.3% CAGR",
-    keyTrends: "Increasing demand for sustainable products, shift to e-commerce, growing health consciousness."
+  // State for market data - initialized from brand data
+  const [marketData, setMarketData] = useState<BrandMarketAnalysis>({
+    market_size: brandData?.market_analysis?.market_size || brandData?.marketAnalysis?.marketSize || "",
+    growth_rate: brandData?.market_analysis?.growth_rate || brandData?.marketAnalysis?.growthRate || "",
+    analysis_year: new Date().getFullYear()
   });
   
-  // State for competitor comparison
-  const [editingCompetitors, setEditingCompetitors] = useState(false);
-  const [competitorData, setCompetitorData] = useState([
-    {
-      name: brandData.marketAnalysis?.competitorAnalysis?.[0]?.name || "Competitor 1",
-      share: brandData.marketAnalysis?.competitorAnalysis?.[0]?.marketShare || "18%",
-      strengths: brandData.marketAnalysis?.competitorAnalysis?.[0]?.strengths?.join(", ") || "Strong retail presence, Wide product range",
-      weaknesses: brandData.marketAnalysis?.competitorAnalysis?.[0]?.weaknesses?.join(", ") || "Higher price point, Less digital engagement"
-    },
-    {
-      name: brandData.marketAnalysis?.competitorAnalysis?.[1]?.name || "Competitor 2",
-      share: brandData.marketAnalysis?.competitorAnalysis?.[1]?.marketShare || "15%",
-      strengths: brandData.marketAnalysis?.competitorAnalysis?.[1]?.strengths?.join(", ") || "Strong brand recognition, Celebrity endorsements",
-      weaknesses: brandData.marketAnalysis?.competitorAnalysis?.[1]?.weaknesses?.join(", ") || "Limited product innovation, Supply chain issues"
-    }
-  ]);
+  // State for key trends (will be stored as part of market_analysis)
+  const [keyTrends, setKeyTrends] = useState("");
   
-  // Update data when brand changes
+  // State for competitors
+  const [competitors, setCompetitors] = useState<BrandCompetitor[]>([]);
+  
+  // State for editing competitor
+  const [editingCompetitorId, setEditingCompetitorId] = useState<string | null>(null);
+  const [editedCompetitor, setEditedCompetitor] = useState<BrandCompetitor | null>(null);
+  
+  // State for editing mode
+  const [editingMarketOverview, setEditingMarketOverview] = useState(false);
+  const [editingCompetitors, setEditingCompetitors] = useState(false);
+  
+  // Temporary states for editing
+  const [tempMarketData, setTempMarketData] = useState<BrandMarketAnalysis>(marketData);
+  const [tempKeyTrends, setTempKeyTrends] = useState(keyTrends);
+  const [tempCompetitors, setTempCompetitors] = useState<BrandCompetitor[]>([]);
+  
+  // Fetch brand ID when selectedBrand changes
+  useEffect(() => {
+    const fetchBrandId = async () => {
+      if (selectedBrand) {
+        try {
+          const id = await brandService.getBrandIdBySlug(selectedBrand);
+          setBrandId(id);
+        } catch (error) {
+          console.error('Failed to fetch brand ID:', error);
+          toast({
+            title: 'Error',
+            description: 'Failed to load brand information',
+            variant: 'destructive',
+          });
+        }
+      }
+    };
+
+    fetchBrandId();
+  }, [selectedBrand, toast]);
+  
+  // Initialize data from brand data
   useEffect(() => {
     if (brandData) {
       // Generate market share data
@@ -140,67 +171,180 @@ const MarketAnalysis = () => {
       setMarketShareData(newMarketShareData);
       
       // Generate sales data
-      const newSalesData = generateSalesData(brandData);
+      const newSalesData = generateSalesData();
       setSalesData(newSalesData);
       
-      // Update market overview
-      setMarketOverview({
-        marketSize: brandData.marketAnalysis?.marketSize || "$4.6 Billion",
-        growthRate: brandData.marketAnalysis?.growthRate || "12.3% CAGR",
-        keyTrends: "Increasing demand for sustainable products, shift to e-commerce, growing health consciousness."
-      });
+      // Initialize market data from raw JSONB
+      let newMarketData: BrandMarketAnalysis;
+      let newTrends: string;
       
-      // Update competitor data
-      if (brandData.marketAnalysis?.competitorAnalysis) {
-        const competitors = brandData.marketAnalysis.competitorAnalysis.map((comp: any) => ({
-          name: comp.name,
-          share: comp.marketShare,
-          strengths: comp.strengths?.join(", ") || "",
-          weaknesses: comp.weaknesses?.join(", ") || ""
-        }));
-        
-        if (competitors.length > 0) {
-          setCompetitorData(competitors);
-        }
+      if (brandData.market_analysis) {
+        newMarketData = {
+          market_size: brandData.market_analysis.market_size || '',
+          growth_rate: brandData.market_analysis.growth_rate || '',
+          analysis_year: brandData.market_analysis.analysis_year || new Date().getFullYear()
+        };
+        // Extract key trends if stored in market_analysis
+        newTrends = brandData.market_analysis.key_trends || "Increasing demand for sustainable products, shift to e-commerce, growing health consciousness.";
+      } else if (brandData.marketAnalysis) {
+        // Fallback to transformed data
+        newMarketData = {
+          market_size: brandData.marketAnalysis.marketSize || '',
+          growth_rate: brandData.marketAnalysis.growthRate || '',
+          analysis_year: new Date().getFullYear()
+        };
+        newTrends = "Increasing demand for sustainable products, shift to e-commerce, growing health consciousness.";
+      } else {
+        newMarketData = {
+          market_size: '',
+          growth_rate: '',
+          analysis_year: new Date().getFullYear()
+        };
+        newTrends = "Increasing demand for sustainable products, shift to e-commerce, growing health consciousness.";
       }
+      
+      setMarketData(newMarketData);
+      setTempMarketData(newMarketData);
+      setKeyTrends(newTrends);
+      setTempKeyTrends(newTrends);
+      
+      // Initialize competitors from raw data
+      let newCompetitors: BrandCompetitor[] = [];
+      
+      if (brandData.competitors && brandData.competitors.length > 0) {
+        newCompetitors = brandData.competitors.map((comp: BrandCompetitor, index) => ({
+          id: comp.id || `comp-${index}`,
+          name: comp.name,
+          market_share: comp.market_share || '',
+          strengths: comp.strengths || [],
+          weaknesses: comp.weaknesses || [],
+          order_index: comp.order_index ?? index
+        }));
+      } else if (brandData.marketAnalysis?.competitorAnalysis) {
+        // Fallback to transformed data
+        newCompetitors = brandData.marketAnalysis.competitorAnalysis.map((comp, index) => ({
+          id: `comp-${index}`,
+          name: comp.name,
+          market_share: comp.marketShare,
+          strengths: comp.strengths,
+          weaknesses: comp.weaknesses,
+          order_index: index
+        }));
+      }
+      
+      setCompetitors(newCompetitors);
+      setTempCompetitors(newCompetitors);
     }
   }, [brandData]);
   
-  // Save market overview edits
-  const handleSaveMarketOverview = () => {
-    setEditingMarketOverview(false);
-  };
-  
-  // Cancel market overview edits
-  const handleCancelMarketOverview = () => {
-    setMarketOverview({
-      marketSize: brandData.marketAnalysis?.marketSize || "$4.6 Billion",
-      growthRate: brandData.marketAnalysis?.growthRate || "12.3% CAGR",
-      keyTrends: "Increasing demand for sustainable products, shift to e-commerce, growing health consciousness."
-    });
-    setEditingMarketOverview(false);
-  };
-  
-  // Save competitor edits
-  const handleSaveCompetitors = () => {
-    setEditingCompetitors(false);
-  };
-  
-  // Cancel competitor edits
-  const handleCancelCompetitors = () => {
-    if (brandData.marketAnalysis?.competitorAnalysis) {
-      const competitors = brandData.marketAnalysis.competitorAnalysis.map((comp: any) => ({
-        name: comp.name,
-        share: comp.marketShare,
-        strengths: comp.strengths?.join(", ") || "",
-        weaknesses: comp.weaknesses?.join(", ") || ""
-      }));
-      
-      if (competitors.length > 0) {
-        setCompetitorData(competitors);
+  // Handle save market overview
+  const handleSaveMarketOverview = async () => {
+    if (brandId) {
+      try {
+        // Save market data with key trends
+        const updatedData = { ...tempMarketData, key_trends: tempKeyTrends };
+        await updateMarketAnalysis.mutateAsync({ brandId, marketAnalysis: updatedData });
+        
+        // Update actual state on success
+        setMarketData(tempMarketData);
+        setKeyTrends(tempKeyTrends);
+        setEditingMarketOverview(false);
+      } catch (error) {
+        console.error('Failed to save market overview:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to save market overview',
+          variant: 'destructive',
+        });
       }
     }
+  };
+  
+  // Handle cancel market overview
+  const handleCancelMarketOverview = () => {
+    setTempMarketData(marketData);
+    setTempKeyTrends(keyTrends);
+    setEditingMarketOverview(false);
+  };
+  
+  // Handle save competitors
+  const handleSaveCompetitors = async () => {
+    if (brandId) {
+      try {
+        // Use the safe batch update from brandService
+        await brandService.safeUpdateCompetitors(brandId, tempCompetitors);
+        
+        // Update actual state on success
+        setCompetitors(tempCompetitors);
+        setEditingCompetitors(false);
+        
+        toast({
+          title: 'Success',
+          description: 'Competitors updated successfully',
+        });
+      } catch (error) {
+        console.error('Failed to save competitors:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to save competitors',
+          variant: 'destructive',
+        });
+      }
+    }
+  };
+  
+  // Handle cancel competitors
+  const handleCancelCompetitors = () => {
+    setTempCompetitors(competitors);
     setEditingCompetitors(false);
+  };
+  
+  // Handle competitor operations in edit mode
+  const handleAddCompetitor = () => {
+    const newCompetitor: BrandCompetitor = {
+      id: `new-comp-${Date.now()}`,
+      name: 'New Competitor',
+      market_share: '0%',
+      strengths: [],
+      weaknesses: [],
+      order_index: tempCompetitors.length
+    };
+    setTempCompetitors([...tempCompetitors, newCompetitor]);
+  };
+  
+  const handleEditCompetitor = (competitor: BrandCompetitor) => {
+    setEditingCompetitorId(competitor.id!);
+    setEditedCompetitor({ ...competitor });
+  };
+  
+  const handleSaveCompetitor = () => {
+    if (editedCompetitor) {
+      const updatedCompetitors = tempCompetitors.map(c => 
+        c.id === editedCompetitor.id ? editedCompetitor : c
+      );
+      setTempCompetitors(updatedCompetitors);
+      setEditingCompetitorId(null);
+      setEditedCompetitor(null);
+    }
+  };
+  
+  const handleCancelEditCompetitor = () => {
+    setEditingCompetitorId(null);
+    setEditedCompetitor(null);
+  };
+  
+  const handleDeleteCompetitor = (id: string) => {
+    const updatedCompetitors = tempCompetitors.filter(c => c.id !== id);
+    setTempCompetitors(updatedCompetitors);
+  };
+  
+  const updateCompetitorField = (field: keyof BrandCompetitor, value: string | string[]) => {
+    if (editedCompetitor) {
+      setEditedCompetitor({
+        ...editedCompetitor,
+        [field]: value
+      });
+    }
   };
   
   return (
@@ -249,15 +393,15 @@ const MarketAnalysis = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="p-4 border rounded-md">
                 <div className="text-sm text-gray-500 mb-1">Market Size</div>
-                <div className="text-xl font-bold">{marketOverview.marketSize}</div>
+                <div className="text-xl font-bold">{marketData.market_size || 'Not set'}</div>
               </div>
               <div className="p-4 border rounded-md">
                 <div className="text-sm text-gray-500 mb-1">Growth Rate</div>
-                <div className="text-xl font-bold">{marketOverview.growthRate}</div>
+                <div className="text-xl font-bold">{marketData.growth_rate || 'Not set'}</div>
               </div>
               <div className="p-4 border rounded-md">
                 <div className="text-sm text-gray-500 mb-1">Key Trends</div>
-                <div className="text-sm">{marketOverview.keyTrends}</div>
+                <div className="text-sm">{keyTrends || 'Not set'}</div>
               </div>
             </div>
           ) : (
@@ -265,25 +409,28 @@ const MarketAnalysis = () => {
               <div className="p-4 border rounded-md">
                 <div className="text-sm text-gray-500 mb-1">Market Size</div>
                 <Input 
-                  value={marketOverview.marketSize} 
-                  onChange={(e) => setMarketOverview({...marketOverview, marketSize: e.target.value})}
+                  value={tempMarketData.market_size || ''} 
+                  onChange={(e) => setTempMarketData({...tempMarketData, market_size: e.target.value})}
                   className="text-xl font-bold"
+                  placeholder="$0B"
                 />
               </div>
               <div className="p-4 border rounded-md">
                 <div className="text-sm text-gray-500 mb-1">Growth Rate</div>
                 <Input 
-                  value={marketOverview.growthRate} 
-                  onChange={(e) => setMarketOverview({...marketOverview, growthRate: e.target.value})}
+                  value={tempMarketData.growth_rate || ''} 
+                  onChange={(e) => setTempMarketData({...tempMarketData, growth_rate: e.target.value})}
                   className="text-xl font-bold"
+                  placeholder="0% CAGR"
                 />
               </div>
               <div className="p-4 border rounded-md">
                 <div className="text-sm text-gray-500 mb-1">Key Trends</div>
                 <Textarea 
-                  value={marketOverview.keyTrends} 
-                  onChange={(e) => setMarketOverview({...marketOverview, keyTrends: e.target.value})}
-                  className="text-sm"
+                  value={tempKeyTrends} 
+                  onChange={(e) => setTempKeyTrends(e.target.value)}
+                  className="text-sm min-h-[80px]"
+                  placeholder="Enter key market trends..."
                 />
               </div>
             </div>
@@ -353,7 +500,10 @@ const MarketAnalysis = () => {
               variant="ghost" 
               size="sm" 
               className="text-gray-500"
-              onClick={() => setEditingCompetitors(true)}
+              onClick={() => {
+                setEditingCompetitors(true);
+                setTempCompetitors([...competitors]);
+              }}
             >
               <Edit className="h-4 w-4 mr-1" />
               Edit
@@ -382,101 +532,132 @@ const MarketAnalysis = () => {
           )}
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[180px]">Competitor</TableHead>
-                <TableHead>Market Share</TableHead>
-                <TableHead>Key Strengths</TableHead>
-                <TableHead>Key Weaknesses</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {competitorData.map((competitor, index) => (
-                <TableRow key={index}>
-                  <TableCell className="font-medium">
-                    {editingCompetitors ? (
-                      <Input 
-                        value={competitor.name} 
-                        onChange={(e) => {
-                          const newData = [...competitorData];
-                          newData[index].name = e.target.value;
-                          setCompetitorData(newData);
-                        }}
-                      />
-                    ) : (
-                      competitor.name
+          {editingCompetitors && (
+            <div className="mb-4">
+              <Button
+                onClick={handleAddCompetitor}
+                size="sm"
+                className="bg-emerald-600 hover:bg-emerald-700"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Competitor
+              </Button>
+            </div>
+          )}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {(editingCompetitors ? tempCompetitors : competitors).map((competitor) => (
+              <Card key={competitor.id} className="relative">
+                <CardHeader className="pb-3">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      {editingCompetitors && editingCompetitorId === competitor.id ? (
+                        <Input
+                          value={editedCompetitor?.name || ''}
+                          onChange={(e) => updateCompetitorField('name', e.target.value)}
+                          placeholder="Competitor name"
+                          className="font-semibold mb-2"
+                        />
+                      ) : (
+                        <CardTitle className="text-lg">{competitor.name}</CardTitle>
+                      )}
+                      
+                      {editingCompetitors && editingCompetitorId === competitor.id ? (
+                        <Input
+                          value={editedCompetitor?.market_share || ''}
+                          onChange={(e) => updateCompetitorField('market_share', e.target.value)}
+                          placeholder="Market share"
+                          className="text-sm"
+                        />
+                      ) : (
+                        <CardDescription>Market Share: {competitor.market_share}</CardDescription>
+                      )}
+                    </div>
+                    
+                    {editingCompetitors && (
+                      <div className="flex gap-1">
+                        {editingCompetitorId === competitor.id ? (
+                          <>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={handleCancelEditCompetitor}
+                              className="h-8 w-8 p-0"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={handleSaveCompetitor}
+                              className="h-8 w-8 p-0 text-emerald-600"
+                            >
+                              <Check className="h-4 w-4" />
+                            </Button>
+                          </>
+                        ) : (
+                          <>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleEditCompetitor(competitor)}
+                              className="h-8 w-8 p-0"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleDeleteCompetitor(competitor.id!)}
+                              className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </>
+                        )}
+                      </div>
                     )}
-                  </TableCell>
-                  <TableCell>
-                    {editingCompetitors ? (
-                      <Input 
-                        value={competitor.share} 
-                        onChange={(e) => {
-                          const newData = [...competitorData];
-                          newData[index].share = e.target.value;
-                          setCompetitorData(newData);
-                        }}
-                      />
-                    ) : (
-                      competitor.share
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {editingCompetitors ? (
-                      <Input 
-                        value={competitor.strengths} 
-                        onChange={(e) => {
-                          const newData = [...competitorData];
-                          newData[index].strengths = e.target.value;
-                          setCompetitorData(newData);
-                        }}
-                      />
-                    ) : (
-                      competitor.strengths
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {editingCompetitors ? (
-                      <Input 
-                        value={competitor.weaknesses} 
-                        onChange={(e) => {
-                          const newData = [...competitorData];
-                          newData[index].weaknesses = e.target.value;
-                          setCompetitorData(newData);
-                        }}
-                      />
-                    ) : (
-                      competitor.weaknesses
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-              {editingCompetitors && (
-                <TableRow>
-                  <TableCell colSpan={4} className="text-center">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => {
-                        setCompetitorData([
-                          ...competitorData, 
-                          {
-                            name: "New Competitor",
-                            share: "5%",
-                            strengths: "Enter strengths here",
-                            weaknesses: "Enter weaknesses here"
-                          }
-                        ]);
-                      }}
-                    >
-                      Add Competitor
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-sm font-medium text-gray-700 mb-1">Strengths</p>
+                      {editingCompetitors && editingCompetitorId === competitor.id ? (
+                        <Textarea
+                          value={(editedCompetitor?.strengths || []).join(', ')}
+                          onChange={(e) => updateCompetitorField('strengths', e.target.value.split(',').map(s => s.trim()).filter(s => s))}
+                          placeholder="Enter strengths separated by commas"
+                          rows={2}
+                          className="text-sm"
+                        />
+                      ) : (
+                        <p className="text-sm text-gray-600">
+                          {(competitor.strengths || []).join(', ') || 'No strengths listed'}
+                        </p>
+                      )}
+                    </div>
+                    
+                    <div>
+                      <p className="text-sm font-medium text-gray-700 mb-1">Weaknesses</p>
+                      {editingCompetitors && editingCompetitorId === competitor.id ? (
+                        <Textarea
+                          value={(editedCompetitor?.weaknesses || []).join(', ')}
+                          onChange={(e) => updateCompetitorField('weaknesses', e.target.value.split(',').map(s => s.trim()).filter(s => s))}
+                          placeholder="Enter weaknesses separated by commas"
+                          rows={2}
+                          className="text-sm"
+                        />
+                      ) : (
+                        <p className="text-sm text-gray-600">
+                          {(competitor.weaknesses || []).join(', ') || 'No weaknesses listed'}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </CardContent>
       </Card>
     </div>

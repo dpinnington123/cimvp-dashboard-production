@@ -18,7 +18,11 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useBrand } from "@/contexts/BrandContext";
-import { useUpdateBrandMessages } from "@/hooks/useUpdateBrandMessages";
+import { 
+  useAddBrandMessage, 
+  useUpdateBrandMessage, 
+  useDeleteBrandMessage 
+} from "@/hooks/useBrandMessageOperations";
 import { brandService } from "@/services/brandService";
 import { useToast } from "@/hooks/use-toast";
 
@@ -40,7 +44,9 @@ interface BrandMessage {
 const BrandMessages = () => {
   const { getBrandData, selectedBrand } = useBrand();
   const brandData = getBrandData();
-  const updateMessages = useUpdateBrandMessages();
+  const addMessage = useAddBrandMessage();
+  const updateMessage = useUpdateBrandMessage();
+  const deleteMessage = useDeleteBrandMessage();
   const { toast } = useToast();
   
   // Colors for different audience types
@@ -132,42 +138,66 @@ const BrandMessages = () => {
   // Save edited message
   const handleSave = async () => {
     if (editingMessage && brandId) {
-      // Update local state first
-      setMessages(messages.map(msg => 
-        msg.id === editingMessage.id ? editingMessage : msg
-      ));
-      setEditingId(null);
-      setEditingMessage(null);
-
-      // Convert messages to database format
-      const dbMessages = messages.map(msg => {
-        // Update the message that was edited
-        const messageToSave = msg.id === editingMessage.id ? editingMessage : msg;
-        
-        return {
-          id: messageToSave.id,
-          title: messageToSave.title,
-          text: messageToSave.quote,
-          narrative: messageToSave.narrative,
-          audience_id: messageToSave.audienceId || null,
-          objective_id: messageToSave.objectiveId || null,
-          behavioral_change: messageToSave.behavioralChange,
-          framing: messageToSave.framing
-        };
-      });
-
-      // Update in database
       try {
-        await updateMessages.mutateAsync({ brandId, messages: dbMessages });
+        // Check if this is a new message (temporary ID) or existing
+        const isNewMessage = editingMessage.id.length < 36;
+        
+        if (isNewMessage) {
+          // Add new message to database
+          const newMessage = await addMessage.mutateAsync({
+            brandId,
+            message: {
+              title: editingMessage.title,
+              text: editingMessage.quote,
+              narrative: editingMessage.narrative,
+              audience_id: editingMessage.audienceId || null,
+              objective_id: editingMessage.objectiveId || null,
+              behavioral_change: editingMessage.behavioralChange,
+              framing: editingMessage.framing
+            }
+          });
+          
+          // Update local state with the real ID from database
+          setMessages(messages.map(msg => 
+            msg.id === editingMessage.id 
+              ? { ...editingMessage, id: newMessage.id }
+              : msg
+          ));
+        } else {
+          // Update existing message
+          await updateMessage.mutateAsync({
+            messageId: editingMessage.id,
+            updates: {
+              title: editingMessage.title,
+              text: editingMessage.quote,
+              narrative: editingMessage.narrative,
+              audience_id: editingMessage.audienceId || null,
+              objective_id: editingMessage.objectiveId || null,
+              behavioral_change: editingMessage.behavioralChange,
+              framing: editingMessage.framing
+            }
+          });
+          
+          // Update local state
+          setMessages(messages.map(msg => 
+            msg.id === editingMessage.id ? editingMessage : msg
+          ));
+        }
+        
+        setEditingId(null);
+        setEditingMessage(null);
       } catch (error) {
-        // Revert on error
-        console.error('Failed to save messages:', error);
+        console.error('Failed to save message:', error);
       }
     }
   };
 
   // Cancel editing
   const handleCancel = () => {
+    // If this was a new message (temporary ID), remove it from local state
+    if (editingId && editingId.length < 36) {
+      setMessages(messages.filter(msg => msg.id !== editingId));
+    }
     setEditingId(null);
     setEditingMessage(null);
   };
@@ -175,28 +205,14 @@ const BrandMessages = () => {
   // Delete a message
   const handleDelete = async (id: string) => {
     if (brandId) {
-      // Update local state first
-      const newMessages = messages.filter(msg => msg.id !== id);
-      setMessages(newMessages);
-
-      // Convert to database format and save
-      const dbMessages = newMessages.map(msg => ({
-        id: msg.id,
-        title: msg.title,
-        text: msg.quote,
-        narrative: msg.narrative,
-        audience_id: msg.audienceId || null,
-        objective_id: msg.objectiveId || null,
-        behavioral_change: msg.behavioralChange,
-        framing: msg.framing
-      }));
-
       try {
-        await updateMessages.mutateAsync({ brandId, messages: dbMessages });
+        // Delete from database
+        await deleteMessage.mutateAsync({ messageId: id, brandId });
+        
+        // Update local state only after successful deletion
+        setMessages(messages.filter(msg => msg.id !== id));
       } catch (error) {
-        // Revert on error
         console.error('Failed to delete message:', error);
-        setMessages(messages);
       }
     }
   };
@@ -204,9 +220,9 @@ const BrandMessages = () => {
   // Add a new message
   const handleAddMessage = () => {
     const newMessage: BrandMessage = {
-      id: Date.now().toString(),
+      id: Date.now().toString(), // Temporary ID
       audience: "New Audience",
-      audienceColor: "gray",
+      audienceColor: audienceColors[messages.length % audienceColors.length],
       title: "New Message Title",
       quote: "Your key message quote goes here.",
       narrative: "Provide a narrative that explains the message in more detail.",
@@ -215,6 +231,7 @@ const BrandMessages = () => {
       framing: "Explain the framing approach"
     };
     
+    // Add to local state temporarily for editing
     setMessages([...messages, newMessage]);
     // Start editing the new message immediately
     handleEdit(newMessage);
@@ -295,9 +312,9 @@ const BrandMessages = () => {
                         variant="ghost" 
                         size="sm" 
                         onClick={handleSave}
-                        disabled={updateMessages.isPending}
+                        disabled={addMessage.isPending || updateMessage.isPending}
                       >
-                        {updateMessages.isPending ? (
+                        {(addMessage.isPending || updateMessage.isPending) ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
                         ) : (
                           <Save className="h-4 w-4" />

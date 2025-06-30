@@ -192,11 +192,16 @@ export interface BrandMarketAnalysis {
 
 export interface BrandCompetitor {
   id?: string;
+  brand_id?: string;
   name: string;
   market_share?: string;
+  marketShare?: string; // For compatibility
   strengths?: string[];
   weaknesses?: string[];
+  unique_selling_points?: string[];
+  uniqueSellingPoints?: string[]; // For compatibility
   order_index?: number;
+  qualitative_profiles?: Record<string, string>; // New field for qualitative assessments
 }
 
 export interface BrandSWOT {

@@ -8,7 +8,11 @@ import type { BrandObjective, BrandAudience, Strategy } from "@/types/brand";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useUpdateBrandObjectives } from "@/hooks/useUpdateBrandObjectives";
+import { 
+  useAddBrandObjective, 
+  useUpdateBrandObjective, 
+  useDeleteBrandObjective 
+} from "@/hooks/useBrandObjectiveOperations";
 import { useUpdateBrandStrategies } from "@/hooks/useUpdateBrandStrategies";
 import { brandService } from "@/services/brandService";
 import { useToast } from "@/hooks/use-toast";
@@ -56,7 +60,9 @@ interface Objective {
 const StrategicObjectives = () => {
   const { getBrandData, selectedBrand, isLoading } = useBrand();
   const brandData = getBrandData();
-  const updateObjectives = useUpdateBrandObjectives();
+  const addObjective = useAddBrandObjective();
+  const updateObjective = useUpdateBrandObjective();
+  const deleteObjective = useDeleteBrandObjective();
   const updateStrategies = useUpdateBrandStrategies();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -195,28 +201,27 @@ const StrategicObjectives = () => {
     
     // If we're currently editing and toggling off, save the data
     if (isCurrentlyEditing && brandId) {
-      // Convert objectives to database format with ALL fields
-      const dbObjectives = objectives.map((obj, index: number) => {
-        // Find the audience ID from the audience text
-        const audienceId = brandData.audiences.find((a: BrandAudience) => a.text === obj.audience)?.id;
-        
-        return {
-          id: obj.id,
-          title: obj.title,
-          behavioral_change: obj.behavioralChange,
-          target_audience_id: audienceId || null,
-          scenario: obj.scenario,
-          timeline: obj.timeline,
-          owner: obj.owner,
-          kpis: obj.kpis,
-          status: 'active',
-          order_index: index
-        };
-      });
+      const objective = objectives.find(obj => obj.id === id);
+      if (!objective) return;
+      
+      // Find the audience ID from the audience text
+      const audienceId = brandData.audiences.find((a: BrandAudience) => a.text === objective.audience)?.id;
       
       try {
-        // Update only objectives - strategies are managed separately
-        await updateObjectives.mutateAsync({ brandId, objectives: dbObjectives });
+        // Update the individual objective
+        await updateObjective.mutateAsync({
+          objectiveId: objective.id,
+          updates: {
+            title: objective.title,
+            behavioral_change: objective.behavioralChange,
+            target_audience_id: audienceId || null,
+            scenario: objective.scenario,
+            timeline: objective.timeline,
+            owner: objective.owner,
+            kpis: objective.kpis,
+            status: 'active'
+          }
+        });
       } catch (error) {
         console.error('Failed to save changes:', error);
         toast({
@@ -234,8 +239,8 @@ const StrategicObjectives = () => {
     }));
   };
   
-  // Update objective field
-  const updateObjective = (id: string, field: keyof Objective, value: any) => {
+  // Update objective field locally
+  const updateObjectiveField = (id: string, field: keyof Objective, value: any) => {
     setObjectives(prev => 
       prev.map(obj => 
         obj.id === id 
@@ -312,7 +317,7 @@ const StrategicObjectives = () => {
   };
   
   // Delete objective
-  const deleteObjective = async (id: string) => {
+  const handleDeleteObjective = async (id: string) => {
     if (!brandId) {
       toast({
         title: 'Error',
@@ -322,44 +327,20 @@ const StrategicObjectives = () => {
       return;
     }
     
-    // Remove from local state first
-    setObjectives(prev => prev.filter(obj => obj.id !== id));
-    // Also clear edit mode for this objective
-    setEditMode(prev => {
-      const updated = {...prev};
-      delete updated[id];
-      return updated;
-    });
-    
-    // Save to database
     try {
-      // Get remaining objectives with all their data
-      const remainingObjectives = objectives
-        .filter(obj => obj.id !== id)
-        .map((obj, index) => {
-          const aud = brandData.audiences.find((a: BrandAudience) => a.text === obj.audience);
-          return {
-            id: obj.id,
-            title: obj.title,
-            behavioral_change: obj.behavioralChange,
-            target_audience_id: aud?.id || null,
-            scenario: obj.scenario,
-            timeline: obj.timeline,
-            owner: obj.owner,
-            kpis: obj.kpis,
-            status: 'active',
-            order_index: index
-          };
-        });
+      // Delete the objective from database
+      await deleteObjective.mutateAsync({ objectiveId: id, brandId });
       
-      await updateObjectives.mutateAsync({ brandId, objectives: remainingObjectives });
+      // Remove from local state only after successful deletion
+      setObjectives(prev => prev.filter(obj => obj.id !== id));
+      // Also clear edit mode for this objective
+      setEditMode(prev => {
+        const updated = {...prev};
+        delete updated[id];
+        return updated;
+      });
     } catch (error) {
       console.error('Failed to delete objective:', error);
-      // Restore to local state if delete failed
-      const originalObj = brandData.objectives.find((obj: BrandObjective) => obj.id === id);
-      if (originalObj) {
-        setObjectives(prev => [...prev, mapBrandDataToObjectives(brandData).find(o => o.id === id)!]);
-      }
     }
   };
   
@@ -460,43 +441,42 @@ const StrategicObjectives = () => {
       // Find the audience ID from the audience text
       const audienceId = brandData.audiences.find((a: BrandAudience) => a.text === newObjective.audience)?.id;
       
-      // Get all current objectives and add the new one
-      const allObjectives = [...objectives, newObjective];
-      const dbObjectives = allObjectives.map((obj, index) => {
-        const aud = brandData.audiences.find((a: BrandAudience) => a.text === obj.audience);
-        return {
-          id: obj.id,
-          title: obj.title,
-          behavioral_change: obj.behavioralChange,
-          target_audience_id: aud?.id || null,
-          scenario: obj.scenario,
-          timeline: obj.timeline,
-          owner: obj.owner,
-          kpis: obj.kpis,
-          status: 'active',
-          order_index: index
-        };
+      // Add the new objective
+      const savedObjective = await addObjective.mutateAsync({
+        brandId,
+        objective: {
+          title: newObjective.title,
+          behavioral_change: newObjective.behavioralChange,
+          target_audience_id: audienceId || null,
+          scenario: newObjective.scenario,
+          timeline: newObjective.timeline,
+          owner: newObjective.owner,
+          kpis: newObjective.kpis,
+          status: 'active'
+        }
       });
       
-      // Log for debugging
-      console.log('Saving objectives for brand:', brandId, selectedBrand);
-      console.log('Objectives to save:', dbObjectives);
-      
-      await updateObjectives.mutateAsync({ brandId, objectives: dbObjectives });
+      // Add to local state with the real ID from database
+      setObjectives(prev => [...prev, {
+        ...newObjective,
+        id: savedObjective.id
+      }]);
       
       // Close the form after successful save
       setIsAddingNew(false);
-      
-      // Force a refresh of brand data
-      queryClient.invalidateQueries({ queryKey: ['brand', selectedBrand] });
+      setNewObjective({
+        id: '',
+        title: '',
+        audience: brandData.audiences.length > 0 ? brandData.audiences[0].text : "General audience",
+        scenario: brandData.profile.businessArea,
+        behavioralChange: '',
+        kpis: [],
+        timeline: '',
+        owner: ''
+      });
       
     } catch (error) {
       console.error('Failed to save new objective:', error);
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to save objective',
-        variant: 'destructive',
-      });
     }
   };
   
@@ -677,9 +657,9 @@ const StrategicObjectives = () => {
             <Button 
               onClick={saveNewObjective}
               className="bg-emerald-600 hover:bg-emerald-700"
-              disabled={updateObjectives.isPending}
+              disabled={addObjective.isPending}
             >
-              {updateObjectives.isPending ? (
+              {addObjective.isPending ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               ) : (
                 <Save className="h-4 w-4 mr-2" />
@@ -698,7 +678,7 @@ const StrategicObjectives = () => {
                 {editMode[objective.id] ? (
                   <Input 
                     value={objective.title}
-                    onChange={(e) => updateObjective(objective.id, 'title', e.target.value)}
+                    onChange={(e) => updateObjectiveField(objective.id, 'title', e.target.value)}
                     className="font-bold text-lg mb-2"
                   />
                 ) : (
@@ -709,7 +689,7 @@ const StrategicObjectives = () => {
                 {editMode[objective.id] ? (
                   <Textarea 
                     value={objective.behavioralChange}
-                    onChange={(e) => updateObjective(objective.id, 'behavioralChange', e.target.value)}
+                    onChange={(e) => updateObjectiveField(objective.id, 'behavioralChange', e.target.value)}
                     className="mt-2"
                     rows={2}
                   />
@@ -735,9 +715,9 @@ const StrategicObjectives = () => {
                     size="sm" 
                     className="h-8 w-8 p-0 text-emerald-600"
                     onClick={() => toggleEditMode(objective.id)}
-                    disabled={updateObjectives.isPending || updateStrategies.isPending}
+                    disabled={updateObjective.isPending || updateStrategies.isPending}
                   >
-                    {updateObjectives.isPending || updateStrategies.isPending ? (
+                    {updateObjective.isPending || updateStrategies.isPending ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
                       <Save className="h-4 w-4" />
@@ -748,7 +728,7 @@ const StrategicObjectives = () => {
                   variant="ghost" 
                   size="sm" 
                   className="h-8 w-8 p-0 text-red-500"
-                  onClick={() => deleteObjective(objective.id)}
+                  onClick={() => handleDeleteObjective(objective.id)}
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
@@ -763,7 +743,7 @@ const StrategicObjectives = () => {
                     {editMode[objective.id] ? (
                       <Select 
                         value={objective.audience}
-                        onValueChange={(value) => updateObjective(objective.id, 'audience', value)}
+                        onValueChange={(value) => updateObjectiveField(objective.id, 'audience', value)}
                       >
                         <SelectTrigger className="mt-1">
                           <SelectValue placeholder="Select audience" />
@@ -795,7 +775,7 @@ const StrategicObjectives = () => {
                     {editMode[objective.id] ? (
                       <Input 
                         value={objective.scenario}
-                        onChange={(e) => updateObjective(objective.id, 'scenario', e.target.value)}
+                        onChange={(e) => updateObjectiveField(objective.id, 'scenario', e.target.value)}
                         className="mt-1"
                       />
                     ) : (
@@ -878,7 +858,7 @@ const StrategicObjectives = () => {
                   {editMode[objective.id] ? (
                     <Input 
                       value={objective.timeline}
-                      onChange={(e) => updateObjective(objective.id, 'timeline', e.target.value)}
+                      onChange={(e) => updateObjectiveField(objective.id, 'timeline', e.target.value)}
                       className="w-28 h-7 text-sm"
                     />
                   ) : (
@@ -890,7 +870,7 @@ const StrategicObjectives = () => {
                   {editMode[objective.id] ? (
                     <Input 
                       value={objective.owner}
-                      onChange={(e) => updateObjective(objective.id, 'owner', e.target.value)}
+                      onChange={(e) => updateObjectiveField(objective.id, 'owner', e.target.value)}
                       className="w-40 h-7 text-sm"
                     />
                   ) : (

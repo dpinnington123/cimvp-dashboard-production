@@ -18,6 +18,12 @@ import type {
   BrandPerformanceHistory
 } from '@/types/brand';
 import type { BrandStyleGuide } from '@/types/brandStyleGuide';
+import { 
+  safeUpdateRelationalData, 
+  safeAddItem, 
+  safeUpdateItem, 
+  safeDeleteItem 
+} from '@/utils/safeRelationalUpdate';
 
 export interface DatabaseBrand {
   id: string;
@@ -828,7 +834,9 @@ class BrandService {
   }
 
   /**
-   * Update brand objectives (now uses brand_objectives table)
+   * DEPRECATED - DO NOT USE - Uses dangerous DELETE-then-INSERT pattern
+   * Use individual CRUD methods or safeUpdateBrandObjectives instead
+   * @deprecated
    */
   async updateBrandObjectives(brandId: string, objectives: any[]): Promise<void> {
     try {
@@ -885,10 +893,113 @@ class BrandService {
   }
 
   /**
-   * Update brand messages (now in separate table)
+   * Safe update method for brand objectives using the new utility
+   */
+  async safeUpdateBrandObjectives(brandId: string, objectives: any[]): Promise<void> {
+    try {
+      const result = await safeUpdateRelationalData({
+        tableName: 'brand_objectives',
+        brandId,
+        items: objectives.map((obj, index) => ({
+          id: obj.id,
+          title: obj.text || obj.title,
+          behavioral_change: obj.notes || obj.behavioral_change || obj.behavioralChange,
+          target_audience_id: obj.target_audience_id || obj.targetAudienceId || null,
+          scenario: obj.scenario || '',
+          timeline: obj.timeline || '',
+          owner: obj.owner || '',
+          kpis: obj.kpis || [],
+          status: obj.status || 'active',
+          order_index: index
+        }))
+      });
+
+      console.log('Brand objectives update result:', result);
+    } catch (error) {
+      console.error('Error in safeUpdateBrandObjectives:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Add a single brand objective
+   */
+  async addBrandObjective(brandId: string, objective: any): Promise<any> {
+    try {
+      return await safeAddItem('brand_objectives', brandId, {
+        title: objective.text || objective.title || 'New Objective',
+        behavioral_change: objective.notes || objective.behavioral_change || objective.behavioralChange || '',
+        target_audience_id: objective.target_audience_id || objective.targetAudienceId || null,
+        scenario: objective.scenario || '',
+        timeline: objective.timeline || '',
+        owner: objective.owner || '',
+        kpis: objective.kpis || [],
+        status: objective.status || 'active'
+      });
+    } catch (error) {
+      console.error('Error adding brand objective:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update a single brand objective
+   */
+  async updateSingleBrandObjective(objectiveId: string, updates: any): Promise<void> {
+    try {
+      const updateData: any = {};
+      
+      // Map fields that might have different names
+      if ('title' in updates || 'text' in updates) updateData.title = updates.title || updates.text;
+      if ('behavioral_change' in updates || 'behavioralChange' in updates || 'notes' in updates) {
+        updateData.behavioral_change = updates.behavioral_change || updates.behavioralChange || updates.notes;
+      }
+      if ('target_audience_id' in updates || 'targetAudienceId' in updates) {
+        updateData.target_audience_id = updates.target_audience_id || updates.targetAudienceId;
+      }
+      if ('scenario' in updates) updateData.scenario = updates.scenario;
+      if ('timeline' in updates) updateData.timeline = updates.timeline;
+      if ('owner' in updates) updateData.owner = updates.owner;
+      if ('kpis' in updates) updateData.kpis = updates.kpis;
+      if ('status' in updates) updateData.status = updates.status;
+      
+      await safeUpdateItem('brand_objectives', objectiveId, updateData);
+    } catch (error) {
+      console.error('Error updating brand objective:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete a single brand objective
+   */
+  async deleteBrandObjective(objectiveId: string): Promise<void> {
+    try {
+      await safeDeleteItem('brand_objectives', objectiveId);
+    } catch (error) {
+      console.error('Error deleting brand objective:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * DEPRECATED - DO NOT USE - Uses dangerous DELETE-then-INSERT pattern
+   * Use individual CRUD methods or safeUpdateBrandMessages instead
+   * @deprecated
    */
   async updateBrandMessages(brandId: string, messages: any[]): Promise<void> {
     try {
+      // Safety check: Get current messages count before deletion
+      const { count: currentCount } = await supabase
+        .from('brand_messages')
+        .select('*', { count: 'exact', head: true })
+        .eq('brand_id', brandId);
+
+      // If we have messages currently and trying to save 0, this might be an error
+      if (currentCount && currentCount > 0 && messages.length === 0) {
+        console.warn('Warning: Attempting to delete all messages. This might be unintentional.');
+      }
+
       // First, delete existing messages
       const { error: deleteError } = await supabase
         .from('brand_messages')
@@ -926,6 +1037,89 @@ class BrandService {
       }
     } catch (error) {
       console.error('Error updating messages:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Safe update method for brand messages using the new utility
+   */
+  async safeUpdateBrandMessages(brandId: string, messages: any[]): Promise<void> {
+    try {
+      const result = await safeUpdateRelationalData({
+        tableName: 'brand_messages',
+        brandId,
+        items: messages.map((msg, index) => ({
+          ...msg,
+          title: msg.title || `Message ${index + 1}`,
+          text: msg.text || msg.quote || '',
+          narrative: msg.notes || msg.narrative || '',
+          behavioral_change: msg.behavioral_change || msg.behavioralChange || '',
+          framing: msg.framing || '',
+          order_index: index
+        }))
+      });
+
+      console.log('Brand messages update result:', result);
+    } catch (error) {
+      console.error('Error in safeUpdateBrandMessages:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Add a single brand message
+   */
+  async addBrandMessage(brandId: string, message: any): Promise<any> {
+    try {
+      return await safeAddItem('brand_messages', brandId, {
+        title: message.title || 'New Message',
+        text: message.text || message.quote || '',
+        narrative: message.notes || message.narrative || '',
+        audience_id: message.audience_id || null,
+        objective_id: message.objective_id || null,
+        behavioral_change: message.behavioral_change || message.behavioralChange || '',
+        framing: message.framing || ''
+      });
+    } catch (error) {
+      console.error('Error adding brand message:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update a single brand message
+   */
+  async updateSingleBrandMessage(messageId: string, updates: any): Promise<void> {
+    try {
+      const updateData: any = {};
+      
+      // Map fields that might have different names
+      if ('title' in updates) updateData.title = updates.title;
+      if ('text' in updates || 'quote' in updates) updateData.text = updates.text || updates.quote;
+      if ('narrative' in updates || 'notes' in updates) updateData.narrative = updates.narrative || updates.notes;
+      if ('audience_id' in updates) updateData.audience_id = updates.audience_id;
+      if ('objective_id' in updates) updateData.objective_id = updates.objective_id;
+      if ('behavioral_change' in updates || 'behavioralChange' in updates) {
+        updateData.behavioral_change = updates.behavioral_change || updates.behavioralChange;
+      }
+      if ('framing' in updates) updateData.framing = updates.framing;
+      
+      await safeUpdateItem('brand_messages', messageId, updateData);
+    } catch (error) {
+      console.error('Error updating brand message:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete a single brand message
+   */
+  async deleteBrandMessage(messageId: string): Promise<void> {
+    try {
+      await safeDeleteItem('brand_messages', messageId);
+    } catch (error) {
+      console.error('Error deleting brand message:', error);
       throw error;
     }
   }
@@ -1138,34 +1332,6 @@ class BrandService {
     }
   }
 
-  /**
-   * Update brand financials
-   */
-  async updateBrandFinancials(brandId: string, financials: {
-    annualSales: string;
-    targetSales: string; 
-    growthPercentage: number;
-  }): Promise<void> {
-    const currentYear = new Date().getFullYear();
-    
-    const { error } = await supabase
-      .from('brand_financials')
-      .upsert({
-        brand_id: brandId,
-        year: currentYear,
-        annual_sales: financials.annualSales,
-        target_sales: financials.targetSales,
-        growth_percentage: financials.growthPercentage,
-        updated_at: new Date().toISOString()
-      }, {
-        onConflict: 'brand_id,year'
-      });
-
-    if (error) {
-      console.error('Error updating financials:', error);
-      throw new Error(`Failed to update financials: ${error.message}`);
-    }
-  }
 
   /**
    * Update market analysis for a brand
@@ -1188,7 +1354,9 @@ class BrandService {
   }
 
   /**
-   * Update competitors for a brand
+   * DEPRECATED - DO NOT USE - Uses dangerous DELETE-then-INSERT pattern
+   * Use individual CRUD methods or safeUpdateCompetitors instead
+   * @deprecated
    */
   async updateCompetitors(brandId: string, competitors: BrandCompetitor[]): Promise<void> {
     console.log('updateCompetitors called with:', { brandId, competitors });
@@ -1225,6 +1393,346 @@ class BrandService {
         console.error('Error inserting competitors:', insertError);
         throw new Error(`Failed to insert competitors: ${insertError.message}`);
       }
+    }
+  }
+
+  /**
+   * Safe update method for competitors using the new utility
+   */
+  async safeUpdateCompetitors(brandId: string, competitors: BrandCompetitor[]): Promise<void> {
+    try {
+      const result = await safeUpdateRelationalData({
+        tableName: 'brand_competitors',
+        brandId,
+        items: competitors.map((comp, index) => ({
+          id: comp.id,
+          name: comp.name || '',
+          strengths: comp.strengths || [],
+          weaknesses: comp.weaknesses || [],
+          market_share: comp.market_share || comp.marketShare || 0,
+          unique_selling_points: comp.unique_selling_points || comp.uniqueSellingPoints || [],
+          order_index: index
+        }))
+      });
+
+      console.log('Competitors update result:', result);
+    } catch (error) {
+      console.error('Error in safeUpdateCompetitors:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Add a single competitor
+   */
+  async addCompetitor(brandId: string, competitor: BrandCompetitor): Promise<any> {
+    try {
+      return await safeAddItem('brand_competitors', brandId, {
+        name: competitor.name || 'New Competitor',
+        strengths: competitor.strengths || [],
+        weaknesses: competitor.weaknesses || [],
+        market_share: competitor.market_share || competitor.marketShare || 0,
+        unique_selling_points: competitor.unique_selling_points || competitor.uniqueSellingPoints || []
+      });
+    } catch (error) {
+      console.error('Error adding competitor:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update a single competitor
+   */
+  async updateSingleCompetitor(competitorId: string, updates: Partial<BrandCompetitor>): Promise<void> {
+    try {
+      const updateData: any = {};
+      
+      if ('name' in updates) updateData.name = updates.name;
+      if ('strengths' in updates) updateData.strengths = updates.strengths;
+      if ('weaknesses' in updates) updateData.weaknesses = updates.weaknesses;
+      if ('market_share' in updates || 'marketShare' in updates) {
+        updateData.market_share = updates.market_share || updates.marketShare;
+      }
+      if ('unique_selling_points' in updates || 'uniqueSellingPoints' in updates) {
+        updateData.unique_selling_points = updates.unique_selling_points || updates.uniqueSellingPoints;
+      }
+      
+      await safeUpdateItem('brand_competitors', competitorId, updateData);
+    } catch (error) {
+      console.error('Error updating competitor:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete a single competitor
+   */
+  async deleteCompetitor(competitorId: string): Promise<void> {
+    try {
+      await safeDeleteItem('brand_competitors', competitorId);
+    } catch (error) {
+      console.error('Error deleting competitor:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update qualitative profiles for all competitors of a brand
+   * This updates the qualitative_profiles JSONB field for each competitor
+   */
+  async updateCompetitorQualitativeProfiles(
+    brandId: string, 
+    profiles: Array<{
+      competitorId: string;
+      qualitativeProfiles: Record<string, string>;
+    }>
+  ): Promise<void> {
+    try {
+      // Update each competitor's qualitative profiles
+      const updatePromises = profiles.map(({ competitorId, qualitativeProfiles }) => 
+        supabase
+          .from('brand_competitors')
+          .update({ 
+            qualitative_profiles: qualitativeProfiles,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', competitorId)
+          .eq('brand_id', brandId) // Extra safety check
+      );
+
+      const results = await Promise.all(updatePromises);
+      
+      // Check for errors
+      const errors = results.filter(result => result.error);
+      if (errors.length > 0) {
+        console.error('Errors updating qualitative profiles:', errors);
+        throw new Error('Failed to update some competitor qualitative profiles');
+      }
+    } catch (error) {
+      console.error('Error updating competitor qualitative profiles:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update qualitative profile for a single competitor
+   */
+  async updateSingleCompetitorQualitativeProfile(
+    competitorId: string, 
+    qualitativeProfiles: Record<string, string>
+  ): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('brand_competitors')
+        .update({ 
+          qualitative_profiles: qualitativeProfiles,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', competitorId);
+
+      if (error) {
+        console.error('Error updating competitor qualitative profile:', error);
+        throw new Error(`Failed to update qualitative profile: ${error.message}`);
+      }
+    } catch (error) {
+      console.error('Error updating competitor qualitative profile:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Add a new characteristic to all competitors of a brand
+   * This adds a new key-value pair to the qualitative_profiles JSONB for all competitors
+   */
+  async addCharacteristicToAllCompetitors(
+    brandId: string, 
+    characteristicName: string, 
+    defaultValue: string = 'Not Assessed'
+  ): Promise<void> {
+    try {
+      // First get all competitors for this brand
+      const { data: competitors, error: fetchError } = await supabase
+        .from('brand_competitors')
+        .select('id, qualitative_profiles')
+        .eq('brand_id', brandId);
+
+      if (fetchError) {
+        throw new Error(`Failed to fetch competitors: ${fetchError.message}`);
+      }
+
+      if (!competitors || competitors.length === 0) {
+        return; // No competitors to update
+      }
+
+      // Update each competitor's qualitative profiles with the new characteristic
+      const updatePromises = competitors.map(competitor => {
+        const updatedProfiles = {
+          ...(competitor.qualitative_profiles || {}),
+          [characteristicName]: defaultValue
+        };
+
+        return supabase
+          .from('brand_competitors')
+          .update({ 
+            qualitative_profiles: updatedProfiles,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', competitor.id);
+      });
+
+      const results = await Promise.all(updatePromises);
+      
+      // Check for errors
+      const errors = results.filter(result => result.error);
+      if (errors.length > 0) {
+        console.error('Errors adding characteristic:', errors);
+        throw new Error('Failed to add characteristic to some competitors');
+      }
+    } catch (error) {
+      console.error('Error adding characteristic to competitors:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update brand basic information
+   */
+  async updateBrandBasicInfo(brandId: string, updates: {
+    name?: string;
+    business_area?: string;
+    region?: string;
+  }): Promise<void> {
+    try {
+      // Update fields in brands table (only name and business_area)
+      const brandUpdates: any = {
+        updated_at: new Date().toISOString()
+      };
+      
+      if ('name' in updates && updates.name !== undefined) {
+        brandUpdates.name = updates.name;
+      }
+      if ('business_area' in updates && updates.business_area !== undefined) {
+        brandUpdates.business_area = updates.business_area;
+      }
+      
+      // Only update if there are fields to update
+      if (Object.keys(brandUpdates).length > 1) { // More than just updated_at
+        const { error } = await supabase
+          .from('brands')
+          .update(brandUpdates)
+          .eq('id', brandId);
+
+        if (error) {
+          throw new Error(`Failed to update brand info: ${error.message}`);
+        }
+      }
+
+      // Handle region update in brand_regions table
+      if ('region' in updates && updates.region !== undefined) {
+        // Check if a primary region exists
+        const { data: existingRegion } = await supabase
+          .from('brand_regions')
+          .select('id')
+          .eq('brand_id', brandId)
+          .eq('is_primary', true)
+          .single();
+
+        if (existingRegion) {
+          // Update existing primary region
+          const { error: regionError } = await supabase
+            .from('brand_regions')
+            .update({
+              region: updates.region
+            })
+            .eq('brand_id', brandId)
+            .eq('is_primary', true);
+
+          if (regionError) {
+            throw new Error(`Failed to update region: ${regionError.message}`);
+          }
+        } else {
+          // Insert new primary region
+          const { error: regionError } = await supabase
+            .from('brand_regions')
+            .insert({
+              brand_id: brandId,
+              region: updates.region,
+              is_primary: true
+            });
+
+          if (regionError) {
+            throw new Error(`Failed to insert region: ${regionError.message}`);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error updating brand basic info:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update brand financial data in brand_financials table
+   */
+  async updateBrandFinancials(brandId: string, financials: {
+    annualSales?: string;
+    targetSales?: string;
+    growth?: string;
+  }): Promise<void> {
+    try {
+      const currentYear = new Date().getFullYear();
+      
+      // Parse growth percentage from string (e.g., "15%" -> 15)
+      const growthPercentage = financials.growth 
+        ? parseFloat(financials.growth.replace('%', '')) 
+        : null;
+
+      // Check if financial record exists for current year
+      const { data: existing } = await supabase
+        .from('brand_financials')
+        .select('id')
+        .eq('brand_id', brandId)
+        .eq('year', currentYear)
+        .single();
+
+      if (existing) {
+        // Update existing record
+        const updateData: any = {
+          updated_at: new Date().toISOString()
+        };
+        
+        if (financials.annualSales !== undefined) updateData.annual_sales = financials.annualSales;
+        if (financials.targetSales !== undefined) updateData.target_sales = financials.targetSales;
+        if (growthPercentage !== null) updateData.growth_percentage = growthPercentage;
+
+        const { error } = await supabase
+          .from('brand_financials')
+          .update(updateData)
+          .eq('brand_id', brandId)
+          .eq('year', currentYear);
+
+        if (error) {
+          throw new Error(`Failed to update financials: ${error.message}`);
+        }
+      } else {
+        // Insert new record
+        const { error } = await supabase
+          .from('brand_financials')
+          .insert({
+            brand_id: brandId,
+            year: currentYear,
+            annual_sales: financials.annualSales || '$0',
+            target_sales: financials.targetSales || '$0',
+            growth_percentage: growthPercentage || 0
+          });
+
+        if (error) {
+          throw new Error(`Failed to insert financials: ${error.message}`);
+        }
+      }
+    } catch (error) {
+      console.error('Error updating brand financials:', error);
+      throw error;
     }
   }
 }

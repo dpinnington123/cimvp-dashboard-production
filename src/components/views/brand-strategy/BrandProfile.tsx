@@ -15,6 +15,33 @@ import {
 } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { useBrand } from "@/contexts/BrandContext";
+import { 
+  useUpdateBrandBasicInfo,
+  useUpdateBrandFinancials,
+  useUpdateBrandVoiceAttributes
+} from "@/hooks/useBrandProfileOperations";
+import { brandService } from "@/services/brandService";
+import { useToast } from "@/hooks/use-toast";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { 
+  PROFILE_CHARACTERISTICS, 
+  CHARACTERISTIC_LABELS,
+  ASSESSMENT_VALUES,
+  ASSESSMENT_COLORS,
+  DEFAULT_ASSESSMENT,
+  type ProfileCharacteristic,
+  type AssessmentValue
+} from "@/config/brandProfileConfig";
+import { 
+  useUpdateCompetitorQualitativeProfiles,
+  useAddCharacteristicToAllCompetitors
+} from "@/hooks/useCompetitorQualitativeProfiles";
 
 type BrandDetailsType = {
   brandName: string;
@@ -39,6 +66,15 @@ const BrandProfile = () => {
   // Get the current brand data from context
   const { selectedBrand, selectedRegion, getBrandData, isLoading } = useBrand();
   const brandData = getBrandData();
+  const { toast } = useToast();
+  
+  // Hooks for database updates
+  const updateBasicInfo = useUpdateBrandBasicInfo();
+  const updateFinancials = useUpdateBrandFinancials();
+  const updateVoiceAttributes = useUpdateBrandVoiceAttributes();
+  
+  // State for brand ID
+  const [brandId, setBrandId] = useState<string | null>(null);
   
   // State for edit modes
   const [editingDetails, setEditingDetails] = useState(false);
@@ -58,52 +94,58 @@ const BrandProfile = () => {
     growth: brandData?.profile?.financials?.growth || '0%',
   }));
 
-  // Brand profile comparison data
-  const [profileAttributes, setProfileAttributes] = useState([
-    { name: "Eco-friendly Production", ourBrand: "Industry Leading", competitor1: "Good", competitor2: "Average", competitor3: "Below Average" },
-    { name: "Product Quality", ourBrand: "Premium", competitor1: "Premium", competitor2: "Mid-range", competitor3: "Low-end" },
-    { name: "Price Point", ourBrand: "High", competitor1: "High", competitor2: "Medium", competitor3: "Low" },
-    { name: "Customer Service", ourBrand: "Excellent", competitor1: "Good", competitor2: "Average", competitor3: "Poor" },
-    { name: "Innovation Rate", ourBrand: "Very High", competitor1: "High", competitor2: "Medium", competitor3: "Low" },
-  ]);
+  // State for qualitative profiles
+  const [qualitativeProfiles, setQualitativeProfiles] = useState<Record<string, Record<string, AssessmentValue>>>({});
   
-  // Update profile attributes based on market analysis
+  // Fetch brand ID when selectedBrand changes
   useEffect(() => {
-    if (brandData?.marketAnalysis?.competitorAnalysis) {
-      const competitors = brandData.marketAnalysis.competitorAnalysis;
-      const attributeNames = ["Market Presence", "Product Quality", "Price Point", "Customer Service", "Innovation Rate"];
-      
-      // Create attribute values for comparison
-      const newAttributes = attributeNames.map((name) => {
-        let ourValue = "Strong";
-        let comp1 = "Average";
-        let comp2 = "Average";
-        let comp3 = "Average";
-        
-        // Special handling for different attribute types
-        if (name === "Market Presence" && competitors[0]?.marketShare) {
-          ourValue = parseInt(competitors[0].marketShare) > 20 ? "Leading" : "Growing";
-          comp1 = competitors[0]?.marketShare || "Unknown";
-          comp2 = competitors.length > 1 ? competitors[1]?.marketShare || "Unknown" : "Unknown";
-          comp3 = competitors.length > 2 ? competitors[2]?.marketShare || "Unknown" : "Unknown";
-        } else if (name === "Product Quality") {
-          ourValue = brandData.profile.name === "TechNova" ? "Premium" : "High";
-        } else if (name === "Innovation Rate") {
-          ourValue = brandData.marketAnalysis?.swot?.strengths?.includes("Innovation") ? "Very High" : "High";
+    const fetchBrandId = async () => {
+      if (selectedBrand) {
+        try {
+          const id = await brandService.getBrandIdBySlug(selectedBrand);
+          setBrandId(id);
+        } catch (error) {
+          console.error('Failed to fetch brand ID:', error);
+          toast({
+            title: 'Error',
+            description: 'Failed to load brand information',
+            variant: 'destructive',
+          });
         }
-        
-        return {
-          name,
-          ourBrand: ourValue,
-          competitor1: comp1,
-          competitor2: comp2,
-          competitor3: comp3
-        };
+      }
+    };
+
+    fetchBrandId();
+  }, [selectedBrand, toast]);
+
+  // Load qualitative profiles from competitors
+  useEffect(() => {
+    if (brandData?.competitors && brandData.competitors.length > 0) {
+      const profiles: Record<string, Record<string, AssessmentValue>> = {};
+      
+      // Initialize our brand's profile
+      profiles[brandId || 'our_brand'] = {};
+      PROFILE_CHARACTERISTICS.forEach(char => {
+        profiles[brandId || 'our_brand'][char] = DEFAULT_ASSESSMENT;
       });
       
-      setProfileAttributes(newAttributes);
+      // Load competitor profiles
+      brandData.competitors.forEach(competitor => {
+        if (competitor.id) {
+          profiles[competitor.id] = competitor.qualitative_profiles || {};
+          
+          // Ensure all characteristics exist for each competitor
+          PROFILE_CHARACTERISTICS.forEach(char => {
+            if (!profiles[competitor.id][char]) {
+              profiles[competitor.id][char] = DEFAULT_ASSESSMENT;
+            }
+          });
+        }
+      });
+      
+      setQualitativeProfiles(profiles);
     }
-  }, [brandData]);
+  }, [brandData, brandId]);
   
   // Update state when selected brand changes or when brand data actually loads
   useEffect(() => {
@@ -151,23 +193,114 @@ const BrandProfile = () => {
   }, [voiceAttributes]); // Remove voiceForm from dependencies
 
   // Handle saving brand details
-  const handleSaveDetails = (data: BrandDetailsType) => {
-    setBrandDetails(data);
-    setEditingDetails(false);
+  const handleSaveDetails = async (data: BrandDetailsType) => {
+    if (!brandId) {
+      toast({
+        title: 'Error',
+        description: 'Brand information not loaded',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      // Update basic info
+      await updateBasicInfo.mutateAsync({
+        brandId,
+        updates: {
+          name: data.brandName,
+          business_area: data.businessArea,
+          region: data.region
+        }
+      });
+
+      // Update financials
+      await updateFinancials.mutateAsync({
+        brandId,
+        financials: {
+          annualSales: data.annualSales,
+          targetSales: data.targetSales,
+          growth: data.growth
+        }
+      });
+
+      setBrandDetails(data);
+      setEditingDetails(false);
+    } catch (error) {
+      console.error('Failed to save brand details:', error);
+      // Error handling is done in the hooks
+    }
   };
   
   // Handle saving voice attributes
-  const handleSaveVoice = (data: VoiceFormData) => {
-    setVoiceAttributes(data.voiceAttributes || voiceAttributes);
-    setEditingVoice(false);
+  const handleSaveVoice = async (data: VoiceFormData) => {
+    if (!brandId) {
+      toast({
+        title: 'Error',
+        description: 'Brand information not loaded',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      await updateVoiceAttributes.mutateAsync({
+        brandId,
+        voiceAttributes: data.voiceAttributes || voiceAttributes
+      });
+
+      setVoiceAttributes(data.voiceAttributes || voiceAttributes);
+      setEditingVoice(false);
+    } catch (error) {
+      console.error('Failed to save voice attributes:', error);
+      // Error handling is done in the hooks
+    }
   };
 
-  // Add a new attribute to profile comparison
-  const handleAddAttribute = () => {
-    setProfileAttributes([
-      ...profileAttributes,
-      { name: "New Attribute", ourBrand: "Strong", competitor1: "Average", competitor2: "Average", competitor3: "Average" }
-    ]);
+  // Hooks for updating profiles
+  const updateCompetitorProfiles = useUpdateCompetitorQualitativeProfiles();
+  const addCharacteristic = useAddCharacteristicToAllCompetitors();
+
+  // Handle saving profile changes
+  const handleSaveProfiles = async () => {
+    if (!brandId) {
+      toast({
+        title: 'Error',
+        description: 'Brand information not loaded',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      // Prepare the update data for competitors only
+      const updates = brandData.competitors
+        .filter(comp => comp.id && qualitativeProfiles[comp.id])
+        .map(comp => ({
+          competitorId: comp.id!,
+          qualitativeProfiles: qualitativeProfiles[comp.id]
+        }));
+
+      await updateCompetitorProfiles.mutateAsync({
+        brandId,
+        profiles: updates
+      });
+
+      setEditingProfile(false);
+    } catch (error) {
+      console.error('Failed to save profiles:', error);
+    }
+  };
+
+  // Update a specific profile value
+  const updateProfileValue = (entityId: string, characteristic: ProfileCharacteristic, value: AssessmentValue) => {
+    setQualitativeProfiles(prev => ({
+      ...prev,
+      [entityId]: {
+        ...prev[entityId],
+        [characteristic]: value
+      }
+    }));
   };
   
   // Add a new voice attribute
@@ -491,7 +624,7 @@ const BrandProfile = () => {
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
             <CardTitle>Brand Profile</CardTitle>
-            <CardDescription>Comparison of {brandData.profile.name} against key competitors</CardDescription>
+            <CardDescription>Qualitative comparison of {brandData.profile.name} against key competitors</CardDescription>
           </div>
           <div className="flex space-x-2">
             {!editingProfile ? (
@@ -506,6 +639,7 @@ const BrandProfile = () => {
                   size="sm" 
                   className="text-red-500"
                   onClick={() => {
+                    // Reset to original values
                     setEditingProfile(false);
                   }}
                 >
@@ -516,134 +650,103 @@ const BrandProfile = () => {
                   variant="ghost" 
                   size="sm" 
                   className="text-emerald-600"
-                  onClick={() => {
-                    setEditingProfile(false);
-                  }}
+                  onClick={handleSaveProfiles}
+                  disabled={updateCompetitorProfiles.isPending}
                 >
                   <Save className="h-4 w-4 mr-1" />
                   Save
                 </Button>
               </div>
             )}
-            <Button size="sm" variant="outline" className="text-emerald-600 border-emerald-600 hover:bg-emerald-50" onClick={handleAddAttribute}>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Add Characteristic
-            </Button>
           </div>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-1/6">Characteristic</TableHead>
-                <TableHead className="w-1/6">{brandData.profile.name}</TableHead>
-                <TableHead className="w-1/6">
-                  {brandData.marketAnalysis?.competitorAnalysis?.[0]?.name || "Competitor 1"}
-                </TableHead>
-                <TableHead className="w-1/6">
-                  {brandData.marketAnalysis?.competitorAnalysis?.[1]?.name || "Competitor 2"}
-                </TableHead>
-                <TableHead className="w-1/6">
-                  {brandData.marketAnalysis?.competitorAnalysis?.[2]?.name || "Competitor 3"}
-                </TableHead>
-                <TableHead className="w-1/6 text-right">Actions</TableHead>
+                <TableHead className="w-1/5">Characteristic</TableHead>
+                <TableHead className="w-1/5">{brandData.profile.name}</TableHead>
+                {brandData.competitors.slice(0, 3).map((competitor, index) => (
+                  <TableHead key={competitor.id || index} className="w-1/5">
+                    {competitor.name}
+                  </TableHead>
+                ))}
+                {/* Fill empty columns if less than 3 competitors */}
+                {Array.from({ length: Math.max(0, 3 - brandData.competitors.length) }).map((_, index) => (
+                  <TableHead key={`empty-${index}`} className="w-1/5 text-gray-400">
+                    -
+                  </TableHead>
+                ))}
               </TableRow>
             </TableHeader>
             <TableBody>
-              {profileAttributes.map((attr, index) => (
-                <TableRow key={index}>
+              {PROFILE_CHARACTERISTICS.map((characteristic) => (
+                <TableRow key={characteristic}>
                   <TableCell className="font-medium">
-                    {editingProfile ? (
-                      <Input 
-                        value={attr.name}
-                        onChange={(e) => {
-                          const newAttrs = [...profileAttributes];
-                          newAttrs[index].name = e.target.value;
-                          setProfileAttributes(newAttrs);
-                        }}
-                        className="h-8"
-                      />
-                    ) : (
-                      attr.name
-                    )}
-                  </TableCell>
-                  <TableCell className="text-emerald-700 font-medium">
-                    {editingProfile ? (
-                      <Input 
-                        value={attr.ourBrand}
-                        onChange={(e) => {
-                          const newAttrs = [...profileAttributes];
-                          newAttrs[index].ourBrand = e.target.value;
-                          setProfileAttributes(newAttrs);
-                        }}
-                        className="h-8"
-                      />
-                    ) : (
-                      attr.ourBrand
-                    )}
+                    {CHARACTERISTIC_LABELS[characteristic]}
                   </TableCell>
                   <TableCell>
                     {editingProfile ? (
-                      <Input 
-                        value={attr.competitor1}
-                        onChange={(e) => {
-                          const newAttrs = [...profileAttributes];
-                          newAttrs[index].competitor1 = e.target.value;
-                          setProfileAttributes(newAttrs);
-                        }}
-                        className="h-8"
-                      />
-                    ) : (
-                      attr.competitor1
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {editingProfile ? (
-                      <Input 
-                        value={attr.competitor2}
-                        onChange={(e) => {
-                          const newAttrs = [...profileAttributes];
-                          newAttrs[index].competitor2 = e.target.value;
-                          setProfileAttributes(newAttrs);
-                        }}
-                        className="h-8"
-                      />
-                    ) : (
-                      attr.competitor2
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {editingProfile ? (
-                      <Input 
-                        value={attr.competitor3}
-                        onChange={(e) => {
-                          const newAttrs = [...profileAttributes];
-                          newAttrs[index].competitor3 = e.target.value;
-                          setProfileAttributes(newAttrs);
-                        }}
-                        className="h-8"
-                      />
-                    ) : (
-                      attr.competitor3
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {editingProfile ? (
-                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-red-500"
-                        onClick={() => {
-                          const newAttrs = [...profileAttributes];
-                          newAttrs.splice(index, 1);
-                          setProfileAttributes(newAttrs);
-                        }}
+                      <Select
+                        value={qualitativeProfiles[brandId || 'our_brand']?.[characteristic] || DEFAULT_ASSESSMENT}
+                        onValueChange={(value: AssessmentValue) => 
+                          updateProfileValue(brandId || 'our_brand', characteristic, value)
+                        }
                       >
-                        <X className="h-4 w-4" />
-                      </Button>
+                        <SelectTrigger className="h-8">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {ASSESSMENT_VALUES.map(value => (
+                            <SelectItem key={value} value={value}>
+                              {value}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     ) : (
-                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                        <Edit className="h-4 w-4" />
-                      </Button>
+                      <span className={`font-medium ${
+                        ASSESSMENT_COLORS[qualitativeProfiles[brandId || 'our_brand']?.[characteristic] || DEFAULT_ASSESSMENT]
+                      }`}>
+                        {qualitativeProfiles[brandId || 'our_brand']?.[characteristic] || DEFAULT_ASSESSMENT}
+                      </span>
                     )}
                   </TableCell>
+                  {brandData.competitors.slice(0, 3).map((competitor) => (
+                    <TableCell key={competitor.id}>
+                      {editingProfile ? (
+                        <Select
+                          value={qualitativeProfiles[competitor.id!]?.[characteristic] || DEFAULT_ASSESSMENT}
+                          onValueChange={(value: AssessmentValue) => 
+                            updateProfileValue(competitor.id!, characteristic, value)
+                          }
+                        >
+                          <SelectTrigger className="h-8">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {ASSESSMENT_VALUES.map(value => (
+                              <SelectItem key={value} value={value}>
+                                {value}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <span className={
+                          ASSESSMENT_COLORS[qualitativeProfiles[competitor.id!]?.[characteristic] || DEFAULT_ASSESSMENT]
+                        }>
+                          {qualitativeProfiles[competitor.id!]?.[characteristic] || DEFAULT_ASSESSMENT}
+                        </span>
+                      )}
+                    </TableCell>
+                  ))}
+                  {/* Fill empty cells if less than 3 competitors */}
+                  {Array.from({ length: Math.max(0, 3 - brandData.competitors.length) }).map((_, index) => (
+                    <TableCell key={`empty-${index}`} className="text-gray-400">
+                      -
+                    </TableCell>
+                  ))}
                 </TableRow>
               ))}
             </TableBody>
