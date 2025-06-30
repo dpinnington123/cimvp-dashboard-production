@@ -333,6 +333,8 @@ export interface BrandData {
   // Direct access to JSONB fields for components
   customer_segments?: BrandCustomerSegment[];
   customer_journey?: BrandCustomerJourney[];
+  market_analysis?: BrandMarketAnalysis;
+  competitors?: BrandCompetitor[];
 }
 
 // Enhanced BrandData interface for database operations

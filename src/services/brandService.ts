@@ -403,12 +403,12 @@ class BrandService {
         name: funnel.stage_name,
         value: funnel.value || 0
       })),
-      marketAnalysis: dbData.market_analysis && dbData.competitors && dbData.swot ? {
-        marketSize: dbData.market_analysis.market_size || '',
-        growthRate: dbData.market_analysis.growth_rate || '',
+      marketAnalysis: {
+        marketSize: dbData.market_analysis?.market_size || '',
+        growthRate: dbData.market_analysis?.growth_rate || '',
         competitorAnalysis: dbData.competitors || [],
-        swot: dbData.swot || { strengths: [], weaknesses: [], opportunities: [], threats: [] }
-      } : undefined,
+        swot: dbData.swot || dbData.swot_data || { strengths: [], weaknesses: [], opportunities: [], threats: [] }
+      },
       customerAnalysis: dbData.customer_segments && dbData.customer_journey ? {
         segments: (dbData.customer_segments || []).map((segment: any) => ({
           name: segment.name,
@@ -434,7 +434,9 @@ class BrandService {
       })),
       // Also expose at top level for components that expect them there
       customer_segments: dbData.customer_segments || [],
-      customer_journey: dbData.customer_journey || []
+      customer_journey: dbData.customer_journey || [],
+      market_analysis: dbData.market_analysis || null,
+      competitors: dbData.competitors || []
     };
   }
 
@@ -1162,6 +1164,67 @@ class BrandService {
     if (error) {
       console.error('Error updating financials:', error);
       throw new Error(`Failed to update financials: ${error.message}`);
+    }
+  }
+
+  /**
+   * Update market analysis for a brand
+   */
+  async updateMarketAnalysis(brandId: string, marketAnalysis: BrandMarketAnalysis): Promise<void> {
+    console.log('updateMarketAnalysis called with:', { brandId, marketAnalysis });
+    
+    const { error } = await supabase
+      .from('brands')
+      .update({
+        market_analysis: marketAnalysis,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', brandId);
+
+    if (error) {
+      console.error('Error updating market analysis:', error);
+      throw new Error(`Failed to update market analysis: ${error.message}`);
+    }
+  }
+
+  /**
+   * Update competitors for a brand
+   */
+  async updateCompetitors(brandId: string, competitors: BrandCompetitor[]): Promise<void> {
+    console.log('updateCompetitors called with:', { brandId, competitors });
+    
+    // Delete existing competitors for this brand
+    const { error: deleteError } = await supabase
+      .from('brand_competitors')
+      .delete()
+      .eq('brand_id', brandId);
+      
+    if (deleteError) {
+      console.error('Error deleting existing competitors:', deleteError);
+      throw new Error(`Failed to delete existing competitors: ${deleteError.message}`);
+    }
+    
+    // Insert new competitors
+    if (competitors.length > 0) {
+      const competitorsToInsert = competitors.map((comp, index) => ({
+        brand_id: brandId,
+        name: comp.name,
+        market_share: comp.market_share,
+        strengths: comp.strengths || [],
+        weaknesses: comp.weaknesses || [],
+        order_index: comp.order_index ?? index,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }));
+      
+      const { error: insertError } = await supabase
+        .from('brand_competitors')
+        .insert(competitorsToInsert);
+        
+      if (insertError) {
+        console.error('Error inserting competitors:', insertError);
+        throw new Error(`Failed to insert competitors: ${insertError.message}`);
+      }
     }
   }
 }
