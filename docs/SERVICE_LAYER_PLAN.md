@@ -64,16 +64,23 @@ updateBrandProfile(brandId: string, profile: {
 })
 
 // JSONB Field Updates (stored in brands table)
-updateBrandObjectives(brandId: string, objectives: Objective[])
-updateBrandMessages(brandId: string, messages: Message[])
-updateBrandPersonas(brandId: string, personas: Persona[])
-updateBrandCustomerSegments(brandId: string, segments: CustomerSegment[])
-updateBrandCustomerJourney(brandId: string, journey: CustomerJourney[])
+updateBrandObjectives(brandId: string, objectives: Objective[]) ✅
+updateBrandMessages(brandId: string, messages: Message[]) ✅
+updateBrandPersonas(brandId: string, personas: Persona[]) ✅
+updateBrandCustomerSegments(brandId: string, segments: CustomerSegment[]) ✅
+updateBrandCustomerJourney(brandId: string, journey: CustomerJourney[]) ✅
+updateBrandMarketAnalysis(brandId: string, marketAnalysis: MarketAnalysis) ✅
 
 // Related Table Updates
 updateBrandRegions(brandId: string, regions: Region[])
 updateBrandFinancials(brandId: string, financials: Financials)
-updateBrandCompetitors(brandId: string, competitors: Competitor[])
+updateBrandCompetitors(brandId: string, competitors: Competitor[]) ✅
+updateBrandVoiceAttributes(brandId: string, voiceAttributes: VoiceAttribute[]) ✅
+updateBrandAudiences(brandId: string, audiences: Audience[]) ✅
+updateBrandStrategies(brandId: string, strategies: Strategy[]) ✅
+
+// Helper Methods
+getBrandIdBySlug(slug: string): Promise<string> ✅
 ```
 
 ### B. Campaign Service (New)
@@ -464,3 +471,73 @@ $$ LANGUAGE plpgsql;
 - **Note**: Data is stored as JSONB in the brands table columns: personas, customer_segments, customer_journey
 
 - **Next**: ResearchFiles component with new researchService
+
+### 2024-06-30: Market Analysis Component Database Integration
+- **Implemented**: Complete CRUD operations for MarketAnalysis component
+  - Created hooks: `useUpdateBrandMarketAnalysis`, `useUpdateBrandCompetitors`
+  - Added service methods: `updateMarketAnalysis`, `updateCompetitors`
+  - Connected market analysis to JSONB field in brands table
+  - Connected competitors to separate `brand_competitors` relational table
+  - Implemented Edit/Save/Cancel pattern for consistency with other components
+  - Added proper error handling and loading states
+  - Market size, growth rate, and key trends now persist to database
+  - Competitors with strengths/weaknesses now persist with proper relational structure
+- **Fixed**: Data loading issue where market data wasn't appearing
+  - Root cause: `transformToBrandData` was conditionally setting marketAnalysis to undefined
+  - Solution: Always include marketAnalysis object even with empty values
+  - Added raw JSONB fields at top level of BrandData: `market_analysis` and `competitors`
+  - Follows same pattern as `customer_segments` and `customer_journey`
+
+## Common Issues and Solutions
+
+### 1. Data Not Loading from Database
+
+**Issue**: Components show empty data even though data exists in the database.
+
+**Root Cause**: The `transformToBrandData` method in brandService conditionally sets entire objects to `undefined` if any part of the data is missing.
+
+**Pattern**: This has occurred in multiple components:
+- CustomerAnalysis (customer_segments, customer_journey)
+- MarketAnalysis (market_analysis, competitors)
+
+**Solution**: 
+1. Always include the object structure even with empty/default values
+2. Expose raw JSONB data at the top level of BrandData interface
+3. Components should check for both transformed and raw data
+
+**Example Fix**:
+```typescript
+// BAD - Conditionally sets entire object to undefined
+marketAnalysis: dbData.market_analysis && dbData.competitors && dbData.swot ? {
+  // data here
+} : undefined
+
+// GOOD - Always includes object with default values
+marketAnalysis: {
+  marketSize: dbData.market_analysis?.market_size || '',
+  growthRate: dbData.market_analysis?.growth_rate || '',
+  // etc
+}
+
+// ALSO expose raw data at top level
+market_analysis: dbData.market_analysis || null,
+competitors: dbData.competitors || []
+```
+
+### 2. UUID vs Integer ID Mismatches
+
+**Issue**: Foreign key constraints fail when mixing UUID and integer IDs.
+
+**Solution**: Always check table schema before implementing relationships. Use appropriate ID types.
+
+### 3. Query Invalidation Not Working
+
+**Issue**: UI doesn't update after successful database save.
+
+**Root Cause**: Query invalidation using wrong key (brand ID vs slug).
+
+**Solution**: Invalidate all brand-related queries:
+```typescript
+queryClient.invalidateQueries({ queryKey: ['brand'] });
+queryClient.invalidateQueries({ queryKey: ['brands'] });
+```
