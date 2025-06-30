@@ -44,9 +44,12 @@ export const CampaignPlannerPage = () => {
       <p className="text-muted-foreground">Loading campaign data...</p>
     </div>;
   }
+  // Create a unique key that changes when campaigns change
+  const campaignsHash = brandData.campaigns?.map(c => c.id).join('-') || 'empty';
+  
   return (
     <ContentJourneyPlanner 
-      key={`planner-${selectedBrand}`} // Force re-mount when brand changes
+      key={`planner-${selectedBrand}-${campaignsHash}`} // Force re-mount when brand or campaigns change
       contentItems={contentItems} 
       brandName={brandData.profile.name || 'Brand'}
       campaigns={brandData.campaigns} 

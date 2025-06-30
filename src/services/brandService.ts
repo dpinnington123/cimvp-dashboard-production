@@ -232,8 +232,9 @@ class BrandService {
         // Strategies
         supabase.from('brand_strategies').select('*').eq('brand_id', brand.id)
           .order('created_at'),
-        // Campaigns
+        // Campaigns (excluding soft deleted)
         supabase.from('brand_campaigns').select('*').eq('brand_id', brand.id)
+          .is('deleted_at', null)
           .order('created_at'),
         // Content with campaign names (limited to 50)
         supabase.from('brand_content')
@@ -366,8 +367,8 @@ class BrandService {
         audience: campaign.audience || '',
         campaignDetails: campaign.campaign_details || '',
         budget: campaign.budget || 0,
-        keyActions: [],
-        agencies: []
+        keyActions: campaign.key_actions || [],
+        agencies: campaign.agencies || []
       })),
       content: (dbData.content || []).map((content: any) => {
         return {
@@ -1576,6 +1577,169 @@ class BrandService {
       console.error('Error updating brand financials:', error);
       throw error;
     }
+  }
+
+  /**
+   * Campaign CRUD Operations
+   */
+  
+  /**
+   * Add a new campaign
+   */
+  async addCampaign(brandId: string, campaign: Partial<Campaign>): Promise<Campaign> {
+    try {
+      const { data, error } = await supabase
+        .from('brand_campaigns')
+        .insert({
+          brand_id: brandId,
+          name: campaign.name || 'New Campaign',
+          status: campaign.status || 'planned',
+          timeframe: campaign.timeframe || '',
+          strategic_objective: campaign.strategicObjective || '',
+          audience: campaign.audience || '',
+          campaign_details: campaign.campaignDetails || '',
+          budget: campaign.budget || 0,
+          overall_score: campaign.scores?.overall || 0,
+          strategic_score: campaign.scores?.strategic || 0,
+          customer_score: campaign.scores?.customer || 0,
+          execution_score: campaign.scores?.execution || 0,
+          agencies: campaign.agencies || [],
+          key_actions: campaign.keyActions || []
+        })
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(`Failed to add campaign: ${error.message}`);
+      }
+
+      // Transform database response to Campaign interface
+      return this.transformDatabaseCampaign(data);
+    } catch (error) {
+      console.error('Error adding campaign:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update an existing campaign
+   */
+  async updateCampaign(campaignId: string, updates: Partial<Campaign>): Promise<void> {
+    try {
+      const updateData: any = {
+        updated_at: new Date().toISOString()
+      };
+
+      // Map Campaign interface fields to database columns
+      if (updates.name !== undefined) updateData.name = updates.name;
+      if (updates.status !== undefined) updateData.status = updates.status;
+      if (updates.timeframe !== undefined) updateData.timeframe = updates.timeframe;
+      if (updates.strategicObjective !== undefined) updateData.strategic_objective = updates.strategicObjective;
+      if (updates.audience !== undefined) updateData.audience = updates.audience;
+      if (updates.campaignDetails !== undefined) updateData.campaign_details = updates.campaignDetails;
+      if (updates.budget !== undefined) updateData.budget = updates.budget;
+      if (updates.agencies !== undefined) updateData.agencies = updates.agencies;
+      if (updates.keyActions !== undefined) updateData.key_actions = updates.keyActions;
+      
+      // Handle scores object
+      if (updates.scores) {
+        if (updates.scores.overall !== undefined) updateData.overall_score = updates.scores.overall;
+        if (updates.scores.strategic !== undefined) updateData.strategic_score = updates.scores.strategic;
+        if (updates.scores.customer !== undefined) updateData.customer_score = updates.scores.customer;
+        if (updates.scores.execution !== undefined) updateData.execution_score = updates.scores.execution;
+      }
+
+      const { error } = await supabase
+        .from('brand_campaigns')
+        .update(updateData)
+        .eq('id', campaignId);
+
+      if (error) {
+        throw new Error(`Failed to update campaign: ${error.message}`);
+      }
+    } catch (error) {
+      console.error('Error updating campaign:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Check if a campaign has associated content
+   */
+  async getCampaignContentCount(campaignId: string): Promise<number> {
+    try {
+      const { count, error } = await supabase
+        .from('brand_content')
+        .select('*', { count: 'exact', head: true })
+        .eq('campaign_id', campaignId);
+
+      if (error) {
+        throw new Error(`Failed to check campaign content: ${error.message}`);
+      }
+
+      return count || 0;
+    } catch (error) {
+      console.error('Error checking campaign content:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete a campaign (soft delete)
+   */
+  async deleteCampaign(campaignId: string, forceDelete: boolean = false): Promise<{ hasContent: boolean; contentCount: number }> {
+    try {
+      // First check if campaign has content
+      const contentCount = await this.getCampaignContentCount(campaignId);
+
+      // If campaign has content and force delete is not set, return the count
+      if (contentCount > 0 && !forceDelete) {
+        return { hasContent: true, contentCount };
+      }
+
+      // Soft delete the campaign
+      const { error } = await supabase
+        .from('brand_campaigns')
+        .update({ 
+          deleted_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', campaignId)
+        .is('deleted_at', null); // Only delete if not already deleted
+
+      if (error) {
+        throw new Error(`Failed to delete campaign: ${error.message}`);
+      }
+
+      return { hasContent: false, contentCount: 0 };
+    } catch (error) {
+      console.error('Error deleting campaign:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Transform database campaign to Campaign interface
+   */
+  private transformDatabaseCampaign(dbCampaign: any): Campaign {
+    return {
+      id: dbCampaign.id,
+      name: dbCampaign.name,
+      scores: {
+        overall: dbCampaign.overall_score || 0,
+        strategic: dbCampaign.strategic_score || 0,
+        customer: dbCampaign.customer_score || 0,
+        execution: dbCampaign.execution_score || 0
+      },
+      status: dbCampaign.status || 'planned',
+      timeframe: dbCampaign.timeframe || '',
+      strategicObjective: dbCampaign.strategic_objective || '',
+      audience: dbCampaign.audience || '',
+      keyActions: dbCampaign.key_actions || [],
+      campaignDetails: dbCampaign.campaign_details || '',
+      agencies: dbCampaign.agencies || [],
+      budget: dbCampaign.budget || 0
+    };
   }
 }
 

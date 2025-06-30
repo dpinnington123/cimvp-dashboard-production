@@ -26,6 +26,7 @@ const ContentJourneyPlanner: React.FC<ContentJourneyPlannerProps> = ({ contentIt
     title: "Campaign Journey"
   });
   const [addedContentIds, setAddedContentIds] = useState<string[]>([]);
+  const [newlyCreatedCampaign, setNewlyCreatedCampaign] = useState<string | null>(null);
   
   const { selectedBrand } = useBrand();
   
@@ -91,7 +92,7 @@ const ContentJourneyPlanner: React.FC<ContentJourneyPlannerProps> = ({ contentIt
     return item.campaign === selectedCampaign;
   });
   
-  const handleCampaignChange = (campaign: string) => {
+  const handleCampaignChange = (campaign: string, isNewCampaign: boolean = false) => {
     setSelectedCampaign(campaign);
     setJourneyMap(prev => ({
       ...prev,
@@ -99,6 +100,11 @@ const ContentJourneyPlanner: React.FC<ContentJourneyPlannerProps> = ({ contentIt
     }));
     // Clear added content IDs when switching campaigns
     setAddedContentIds([]);
+    
+    // Track if this is a newly created campaign
+    if (isNewCampaign) {
+      setNewlyCreatedCampaign(campaign);
+    }
   };
   
   const handleTitleChange = (title: string) => {
@@ -295,11 +301,25 @@ const ContentJourneyPlanner: React.FC<ContentJourneyPlannerProps> = ({ contentIt
 
         <div className="flex gap-6">
           <div className="shrink-0">
-            <CampaignTabs onCampaignChange={handleCampaignChange} campaigns={campaigns} />
+            <CampaignTabs 
+              key={`campaign-tabs-${campaigns.length}`} 
+              onCampaignChange={handleCampaignChange} 
+              campaigns={campaigns} 
+            />
           </div>
           
           <div className="flex-1 space-y-6">
-            <CampaignOverview items={contentItems} selectedCampaign={selectedCampaign} />
+            <CampaignOverview 
+              items={contentItems} 
+              selectedCampaign={selectedCampaign} 
+              isNewCampaign={newlyCreatedCampaign === selectedCampaign}
+              onEditComplete={() => setNewlyCreatedCampaign(null)}
+              onCampaignDeleted={() => {
+                // Switch back to "All Campaigns" after deletion
+                setSelectedCampaign('All Campaigns');
+                setNewlyCreatedCampaign(null);
+              }}
+            />
 
             <Card>
               <CardHeader>

@@ -54,6 +54,7 @@ export interface Strategy {
 }
 
 export interface Campaign {
+  id?: string;
   name: string;
   scores: {
     overall: number;
