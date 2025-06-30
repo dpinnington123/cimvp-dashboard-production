@@ -833,64 +833,6 @@ class BrandService {
     return data;
   }
 
-  /**
-   * DEPRECATED - DO NOT USE - Uses dangerous DELETE-then-INSERT pattern
-   * Use individual CRUD methods or safeUpdateBrandObjectives instead
-   * @deprecated
-   */
-  async updateBrandObjectives(brandId: string, objectives: any[]): Promise<void> {
-    try {
-      // First check if there are existing objectives to delete
-      const { data: existingObjectives } = await supabase
-        .from('brand_objectives')
-        .select('id')
-        .eq('brand_id', brandId);
-
-      // Only delete if there are existing objectives
-      if (existingObjectives && existingObjectives.length > 0) {
-        const { error: deleteError } = await supabase
-          .from('brand_objectives')
-          .delete()
-          .eq('brand_id', brandId);
-
-        if (deleteError) {
-          console.error('Error deleting objectives:', deleteError);
-          throw new Error(`Failed to delete objectives: ${deleteError.message}`);
-        }
-      }
-
-      // Then insert new ones
-      if (objectives.length > 0) {
-        const objectivesToInsert = objectives.map((objective, index) => ({
-          brand_id: brandId,
-          title: objective.text || objective.title,
-          behavioral_change: objective.notes || objective.behavioral_change || objective.behavioralChange,
-          target_audience_id: objective.target_audience_id,
-          scenario: objective.scenario,
-          timeline: objective.timeline,
-          owner: objective.owner,
-          kpis: objective.kpis || [],
-          status: objective.status || 'active',
-          order_index: objective.order_index !== undefined ? objective.order_index : index
-        }));
-
-        const { error } = await supabase
-          .from('brand_objectives')
-          .insert(objectivesToInsert);
-
-        if (error) {
-          console.error('Error inserting objectives:', error);
-          throw new Error(`Failed to insert objectives: ${error.message}`);
-        }
-      }
-
-      // JSONB field no longer used - objectives are now in separate table
-        
-    } catch (error) {
-      console.error('Error updating objectives:', error);
-      throw error;
-    }
-  }
 
   /**
    * Safe update method for brand objectives using the new utility
@@ -982,64 +924,6 @@ class BrandService {
     }
   }
 
-  /**
-   * DEPRECATED - DO NOT USE - Uses dangerous DELETE-then-INSERT pattern
-   * Use individual CRUD methods or safeUpdateBrandMessages instead
-   * @deprecated
-   */
-  async updateBrandMessages(brandId: string, messages: any[]): Promise<void> {
-    try {
-      // Safety check: Get current messages count before deletion
-      const { count: currentCount } = await supabase
-        .from('brand_messages')
-        .select('*', { count: 'exact', head: true })
-        .eq('brand_id', brandId);
-
-      // If we have messages currently and trying to save 0, this might be an error
-      if (currentCount && currentCount > 0 && messages.length === 0) {
-        console.warn('Warning: Attempting to delete all messages. This might be unintentional.');
-      }
-
-      // First, delete existing messages
-      const { error: deleteError } = await supabase
-        .from('brand_messages')
-        .delete()
-        .eq('brand_id', brandId);
-
-      if (deleteError) {
-        console.error('Error deleting messages:', deleteError);
-        throw new Error(`Failed to delete messages: ${deleteError.message}`);
-      }
-
-      // Then insert new ones if there are any
-      if (messages.length > 0) {
-        const messagesToInsert = messages.map((message, index) => ({
-          id: message.id || undefined, // Let DB generate if not provided
-          brand_id: brandId,
-          title: message.title || `Message ${index + 1}`,
-          text: message.text || message.quote || '',
-          narrative: message.notes || message.narrative || '',
-          audience_id: message.audience_id || null,
-          objective_id: message.objective_id || null,
-          behavioral_change: message.behavioral_change || message.behavioralChange || '',
-          framing: message.framing || '',
-          order_index: message.order_index !== undefined ? message.order_index : index
-        }));
-
-        const { error } = await supabase
-          .from('brand_messages')
-          .insert(messagesToInsert);
-
-        if (error) {
-          console.error('Error inserting messages:', error);
-          throw new Error(`Failed to insert messages: ${error.message}`);
-        }
-      }
-    } catch (error) {
-      console.error('Error updating messages:', error);
-      throw error;
-    }
-  }
 
   /**
    * Safe update method for brand messages using the new utility
@@ -1353,48 +1237,6 @@ class BrandService {
     }
   }
 
-  /**
-   * DEPRECATED - DO NOT USE - Uses dangerous DELETE-then-INSERT pattern
-   * Use individual CRUD methods or safeUpdateCompetitors instead
-   * @deprecated
-   */
-  async updateCompetitors(brandId: string, competitors: BrandCompetitor[]): Promise<void> {
-    console.log('updateCompetitors called with:', { brandId, competitors });
-    
-    // Delete existing competitors for this brand
-    const { error: deleteError } = await supabase
-      .from('brand_competitors')
-      .delete()
-      .eq('brand_id', brandId);
-      
-    if (deleteError) {
-      console.error('Error deleting existing competitors:', deleteError);
-      throw new Error(`Failed to delete existing competitors: ${deleteError.message}`);
-    }
-    
-    // Insert new competitors
-    if (competitors.length > 0) {
-      const competitorsToInsert = competitors.map((comp, index) => ({
-        brand_id: brandId,
-        name: comp.name,
-        market_share: comp.market_share,
-        strengths: comp.strengths || [],
-        weaknesses: comp.weaknesses || [],
-        order_index: comp.order_index ?? index,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      }));
-      
-      const { error: insertError } = await supabase
-        .from('brand_competitors')
-        .insert(competitorsToInsert);
-        
-      if (insertError) {
-        console.error('Error inserting competitors:', insertError);
-        throw new Error(`Failed to insert competitors: ${insertError.message}`);
-      }
-    }
-  }
 
   /**
    * Safe update method for competitors using the new utility
