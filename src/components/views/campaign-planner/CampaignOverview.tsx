@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Target, Flag, Handshake, Users, Activity, FileText, Edit2, Save, Calendar, Trash2 } from 'lucide-react';
 import { ContentItem } from '@/types/content';
@@ -53,6 +53,8 @@ interface CampaignData {
   keyActions: string;
   campaignDetails: string;
   agencies: string;
+  status: 'planned' | 'active' | 'completed';
+  budget: string;
 }
 
 const CampaignOverview: React.FC<CampaignOverviewProps> = ({ items, selectedCampaign, isNewCampaign, onEditComplete, onCampaignDeleted }) => {
@@ -61,6 +63,7 @@ const CampaignOverview: React.FC<CampaignOverviewProps> = ({ items, selectedCamp
   const [endDate, setEndDate] = React.useState<Date>();
   const [showDeleteDialog, setShowDeleteDialog] = React.useState(false);
   const [contentCount, setContentCount] = React.useState(0);
+  const [openAccordionItems, setOpenAccordionItems] = React.useState<string[]>([]);
   const form = useForm<CampaignData>();
   const updateCampaign = useUpdateCampaign();
   const deleteCampaign = useDeleteCampaign();
@@ -91,6 +94,13 @@ const CampaignOverview: React.FC<CampaignOverviewProps> = ({ items, selectedCamp
     }
   }, [isNewCampaign, currentCampaign]);
   
+  // Update accordion state when editing mode changes
+  useEffect(() => {
+    if (isEditing || isNewCampaign) {
+      setOpenAccordionItems(["campaign-details", "campaign-metrics"]);
+    }
+  }, [isEditing, isNewCampaign]);
+  
   // Set form defaults when campaign changes or editing starts
   useEffect(() => {
     if (currentCampaign && isEditing) {
@@ -102,6 +112,8 @@ const CampaignOverview: React.FC<CampaignOverviewProps> = ({ items, selectedCamp
         keyActions: currentCampaign.keyActions?.join(', ') || '',
         campaignDetails: currentCampaign.campaignDetails || '',
         agencies: currentCampaign.agencies?.join(', ') || '',
+        status: currentCampaign.status || 'planned',
+        budget: currentCampaign.budget?.toString() || '',
       });
       
       // Parse dates from timeframe if available
@@ -240,45 +252,6 @@ const CampaignOverview: React.FC<CampaignOverviewProps> = ({ items, selectedCamp
   }
 
   const filteredItems = items.filter(item => item.campaign === selectedCampaign);
-  const campaignInfo = filteredItems.reduce<Record<string, {
-    name: string;
-    itemCount: number;
-    totalCost: number;
-    status: 'draft' | 'live';
-    strategicObjective?: string;
-    campaignObjectives?: string[];
-    customerValueProp?: string;
-    audience?: string;
-    keyActions?: string[];
-    campaignDetails?: string;
-    agencies?: string[];
-  }>>((acc, item) => {
-    if (!item.campaign) return acc;
-    
-    if (!acc[item.campaign]) {
-      acc[item.campaign] = {
-        name: item.campaign,
-        itemCount: 0,
-        totalCost: 0,
-        status: 'draft',
-        strategicObjective: item.strategicObjective,
-        campaignObjectives: item.campaignObjectives,
-        customerValueProp: item.customerValueProp,
-        audience: item.audience,
-        keyActions: item.keyActions,
-        campaignDetails: item.campaignDetails,
-        agencies: item.agencies
-      };
-    }
-    
-    acc[item.campaign].itemCount++;
-    acc[item.campaign].totalCost += item.cost || 0;
-    if (item.status === 'live') {
-      acc[item.campaign].status = 'live';
-    }
-    
-    return acc;
-  }, {});
 
   const onSubmit = async (data: CampaignData) => {
     if (!campaignId) {
@@ -297,6 +270,8 @@ const CampaignOverview: React.FC<CampaignOverviewProps> = ({ items, selectedCamp
       keyActions: data.keyActions?.split(',').map(a => a.trim()).filter(Boolean),
       customerValueProp: data.customerValueProp,
       campaignObjectives: data.campaignObjectives?.split(',').map(a => a.trim()).filter(Boolean),
+      status: data.status,
+      budget: data.budget ? parseFloat(data.budget) : undefined,
     };
 
     // Add dates if they were selected
@@ -390,6 +365,7 @@ const CampaignOverview: React.FC<CampaignOverviewProps> = ({ items, selectedCamp
                   form.handleSubmit(onSubmit)();
                 } else {
                   setIsEditing(true);
+                  setOpenAccordionItems(["campaign-details", "campaign-metrics"]);
                 }
               }}
               disabled={!campaignId || updateCampaign.isPending}
@@ -448,14 +424,19 @@ const CampaignOverview: React.FC<CampaignOverviewProps> = ({ items, selectedCamp
             </CardContent>
           </Card>
 
-          <Accordion type="single" collapsible className="w-full" defaultValue={isNewCampaign ? "campaign-details" : undefined}>
+          <Accordion 
+            type="multiple" 
+            className="w-full" 
+            value={openAccordionItems}
+            onValueChange={setOpenAccordionItems}
+          >
             <AccordionItem value="campaign-details">
               <AccordionTrigger className="text-lg font-semibold">Campaign Details</AccordionTrigger>
               <AccordionContent>
                 <Card>
                   <CardContent className="pt-6">
-                    {Object.values(campaignInfo).map((campaign) => (
-                      <div key={campaign.name} className="grid grid-cols-3 gap-4">
+                    {/* Always render the form fields, even for new campaigns with no content */}
+                    <div className="grid grid-cols-3 gap-4">
                         <div className="space-y-2">
                           <h4 className="text-sm font-medium flex items-center gap-2">
                             <Target className="h-4 w-4" />
@@ -479,7 +460,7 @@ const CampaignOverview: React.FC<CampaignOverviewProps> = ({ items, selectedCamp
                             </Select>
                           ) : (
                             <p className="text-sm bg-muted p-3 rounded-lg">
-                              {campaign.strategicObjective || 'Not specified'}
+                              {currentCampaign?.strategicObjective || 'Not specified'}
                             </p>
                           )}
                         </div>
@@ -507,7 +488,7 @@ const CampaignOverview: React.FC<CampaignOverviewProps> = ({ items, selectedCamp
                             </Select>
                           ) : (
                             <p className="text-sm bg-muted p-3 rounded-lg">
-                              {campaign.audience || 'Not specified'}
+                              {currentCampaign?.audience || 'Not specified'}
                             </p>
                           )}
                         </div>
@@ -525,9 +506,9 @@ const CampaignOverview: React.FC<CampaignOverviewProps> = ({ items, selectedCamp
                             />
                           ) : (
                             <div className="text-sm bg-muted p-3 rounded-lg">
-                              {campaign.keyActions?.length ? (
+                              {currentCampaign?.keyActions?.length ? (
                                 <ul className="list-disc pl-4 space-y-1">
-                                  {campaign.keyActions.map((action, index) => (
+                                  {currentCampaign.keyActions.map((action, index) => (
                                     <li key={index}>{action}</li>
                                   ))}
                                 </ul>
@@ -538,11 +519,9 @@ const CampaignOverview: React.FC<CampaignOverviewProps> = ({ items, selectedCamp
                           )}
                         </div>
                       </div>
-                    ))}
                     
                     {/* Second row of fields */}
-                    {Object.values(campaignInfo).map((campaign) => (
-                      <div key={`${campaign.name}-2`} className="grid grid-cols-3 gap-4 mt-4">
+                    <div className="grid grid-cols-3 gap-4 mt-4">
                         <div className="space-y-2">
                           <h4 className="text-sm font-medium flex items-center gap-2">
                             <Flag className="h-4 w-4" />
@@ -556,7 +535,7 @@ const CampaignOverview: React.FC<CampaignOverviewProps> = ({ items, selectedCamp
                             />
                           ) : (
                             <p className="text-sm bg-muted p-3 rounded-lg">
-                              {campaign.campaignObjectives?.join(', ') || 'Not specified'}
+                              {currentCampaign?.campaignObjectives?.join(', ') || 'Not specified'}
                             </p>
                           )}
                         </div>
@@ -574,7 +553,7 @@ const CampaignOverview: React.FC<CampaignOverviewProps> = ({ items, selectedCamp
                             />
                           ) : (
                             <p className="text-sm bg-muted p-3 rounded-lg">
-                              {campaign.customerValueProp || 'Not specified'}
+                              {currentCampaign?.customerValueProp || 'Not specified'}
                             </p>
                           )}
                         </div>
@@ -592,12 +571,11 @@ const CampaignOverview: React.FC<CampaignOverviewProps> = ({ items, selectedCamp
                             />
                           ) : (
                             <p className="text-sm bg-muted p-3 rounded-lg">
-                              {campaign.campaignDetails || 'Not specified'}
+                              {currentCampaign?.campaignDetails || 'Not specified'}
                             </p>
                           )}
                         </div>
                       </div>
-                    ))}
                   </CardContent>
                 </Card>
               </AccordionContent>
@@ -608,17 +586,34 @@ const CampaignOverview: React.FC<CampaignOverviewProps> = ({ items, selectedCamp
               <AccordionContent>
                 <Card>
                   <CardContent className="pt-6">
-                    {Object.values(campaignInfo).map((campaign) => (
-                      <div key={campaign.name} className="space-y-4">
-                        <div className="grid grid-cols-4 gap-4">
-                          <div className="p-3 bg-muted rounded-lg">
-                            <h4 className="text-sm font-medium mb-1">Status</h4>
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-4 gap-4">
+                        <div className="p-3 bg-muted rounded-lg">
+                          <h4 className="text-sm font-medium mb-1">Status</h4>
+                          {isEditing ? (
+                            <Select 
+                              value={form.watch('status')}
+                              onValueChange={(value) => form.setValue('status', value as 'planned' | 'active' | 'completed')}
+                            >
+                              <SelectTrigger className="h-8">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="planned">Planned</SelectItem>
+                                <SelectItem value="active">Active</SelectItem>
+                                <SelectItem value="completed">Completed</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          ) : (
                             <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                              campaign.status === 'live' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                              currentCampaign?.status === 'active' ? 'bg-green-100 text-green-800' : 
+                              currentCampaign?.status === 'completed' ? 'bg-gray-100 text-gray-800' :
+                              'bg-yellow-100 text-yellow-800'
                             }`}>
-                              {campaign.status}
+                              {currentCampaign?.status || 'planned'}
                             </span>
-                          </div>
+                          )}
+                        </div>
 
                           <div className="p-3 bg-muted rounded-lg">
                             <h4 className="text-sm font-medium mb-1">Content Items</h4>
@@ -627,9 +622,23 @@ const CampaignOverview: React.FC<CampaignOverviewProps> = ({ items, selectedCamp
 
                           <div className="p-3 bg-muted rounded-lg">
                             <h4 className="text-sm font-medium mb-1">Total Budget</h4>
-                            <p className="text-xl font-semibold">
-                              ${campaign.totalCost.toLocaleString()}
-                            </p>
+                            {isEditing ? (
+                              <div className="relative">
+                                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">$</span>
+                                <Input
+                                  {...form.register('budget')}
+                                  type="number"
+                                  step="0.01"
+                                  placeholder="0.00"
+                                  className="pl-6 h-8"
+                                />
+                              </div>
+                            ) : (
+                              <p className="text-xl font-semibold">
+                                ${currentCampaign?.budget?.toLocaleString() || 
+                                  filteredItems.reduce((sum, item) => sum + (item.cost || 0), 0).toLocaleString()}
+                              </p>
+                            )}
                           </div>
 
                           <div className="p-3 bg-muted rounded-lg">
@@ -642,8 +651,8 @@ const CampaignOverview: React.FC<CampaignOverviewProps> = ({ items, selectedCamp
                               />
                             ) : (
                               <div className="space-y-1">
-                                {campaign.agencies?.length ? (
-                                  campaign.agencies.map((agency, index) => (
+                                {currentCampaign?.agencies?.length ? (
+                                  currentCampaign.agencies.map((agency, index) => (
                                     <p key={index} className="text-sm">{agency}</p>
                                   ))
                                 ) : (
@@ -659,61 +668,66 @@ const CampaignOverview: React.FC<CampaignOverviewProps> = ({ items, selectedCamp
                             <Calendar className="h-4 w-4" />
                             Campaign Timeline
                           </h4>
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <label className="text-sm font-medium mb-1 block">Start Date</label>
-                              <Popover>
-                                <PopoverTrigger asChild>
-                                  <Button
-                                    variant="outline"
-                                    className={`w-full justify-start text-left font-normal ${
-                                      !startDate && "text-muted-foreground"
-                                    }`}
-                                  >
-                                    {startDate ? format(startDate, "PPP") : <span>Pick a start date</span>}
-                                  </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0" align="start">
-                                  <CalendarComponent
-                                    mode="single"
-                                    selected={startDate}
-                                    onSelect={setStartDate}
-                                    initialFocus
-                                    className="pointer-events-auto"
-                                  />
-                                </PopoverContent>
-                              </Popover>
-                            </div>
+                          {isEditing ? (
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <label className="text-sm font-medium mb-1 block">Start Date</label>
+                                <Popover>
+                                  <PopoverTrigger asChild>
+                                    <Button
+                                      variant="outline"
+                                      className={`w-full justify-start text-left font-normal ${
+                                        !startDate && "text-muted-foreground"
+                                      }`}
+                                    >
+                                      {startDate ? format(startDate, "PPP") : <span>Pick a start date</span>}
+                                    </Button>
+                                  </PopoverTrigger>
+                                  <PopoverContent className="w-auto p-0" align="start">
+                                    <CalendarComponent
+                                      mode="single"
+                                      selected={startDate}
+                                      onSelect={setStartDate}
+                                      initialFocus
+                                      className="pointer-events-auto"
+                                    />
+                                  </PopoverContent>
+                                </Popover>
+                              </div>
 
-                            <div>
-                              <label className="text-sm font-medium mb-1 block">End Date</label>
-                              <Popover>
-                                <PopoverTrigger asChild>
-                                  <Button
-                                    variant="outline"
-                                    className={`w-full justify-start text-left font-normal ${
-                                      !endDate && "text-muted-foreground"
-                                    }`}
-                                  >
-                                    {endDate ? format(endDate, "PPP") : <span>Pick an end date</span>}
-                                  </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0" align="start">
-                                  <CalendarComponent
-                                    mode="single"
-                                    selected={endDate}
-                                    onSelect={setEndDate}
-                                    initialFocus
-                                    disabled={(date) => startDate ? date < startDate : false}
-                                    className="pointer-events-auto"
-                                  />
-                                </PopoverContent>
-                              </Popover>
+                              <div>
+                                <label className="text-sm font-medium mb-1 block">End Date</label>
+                                <Popover>
+                                  <PopoverTrigger asChild>
+                                    <Button
+                                      variant="outline"
+                                      className={`w-full justify-start text-left font-normal ${
+                                        !endDate && "text-muted-foreground"
+                                      }`}
+                                    >
+                                      {endDate ? format(endDate, "PPP") : <span>Pick an end date</span>}
+                                    </Button>
+                                  </PopoverTrigger>
+                                  <PopoverContent className="w-auto p-0" align="start">
+                                    <CalendarComponent
+                                      mode="single"
+                                      selected={endDate}
+                                      onSelect={setEndDate}
+                                      initialFocus
+                                      disabled={(date) => startDate ? date < startDate : false}
+                                      className="pointer-events-auto"
+                                    />
+                                  </PopoverContent>
+                                </Popover>
+                              </div>
                             </div>
-                          </div>
+                          ) : (
+                            <div className="text-sm">
+                              {currentCampaign?.timeframe || 'No dates set'}
+                            </div>
+                          )}
                         </div>
                       </div>
-                    ))}
                   </CardContent>
                 </Card>
               </AccordionContent>

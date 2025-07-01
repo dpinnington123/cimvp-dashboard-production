@@ -509,6 +509,76 @@ async upsertData(key: string, data: Data): Promise<Data> {
 }
 ```
 
+## React Query Integration Patterns
+
+### Query Key Structure
+
+**CRITICAL**: Understanding query key structure is essential for proper cache invalidation.
+
+```typescript
+// Query keys in the app follow this pattern:
+['brands']                    // List of all brands
+['brand', brandSlug]          // Specific brand with all data (campaigns, content, etc.)
+['brand-style-guide', brandId] // Brand style guide
+['content-list']              // All content items
+['content', contentId]        // Specific content item
+```
+
+### Cache Invalidation After Mutations
+
+When mutating data, you MUST invalidate the correct query keys:
+
+```typescript
+// ❌ WRONG - This won't update the UI
+await queryClient.invalidateQueries({ queryKey: ['brands'] });
+
+// ✅ CORRECT - Invalidate the specific brand data
+await queryClient.invalidateQueries({ queryKey: ['brand', brandSlug] });
+
+// ✅ BETTER - Invalidate all brand queries
+await queryClient.invalidateQueries({ queryKey: ['brand'] });
+```
+
+### Common Mutation Pattern
+
+```typescript
+export const useDeleteCampaign = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ campaignId }) => brandService.deleteCampaign(campaignId),
+    onSuccess: async (data, variables) => {
+      // 1. Invalidate specific brand query
+      if (variables.brandSlug) {
+        await queryClient.invalidateQueries({ 
+          queryKey: ['brand', variables.brandSlug]
+        });
+      }
+      
+      // 2. Also invalidate all brand queries as fallback
+      await queryClient.invalidateQueries({ 
+        queryKey: ['brand']
+      });
+      
+      // 3. Force immediate refetch for active queries
+      await queryClient.refetchQueries({ 
+        queryKey: ['brand'],
+        exact: false,
+        type: 'active'
+      });
+    }
+  });
+};
+```
+
+### Query Key Gotchas
+
+1. **Partial Matching**: `invalidateQueries(['brand'])` will invalidate ALL queries starting with `['brand']`, including `['brand', 'eco-solutions']`.
+
+2. **Exact Matching**: Use `exact: true` to invalidate only the exact query key.
+
+3. **Active Queries**: Use `type: 'active'` to only refetch queries currently being used by components.
+
 ## Best Practices
 
 ### 1. Type Safety
@@ -535,6 +605,12 @@ async upsertData(key: string, data: Data): Promise<Data> {
 - Follow established patterns across all services
 - Use consistent naming conventions
 - Document complex business logic
+
+### 6. React Query Integration
+- Always pass necessary context (brandSlug, etc.) to mutations
+- Use consistent query key patterns
+- Prefer `refetchQueries` over `invalidateQueries` for immediate UI updates
+- Add unique keys to components when data structure changes
 
 ## Migration Roadmap
 
