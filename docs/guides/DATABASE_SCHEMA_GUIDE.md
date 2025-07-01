@@ -6,6 +6,38 @@ The Change Influence MVP uses PostgreSQL (via Supabase) with a hybrid approach c
 
 ## Schema Design Philosophy
 
+```mermaid
+graph TB
+    subgraph "Storage Strategy"
+        Relational[Relational Tables<br/>Structured Data]
+        JSONB[JSONB Fields<br/>Flexible Data]
+        Views[Database Views<br/>Complex Queries]
+        
+        Relational --> Examples1[objectives, messages,<br/>competitors, campaigns]
+        JSONB --> Examples2[personas, segments,<br/>journey, market analysis]
+        Views --> Examples3[brand_full_data,<br/>performance_summary]
+    end
+    
+    subgraph "Data Integrity"
+        UUID[UUID Primary Keys]
+        FK[Foreign Key Constraints]
+        RLS[Row Level Security]
+        Timestamps[Auto Timestamps]
+        
+        FK --> Cascade[CASCADE Deletes]
+        RLS --> UserAccess[User Data Isolation]
+    end
+    
+    subgraph "Performance"
+        Indexes[Strategic Indexes]
+        GIN[JSONB GIN Indexes]
+        Materialized[Materialized Views]
+        
+        Indexes --> Types[FK, Composite, Partial]
+        GIN --> JSONQuery[Fast JSONB Queries]
+    end
+```
+
 ### 1. Hybrid Storage Approach
 - **Relational Tables**: For structured data with clear relationships (objectives, messages, competitors)
 - **JSONB Fields**: For flexible, nested data structures (personas, segments, market analysis)
@@ -372,6 +404,35 @@ CREATE TABLE content (
 
 ### 5. Analytics & Performance Tables
 
+```mermaid
+graph LR
+    subgraph "Analytics Data Flow"
+        Content[Content]
+        Reviews[Content Reviews]
+        Scores[Individual Scores]
+        CategorySum[Category Summaries]
+        
+        Content --> Reviews
+        Reviews --> Scores
+        Reviews --> CategorySum
+        
+        Scores --> BrandScores[Brand Aggregate]
+        CategorySum --> BrandScores
+        
+        BrandScores --> Overall[Overall Scores]
+        BrandScores --> Channel[Channel Scores]
+        BrandScores --> History[Performance History]
+        BrandScores --> Funnel[Funnel Data]
+    end
+    
+    subgraph "Metrics Storage"
+        Overall --> Period[By Period]
+        Channel --> ByChannel[By Channel Type]
+        History --> Timeline[Historical Timeline]
+        Funnel --> Stages[By Funnel Stage]
+    end
+```
+
 #### `brand_overall_scores`
 Aggregate brand performance metrics.
 
@@ -634,6 +695,36 @@ GROUP BY b.id, bos.score, bos.period;
 ```
 
 ## Row Level Security (RLS)
+
+```mermaid
+graph TB
+    subgraph "RLS Security Model"
+        User[Authenticated User]
+        Request[Database Request]
+        RLS[RLS Policy Check]
+        
+        User --> Request
+        Request --> RLS
+        
+        RLS --> Decision{Access Check}
+        
+        Decision -->|Allowed| Data[Return Data]
+        Decision -->|Denied| Error[Access Denied]
+        
+        subgraph "Policy Types"
+            Select[SELECT Policy<br/>View own data]
+            Insert[INSERT Policy<br/>Create own data]
+            Update[UPDATE Policy<br/>Modify own data]
+            Delete[DELETE Policy<br/>Remove own data]
+        end
+        
+        subgraph "Access Rules"
+            Direct[Direct Ownership<br/>client_id = auth.uid]
+            Cascade[Cascaded Access<br/>via brand ownership]
+            Role[Role-Based<br/>via user roles]
+        end
+    end
+```
 
 ### RLS Policies
 

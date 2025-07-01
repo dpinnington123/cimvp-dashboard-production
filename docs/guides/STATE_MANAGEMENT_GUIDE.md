@@ -84,6 +84,32 @@ function App() {
 
 ### Query Patterns
 
+```mermaid
+sequenceDiagram
+    participant Component
+    participant Hook
+    participant QueryClient
+    participant Cache
+    participant API
+    
+    Component->>Hook: useQuery(['brand', id])
+    Hook->>QueryClient: Check cache
+    
+    alt Cache Hit & Fresh
+        QueryClient->>Cache: Get data
+        Cache-->>QueryClient: Cached data
+        QueryClient-->>Hook: Return cached data
+        Hook-->>Component: { data, isLoading: false }
+    else Cache Miss or Stale
+        QueryClient->>API: Fetch data
+        Note over Component,Hook: isLoading: true
+        API-->>QueryClient: Response data
+        QueryClient->>Cache: Update cache
+        QueryClient-->>Hook: Return fresh data
+        Hook-->>Component: { data, isLoading: false }
+    end
+```
+
 #### Basic Query
 ```typescript
 // hooks/useBrandData.ts
@@ -163,6 +189,35 @@ function useDashboardData(brandId: string) {
 ```
 
 ### Mutation Patterns
+
+```mermaid
+flowchart TD
+    subgraph "Mutation Lifecycle"
+        Start[User Action]
+        Mutate[Call mutate]
+        OnMutate[onMutate<br/>Optimistic Update]
+        Execute[Execute API Call]
+        
+        Start --> Mutate
+        Mutate --> OnMutate
+        OnMutate --> Execute
+        
+        Execute --> Success{Result?}
+        
+        Success -->|Success| OnSuccess[onSuccess<br/>Confirm Update]
+        Success -->|Error| OnError[onError<br/>Rollback]
+        
+        OnSuccess --> OnSettled[onSettled<br/>Cleanup]
+        OnError --> OnSettled
+        
+        OnSettled --> Invalidate[Invalidate Queries]
+        Invalidate --> Refetch[Refetch Active]
+        
+        style OnMutate fill:#90EE90
+        style OnError fill:#FFB6C1
+        style OnSuccess fill:#87CEEB
+    end
+```
 
 #### Basic Mutation
 ```typescript
@@ -514,6 +569,43 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 ## 4. Form State Management
 
 Using React Hook Form with Zod validation.
+
+```mermaid
+flowchart LR
+    subgraph "Form State Flow"
+        Schema[Zod Schema]
+        Form[React Hook Form]
+        Component[Form Component]
+        Validation[Validation]
+        Submit[Submit Handler]
+        
+        Schema -->|Resolver| Form
+        Form -->|Register Fields| Component
+        Component -->|User Input| Form
+        Form -->|Validate| Validation
+        Validation -->|Valid| Submit
+        Validation -->|Invalid| Errors[Show Errors]
+        
+        Submit -->|Success| API[API Call]
+        Submit -->|Failure| ErrorToast[Error Toast]
+        API -->|Success| SuccessToast[Success Toast]
+        API -->|Success| Navigate[Navigate/Reset]
+    end
+    
+    subgraph "Form Features"
+        Watch[watch - Monitor fields]
+        Control[control - Field control]
+        Errors2[errors - Validation errors]
+        Reset[reset - Reset form]
+        SetValue[setValue - Update fields]
+    end
+    
+    Form --> Watch
+    Form --> Control
+    Form --> Errors2
+    Form --> Reset
+    Form --> SetValue
+```
 
 ### Basic Form Setup
 ```typescript

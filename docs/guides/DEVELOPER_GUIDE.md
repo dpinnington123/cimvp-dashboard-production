@@ -29,6 +29,39 @@ The Change Influence MVP Dashboard is a comprehensive content management and ana
 - **Forms**: React Hook Form v7 + Zod v3
 - **Routing**: React Router v6
 
+```mermaid
+graph TB
+    subgraph "Frontend Stack"
+        React[React 19]
+        TS[TypeScript 5.7]
+        Vite[Vite 6.0]
+        React --> TS
+        TS --> Vite
+    end
+    
+    subgraph "Backend Stack"
+        Supabase[Supabase]
+        PG[PostgreSQL 15]
+        Auth[Auth Service]
+        Storage[Storage Service]
+        Supabase --> PG
+        Supabase --> Auth
+        Supabase --> Storage
+    end
+    
+    subgraph "State & Forms"
+        TQ[TanStack Query v5]
+        Context[React Context]
+        RHF[React Hook Form v7]
+        Zod[Zod v3]
+        TQ --> Context
+        RHF --> Zod
+    end
+    
+    Frontend --> Backend
+    Frontend --> State
+```
+
 ---
 
 ## Architecture Overview
@@ -53,6 +86,37 @@ src/
 3. **Performance**: Lazy loading, optimized queries, and caching
 4. **Security**: Row-level security, input validation, and secure auth
 
+```mermaid
+graph LR
+    subgraph "Architecture Layers"
+        UI[UI Components]
+        Hooks[Custom Hooks]
+        Services[Service Layer]
+        DB[Database]
+        
+        UI --> Hooks
+        Hooks --> Services
+        Services --> DB
+    end
+    
+    subgraph "Data Flow"
+        User[User Action]
+        Component[Component]
+        Hook[Hook]
+        Service[Service]
+        Supabase[Supabase]
+        
+        User --> Component
+        Component --> Hook
+        Hook --> Service
+        Service --> Supabase
+        Supabase --> Service
+        Service --> Hook
+        Hook --> Component
+        Component --> User
+    end
+```
+
 ---
 
 ## Hooks Documentation
@@ -61,6 +125,31 @@ src/
 The application uses 40+ custom hooks organized into categories for different functionality areas. All hooks follow consistent patterns and integrate with TanStack Query for optimal performance.
 
 ### Hook Categories
+
+```mermaid
+graph TD
+    subgraph "Hook Categories"
+        UI[UI/Utility Hooks]
+        Auth[Authentication Hook]
+        Brand[Brand Context Hook]
+        Content[Content Management Hooks]
+        Score[Scoring/Analytics Hooks]
+        Update[Brand Data Update Hooks]
+        Ops[Brand Operations Hooks]
+        Profile[Brand Profile Operations]
+        Special[Specialized Hooks]
+    end
+    
+    UI --> |useIsMobile, useToast| Components
+    Auth --> |useAuth| AuthFlow
+    Brand --> |useBrand| BrandData
+    Content --> |useContent, useContentList| ContentOps
+    Score --> |useScores| Analytics
+    Update --> |useUpdateBrand*| JSONB
+    Ops --> |CRUD Operations| Relations
+    Profile --> |Profile Updates| BrandInfo
+    Special --> |useBrandFormOptions| Forms
+```
 
 #### 1. UI/Utility Hooks
 
@@ -639,6 +728,30 @@ function BrandMetricsView({ data, loading }) {
 
 ### Authentication Flow
 
+```mermaid
+sequenceDiagram
+    participant User
+    participant Component
+    participant useAuth
+    participant AuthContext
+    participant Supabase
+    participant Database
+    
+    User->>Component: Login attempt
+    Component->>useAuth: signInWithPassword(email, pwd)
+    useAuth->>AuthContext: Call auth method
+    AuthContext->>Supabase: Auth request
+    Supabase->>Database: Verify credentials
+    Database-->>Supabase: User data
+    Supabase-->>AuthContext: Session + User
+    AuthContext-->>useAuth: Auth result
+    useAuth-->>Component: Success/Error
+    Component-->>User: Navigate/Show error
+    
+    Note over AuthContext,Supabase: Session persisted in localStorage
+    Note over Component: Protected routes check session
+```
+
 #### 1. Supabase Auth Setup
 ```typescript
 // lib/supabase.ts
@@ -710,6 +823,46 @@ SUPABASE_SERVICE_KEY=secret        # NEVER expose
 
 ### Overview
 The application uses a hybrid approach with TanStack Query for server state and React Context for local state.
+
+```mermaid
+graph TB
+    subgraph "State Management Architecture"
+        subgraph "Server State"
+            TQ[TanStack Query]
+            Cache[Query Cache]
+            Mutations[Mutations]
+            TQ --> Cache
+            TQ --> Mutations
+        end
+        
+        subgraph "Local State"
+            Auth[Auth Context]
+            Brand[Brand Context]
+            Component[Component State]
+        end
+        
+        subgraph "Form State"
+            RHF[React Hook Form]
+            Zod[Zod Validation]
+            RHF --> Zod
+        end
+        
+        subgraph "URL State"
+            Router[React Router]
+            Params[URL Params]
+            Search[Search Params]
+            Router --> Params
+            Router --> Search
+        end
+    end
+    
+    TQ -.-> |Invalidate| Cache
+    Mutations -.-> |Update| Cache
+    Component --> TQ
+    Component --> Auth
+    Component --> Brand
+    Component --> RHF
+```
 
 ### Server State (TanStack Query)
 
@@ -941,6 +1094,39 @@ GROUP BY b.id;
 5. **RLS** enforces security
 6. **Response** flows back up the chain
 
+```mermaid
+sequenceDiagram
+    participant Component
+    participant Hook
+    participant Service
+    participant Supabase
+    participant RLS
+    participant Database
+    
+    Component->>Hook: Trigger action
+    Hook->>Hook: Show loading state
+    Hook->>Service: Call service method
+    Service->>Service: Validate input
+    Service->>Supabase: Execute query
+    Supabase->>RLS: Check permissions
+    RLS->>RLS: Verify user access
+    alt Access Granted
+        RLS->>Database: Execute operation
+        Database-->>Supabase: Return data
+        Supabase-->>Service: Success response
+        Service-->>Hook: Transformed data
+        Hook-->>Hook: Update cache
+        Hook-->>Component: Success state
+        Component-->>Component: Update UI
+    else Access Denied
+        RLS-->>Supabase: Permission error
+        Supabase-->>Service: Error response
+        Service-->>Hook: Error
+        Hook-->>Component: Error state
+        Component-->>Component: Show error
+    end
+```
+
 ### Error Handling Pattern
 ```typescript
 try {
@@ -1048,6 +1234,40 @@ function transformToBrandData(dbData: DatabaseBrand): BrandData {
 ---
 
 ## Deployment Guide
+
+```mermaid
+graph LR
+    subgraph "Development"
+        Dev[Local Dev]
+        Test[Run Tests]
+        Build[Build Check]
+        Dev --> Test
+        Test --> Build
+    end
+    
+    subgraph "CI/CD Pipeline"
+        PR[Pull Request]
+        CI[CI Checks]
+        Review[Code Review]
+        Merge[Merge to Main]
+        PR --> CI
+        CI --> Review
+        Review --> Merge
+    end
+    
+    subgraph "Deployment"
+        Deploy[Deploy]
+        Migration[DB Migrations]
+        Verify[Verification]
+        Monitor[Monitoring]
+        Merge --> Deploy
+        Deploy --> Migration
+        Migration --> Verify
+        Verify --> Monitor
+    end
+    
+    Build --> PR
+```
 
 ### Environment Setup
 1. Production environment variables

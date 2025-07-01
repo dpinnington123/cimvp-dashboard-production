@@ -731,6 +731,50 @@ function InfiniteContentList() {
 
 ## Error Handling
 
+```mermaid
+flowchart TD
+    subgraph "Error Handling Flow"
+        Action[User Action]
+        Component[Component]
+        Hook[Hook/Mutation]
+        Service[Service Layer]
+        API[API Call]
+        
+        Action --> Component
+        Component --> Hook
+        Hook --> Service
+        Service --> API
+        
+        API --> Error{Error?}
+        
+        Error -->|Network Error| NetworkHandler[Network Error Handler]
+        Error -->|Auth Error| AuthHandler[Auth Error Handler]
+        Error -->|Validation Error| ValidationHandler[Validation Handler]
+        Error -->|Server Error| ServerHandler[Server Error Handler]
+        Error -->|Success| Success[Return Data]
+        
+        NetworkHandler --> Retry[Retry Logic]
+        AuthHandler --> Redirect[Redirect to Login]
+        ValidationHandler --> ShowErrors[Show Field Errors]
+        ServerHandler --> Toast[Error Toast]
+        
+        Retry --> API
+        
+        subgraph "User Feedback"
+            Toast --> UserNotification[Toast Notification]
+            ShowErrors --> FormErrors[Form Error Messages]
+            Redirect --> LoginPage[Login Page]
+        end
+    end
+    
+    subgraph "Error Types"
+        E1[Network Errors<br/>Connection issues]
+        E2[Auth Errors<br/>401, 403]
+        E3[Validation Errors<br/>400, 422]
+        E4[Server Errors<br/>500, 503]
+    end
+```
+
 ### 1. Global Error Boundary
 
 ```typescript

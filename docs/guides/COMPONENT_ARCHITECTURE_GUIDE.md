@@ -13,6 +13,37 @@ This guide documents the component architecture, patterns, and best practices fo
 4. **Reusability**: Build once, use many times
 5. **Performance**: Optimize re-renders and bundle size
 
+```mermaid
+graph TB
+    subgraph "Component Architecture"
+        UI[UI Layer]
+        Logic[Business Logic]
+        Data[Data Layer]
+        
+        UI -->|Presentation| Components[Components]
+        Logic -->|State & Effects| Hooks[Custom Hooks]
+        Data -->|API Calls| Services[Service Layer]
+        
+        Components --> Hooks
+        Hooks --> Services
+        
+        subgraph "Component Types"
+            Pure[Pure Components]
+            Container[Container Components]
+            Layout[Layout Components]
+            Feature[Feature Components]
+        end
+    end
+    
+    subgraph "Design Principles"
+        SRP[Single Responsibility]
+        Composition[Composition]
+        TypeSafe[Type Safety]
+        Reusable[Reusability]
+        Performance[Performance]
+    end
+```
+
 ## Directory Structure
 
 ```
@@ -32,6 +63,37 @@ src/components/
 ```
 
 ## Component Categories
+
+```mermaid
+graph TD
+    subgraph "Component Hierarchy"
+        Root[src/components]
+        
+        Root --> UI[ui/<br/>shadcn/ui Library]
+        Root --> Common[common/<br/>Shared Components]
+        Root --> Layout[layout/<br/>Structure & Navigation]
+        Root --> Views[views/<br/>Feature Components]
+        Root --> Builder[brand-profile-builder/<br/>Style Guide]
+        
+        UI --> Forms[Form Components]
+        UI --> Feedback[Feedback Components]
+        UI --> Display[Display Components]
+        
+        Common --> Loading[LoadingSpinner]
+        Common --> Error[ErrorDisplay]
+        Common --> Stats[StatCard]
+        Common --> Charts[ChartCard]
+        
+        Layout --> Dashboard[DashboardLayout]
+        Layout --> Sidebar[AppSidebar]
+        Layout --> Header[Header]
+        
+        Views --> BrandDash[brand-dashboard/]
+        Views --> Strategy[brand-strategy/]
+        Views --> Campaign[campaign-planner/]
+        Views --> Reports[content-reports/]
+    end
+```
 
 ### 1. UI Components (`/ui/`)
 
@@ -210,6 +272,28 @@ feature-name/
 ```
 
 ## Component Patterns
+
+```mermaid
+graph TB
+    subgraph "Component Patterns"
+        Composition[Composition Pattern<br/>Build from simple blocks]
+        Compound[Compound Components<br/>Related components work together]
+        RenderProps[Render Props<br/>Flexible logic sharing]
+        CustomHooks[Custom Hooks<br/>Extract & share logic]
+        
+        Composition --> Example1[UserProfile composed of<br/>Header, Stats, Posts, Settings]
+        Compound --> Example2[Card with<br/>CardHeader, CardContent, CardFooter]
+        RenderProps --> Example3[DataFetcher with<br/>render callback]
+        CustomHooks --> Example4[useFormWithValidation<br/>Reusable form logic]
+    end
+    
+    subgraph "State Patterns"
+        LocalState[Local State<br/>UI concerns only]
+        ServerState[Server State<br/>React Query]
+        FormState[Form State<br/>React Hook Form]
+        URLState[URL State<br/>Router params]
+    end
+```
 
 ### 1. Composition Pattern
 
@@ -522,6 +606,32 @@ import { cn } from "@/lib/utils";
 ```
 
 ## Performance Optimization
+
+```mermaid
+flowchart LR
+    subgraph "Performance Strategies"
+        CodeSplit[Code Splitting<br/>Lazy load components]
+        Memoization[Memoization<br/>React.memo, useMemo]
+        EventOpt[Event Optimization<br/>Stable references]
+        Bundle[Bundle Size<br/>Tree shaking]
+    end
+    
+    subgraph "Implementation"
+        CodeSplit --> Lazy[lazy + Suspense]
+        Memoization --> Memo[Only when measurable]
+        EventOpt --> Callback[useCallback hooks]
+        Bundle --> Dynamic[Dynamic imports]
+    end
+    
+    subgraph "Metrics"
+        Render[Re-render count]
+        Load[Load time]
+        Size[Bundle size]
+        Memory[Memory usage]
+    end
+    
+    Implementation --> Metrics
+```
 
 ### 1. Code Splitting
 ```tsx

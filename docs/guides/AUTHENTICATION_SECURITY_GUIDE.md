@@ -251,6 +251,55 @@ const signUpSchema = z.object({
 
 ## Security Patterns
 
+```mermaid
+graph TB
+    subgraph "Security Layers"
+        Client[Client Layer]
+        API[API Layer]
+        Database[Database Layer]
+        
+        subgraph "Client Security"
+            InputVal[Input Validation<br/>Zod Schemas]
+            XSS[XSS Prevention<br/>DOMPurify]
+            HTTPS[HTTPS Only]
+            CSP[Content Security Policy]
+        end
+        
+        subgraph "API Security"
+            Auth[Authentication<br/>Supabase Auth]
+            Session[Session Management<br/>JWT Tokens]
+            Rate[Rate Limiting]
+            Headers[Security Headers]
+        end
+        
+        subgraph "Database Security"
+            RLS[Row Level Security]
+            Encrypt[Encryption at Rest]
+            Backup[Secure Backups]
+            Audit[Audit Logs]
+        end
+        
+        Client --> InputVal
+        Client --> XSS
+        Client --> HTTPS
+        Client --> CSP
+        
+        API --> Auth
+        API --> Session
+        API --> Rate
+        API --> Headers
+        
+        Database --> RLS
+        Database --> Encrypt
+        Database --> Backup
+        Database --> Audit
+    end
+    
+    style Client fill:#E3F2FD
+    style API fill:#FFF3E0
+    style Database fill:#E8F5E9
+```
+
 ### 1. Row Level Security (RLS)
 
 RLS ensures users can only access their own data at the database level.

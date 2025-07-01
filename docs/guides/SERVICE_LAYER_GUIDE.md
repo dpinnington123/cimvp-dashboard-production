@@ -21,7 +21,70 @@ The service layer provides a clean abstraction over Supabase operations, encapsu
 - User-friendly error messages
 - Proper logging for debugging
 
+```mermaid
+graph TB
+    subgraph "Service Layer Architecture"
+        Components[UI Components]
+        Hooks[Custom Hooks]
+        Services[Service Layer]
+        Supabase[Supabase Client]
+        Database[(PostgreSQL)]
+        
+        Components -->|User Actions| Hooks
+        Hooks -->|State Management| Services
+        Services -->|Business Logic| Supabase
+        Supabase -->|SQL Queries| Database
+        
+        Database -->|Data| Supabase
+        Supabase -->|Response| Services
+        Services -->|Transformed Data| Hooks
+        Hooks -->|UI State| Components
+    end
+    
+    subgraph "Service Responsibilities"
+        Auth[Authentication]
+        Validation[Input Validation]
+        Transform[Data Transformation]
+        Cache[Cache Management]
+        Error[Error Handling]
+    end
+    
+    Services --> Auth
+    Services --> Validation
+    Services --> Transform
+    Services --> Cache
+    Services --> Error
+```
+
 ## Service Inventory
+
+```mermaid
+graph LR
+    subgraph "Service Layer"
+        BrandService[Brand Service<br/>40+ methods]
+        ContentService[Content Service<br/>CRUD operations]
+        ProcessingService[Content Processing<br/>Async workflows]
+        ScoreService[Score Service<br/>Analytics & reviews]
+        UploadService[Upload Service<br/>File management]
+        ExportService[Export Service<br/>PDF/PPT/CSV]
+    end
+    
+    subgraph "Database Tables"
+        Brands[(brands)]
+        Content[(content)]
+        Scores[(scores)]
+        Storage[(storage)]
+    end
+    
+    BrandService --> Brands
+    ContentService --> Content
+    ProcessingService --> Content
+    ScoreService --> Scores
+    UploadService --> Storage
+    ExportService --> Brands
+    ExportService --> Content
+    ExportService --> Scores
+```
 
 ### 1. Brand Service (`brandService.ts`)
 
@@ -446,6 +509,34 @@ async someOperation(): Promise<Result> {
 
 Used for updating lists of related items without data loss:
 
+```mermaid
+flowchart TD
+    Start[Start: New Items List]
+    Fetch[Fetch Existing Items from DB]
+    Compare[Compare New vs Existing]
+    
+    Start --> Fetch
+    Fetch --> Compare
+    
+    Compare --> Categorize{Categorize Items}
+    
+    Categorize --> ToAdd[Items to Add<br/>No ID exists]
+    Categorize --> ToUpdate[Items to Update<br/>ID exists in both]
+    Categorize --> ToDelete[Items to Delete<br/>ID only in existing]
+    
+    ToAdd --> Insert[Batch Insert]
+    ToUpdate --> Update[Batch Update]
+    ToDelete --> Delete[Batch Delete]
+    
+    Insert --> Complete[Complete]
+    Update --> Complete
+    Delete --> Complete
+    
+    style ToAdd fill:#90EE90
+    style ToUpdate fill:#FFE4B5
+    style ToDelete fill:#FFB6C1
+```
+
 ```typescript
 async safeBatchUpdate<T>(
   tableName: string,
@@ -510,6 +601,44 @@ async upsertData(key: string, data: Data): Promise<Data> {
 ```
 
 ## React Query Integration Patterns
+
+```mermaid
+graph TB
+    subgraph "Query Cache Structure"
+        Cache[Query Cache]
+        
+        subgraph "Query Keys"
+            Brands["['brands']<br/>All brands list"]
+            Brand["['brand', slug]<br/>Specific brand data"]
+            StyleGuide["['brand-style-guide', id]<br/>Style guide"]
+            ContentList["['content-list']<br/>All content"]
+            Content["['content', id]<br/>Specific content"]
+        end
+        
+        Cache --> Brands
+        Cache --> Brand
+        Cache --> StyleGuide
+        Cache --> ContentList
+        Cache --> Content
+    end
+    
+    subgraph "Mutation Flow"
+        Mutation[Mutation]
+        Invalidate[Invalidate Queries]
+        Refetch[Refetch Active]
+        Update[Update UI]
+        
+        Mutation --> Invalidate
+        Invalidate --> Refetch
+        Refetch --> Update
+    end
+    
+    subgraph "Cache Strategies"
+        Partial[Partial Match<br/>Invalidates all matching]
+        Exact[Exact Match<br/>Specific key only]
+        Active[Active Only<br/>Currently rendered]
+    end
+```
 
 ### Query Key Structure
 
