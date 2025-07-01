@@ -1,5 +1,6 @@
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/lib/supabaseClient';
+import { debugSupabaseConfigs } from '@/lib/supabaseClientDebug';
 import { useEffect, useState } from 'react';
 
 export function DebugInfo() {
@@ -37,6 +38,11 @@ export function DebugInfo() {
     };
     
     testConnection();
+    
+    // Run debug tests in production only
+    if (import.meta.env.MODE === 'production') {
+      debugSupabaseConfigs();
+    }
   }, []);
   
   // Only show in development or if there's an error
