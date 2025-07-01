@@ -1,6 +1,22 @@
 // src/types/brand.ts
 // Centralized type definitions for brand data
 
+// Score interface for content analysis results
+export interface Score {
+  id: number;
+  content_review_id: number;
+  check_id: number;
+  score_value: number;
+  fix_recommendation?: string;
+  created_at?: string;
+  comments?: string;
+  confidence?: number;
+  updated_at?: string;
+  check_name?: string;
+  client_id?: string;
+  check_sub_category?: string;
+}
+
 // Type definitions for brand data
 export interface BrandProfile {
   id: string;
@@ -273,6 +289,19 @@ export interface BrandContent {
   campaign_strategic_alignment?: number;
   campaign_customer_alignment?: number;
   campaign_content_effectiveness?: number;
+  // Additional fields from content table join
+  contentObjectives?: string;
+  strategyAlignedTo?: string;
+  campaignAlignedTo?: string;
+  funnelAlignment?: string;
+  expiryDate?: string;
+  agency?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  // Scores data
+  scores?: Score[];
+  characteristics?: Score[];
+  areasToImprove?: Score[];
 }
 
 export interface BrandOverallScores {

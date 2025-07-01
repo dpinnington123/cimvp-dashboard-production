@@ -1,3 +1,5 @@
+import { Score } from './brand';
+
 export interface ContentItem {
   id: string;
   name: string;
@@ -25,6 +27,18 @@ export interface ContentItem {
   objective?: string;
   kpis?: string[];
   agency?: string;
+  // Additional fields from content table
+  contentObjectives?: string;
+  strategyAlignedTo?: string;
+  campaignAlignedTo?: string;
+  funnelAlignment?: string;
+  expiryDate?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  // Scores data
+  scores?: Score[];
+  characteristics?: Score[];
+  areasToImprove?: Score[];
 }
 
 export interface Position {

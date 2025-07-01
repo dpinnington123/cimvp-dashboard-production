@@ -1741,6 +1741,337 @@ class BrandService {
       budget: dbCampaign.budget || 0
     };
   }
+
+  /**
+   * Get brand audiences
+   */
+  async getBrandAudiences(brandId: string): Promise<any[]> {
+    try {
+      const { data, error } = await supabase
+        .from('brand_audiences')
+        .select('*')
+        .eq('brand_id', brandId)
+        .order('order_index');
+
+      if (error) {
+        console.error('Error fetching brand audiences:', error);
+        throw error;
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('Error in getBrandAudiences:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get brand strategies
+   */
+  async getBrandStrategies(brandId: string): Promise<any[]> {
+    try {
+      const { data, error } = await supabase
+        .from('brand_strategies')
+        .select('*')
+        .eq('brand_id', brandId)
+        .order('order_index');
+
+      if (error) {
+        console.error('Error fetching brand strategies:', error);
+        throw error;
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('Error in getBrandStrategies:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get content scores for a specific content item
+   */
+  async getContentScores(contentId: number): Promise<Score[]> {
+    try {
+      // First get the content review for this content
+      const { data: reviewData, error: reviewError } = await supabase
+        .from('content_reviews')
+        .select('id')
+        .eq('content_id', contentId)
+        .order('reviewed_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (reviewError || !reviewData) {
+        console.log('No content review found for content:', contentId);
+        return [];
+      }
+
+      // Then get all scores for this review
+      const { data: scoresData, error: scoresError } = await supabase
+        .from('scores')
+        .select('*')
+        .eq('content_review_id', reviewData.id);
+
+      if (scoresError) {
+        console.error('Error fetching content scores:', scoresError);
+        throw scoresError;
+      }
+
+      return scoresData || [];
+    } catch (error) {
+      console.error('Error in getContentScores:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get all content for a brand
+   */
+  async getBrandContentBySlug(brandSlug: string): Promise<BrandContent[]> {
+    try {
+      const brand = await this.getBrandBySlug(brandSlug);
+      if (!brand) {
+        console.error('Brand not found:', brandSlug);
+        return [];
+      }
+
+      const { data, error } = await supabase
+        .from('brand_content')
+        .select(`
+          *,
+          content:content_id (
+            id,
+            content_objectives,
+            funnel_alignment,
+            expiry_date,
+            created_at: created_at,
+            updated_at: updated_at,
+            campaign_id,
+            audience_id,
+            strategy_id
+          )
+        `)
+        .eq('brand_id', brand.id)
+        .is('deleted_at', null)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching brand content:', error);
+        throw error;
+      }
+
+      // Fetch all campaigns, audiences, and strategies for this brand for efficient lookup
+      const [campaigns, audiences, strategies] = await Promise.all([
+        this.getCampaigns(brand.id),
+        this.getBrandAudiences(brand.id),
+        this.getBrandStrategies(brand.id)
+      ]);
+
+      // Create lookup maps for efficient access
+      const campaignMap = new Map(campaigns.map(c => [c.id, c]));
+      const audienceMap = new Map(audiences.map(a => [a.id, a]));
+      const strategyMap = new Map(strategies.map(s => [s.id, s]));
+
+      // Transform content and fetch scores for each item
+      const transformedContent = await Promise.all((data || []).map(async item => {
+        const transformed = this.transformDatabaseContent(item, campaignMap, audienceMap, strategyMap);
+        
+        // If we have a content_id, fetch the scores
+        if (item.content_id) {
+          const scores = await this.getContentScores(item.content_id);
+          transformed.scores = scores;
+          
+          // Extract characteristics and areas to improve
+          transformed.characteristics = scores.filter(s => s.check_sub_category === 'Characteristics');
+          transformed.areasToImprove = scores.filter(s => 
+            s.fix_recommendation && 
+            s.score_value < 80
+          );
+        }
+        
+        return transformed;
+      }));
+
+      return transformedContent;
+    } catch (error) {
+      console.error('Error in getBrandContentBySlug:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Add new content to a brand
+   */
+  async addBrandContent(brandId: string, content: Partial<BrandContent>): Promise<BrandContent> {
+    try {
+      const { data, error } = await supabase
+        .from('brand_content')
+        .insert({
+          brand_id: brandId,
+          campaign_id: content.campaignId,
+          content_id: content.contentId,
+          name: content.name,
+          format: content.format,
+          type: content.type,
+          status: content.status || 'pending',
+          description: content.description,
+          quality_score: content.qualityScore || 0,
+          cost: content.cost || 0,
+          audience: content.audience,
+          key_actions: content.keyActions || [],
+          agencies: content.agencies || [],
+          overall_score: content.overallScore || 0,
+          strategic_score: content.strategicScore || 0,
+          customer_score: content.customerScore || 0,
+          execution_score: content.executionScore || 0,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error adding brand content:', error);
+        throw error;
+      }
+
+      return this.transformDatabaseContent(data);
+    } catch (error) {
+      console.error('Error in addBrandContent:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update existing content
+   */
+  async updateBrandContent(contentId: string, updates: Partial<BrandContent>): Promise<void> {
+    try {
+      const updateData: any = {
+        updated_at: new Date().toISOString()
+      };
+
+      // Map the BrandContent interface fields to database columns
+      if (updates.campaignId !== undefined) updateData.campaign_id = updates.campaignId;
+      if (updates.contentId !== undefined) updateData.content_id = updates.contentId;
+      if (updates.name !== undefined) updateData.name = updates.name;
+      if (updates.format !== undefined) updateData.format = updates.format;
+      if (updates.type !== undefined) updateData.type = updates.type;
+      if (updates.status !== undefined) updateData.status = updates.status;
+      if (updates.description !== undefined) updateData.description = updates.description;
+      if (updates.qualityScore !== undefined) updateData.quality_score = updates.qualityScore;
+      if (updates.cost !== undefined) updateData.cost = updates.cost;
+      if (updates.audience !== undefined) updateData.audience = updates.audience;
+      if (updates.keyActions !== undefined) updateData.key_actions = updates.keyActions;
+      if (updates.agencies !== undefined) updateData.agencies = updates.agencies;
+      if (updates.overallScore !== undefined) updateData.overall_score = updates.overallScore;
+      if (updates.strategicScore !== undefined) updateData.strategic_score = updates.strategicScore;
+      if (updates.customerScore !== undefined) updateData.customer_score = updates.customerScore;
+      if (updates.executionScore !== undefined) updateData.execution_score = updates.executionScore;
+
+      const { error } = await supabase
+        .from('brand_content')
+        .update(updateData)
+        .eq('id', contentId);
+
+      if (error) {
+        console.error('Error updating brand content:', error);
+        throw error;
+      }
+    } catch (error) {
+      console.error('Error in updateBrandContent:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete content (soft delete)
+   */
+  async deleteBrandContent(contentId: string): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('brand_content')
+        .update({
+          deleted_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', contentId);
+
+      if (error) {
+        console.error('Error deleting brand content:', error);
+        throw error;
+      }
+    } catch (error) {
+      console.error('Error in deleteBrandContent:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Transform database content to BrandContent interface
+   */
+  private transformDatabaseContent(
+    dbContent: any, 
+    campaignMap?: Map<string, any>,
+    audienceMap?: Map<string, any>,
+    strategyMap?: Map<string, any>
+  ): BrandContent {
+    // Get related data from maps if content table join exists
+    let campaignName = '';
+    let audienceName = '';
+    let strategyName = '';
+    
+    if (dbContent.content) {
+      // Look up campaign name from campaign_id
+      if (dbContent.content.campaign_id && campaignMap) {
+        const campaign = campaignMap.get(dbContent.content.campaign_id);
+        campaignName = campaign?.name || '';
+      }
+      
+      // Look up audience name from audience_id
+      if (dbContent.content.audience_id && audienceMap) {
+        const audience = audienceMap.get(dbContent.content.audience_id);
+        audienceName = audience?.name || '';
+      }
+      
+      // Look up strategy name from strategy_id
+      if (dbContent.content.strategy_id && strategyMap) {
+        const strategy = strategyMap.get(dbContent.content.strategy_id);
+        strategyName = strategy?.name || '';
+      }
+    }
+
+    return {
+      id: dbContent.id,
+      campaignId: dbContent.campaign_id,
+      contentId: dbContent.content_id,
+      name: dbContent.name,
+      format: dbContent.format,
+      type: dbContent.type,
+      status: dbContent.status || 'pending',
+      description: dbContent.description,
+      qualityScore: dbContent.quality_score || 0,
+      cost: dbContent.cost || 0,
+      audience: dbContent.audience || audienceName, // Use audience from brand_content or from lookup
+      keyActions: dbContent.key_actions || [],
+      agencies: dbContent.agencies || [],
+      overallScore: dbContent.overall_score || 0,
+      strategicScore: dbContent.strategic_score || 0,
+      customerScore: dbContent.customer_score || 0,
+      executionScore: dbContent.execution_score || 0,
+      // Include fields from the joined content table with proper lookups
+      contentObjectives: dbContent.content?.content_objectives,
+      strategyAlignedTo: strategyName,
+      campaignAlignedTo: campaignName,
+      funnelAlignment: dbContent.content?.funnel_alignment,
+      expiryDate: dbContent.content?.expiry_date,
+      agency: dbContent.agencies && dbContent.agencies[0], // Use agencies array from brand_content
+      // Add timestamps
+      createdAt: dbContent.content?.created_at || dbContent.created_at,
+      updatedAt: dbContent.content?.updated_at || dbContent.updated_at
+    };
+  }
 }
 
 export const brandService = new BrandService();

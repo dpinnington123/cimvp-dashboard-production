@@ -2,11 +2,27 @@ import React, { useState } from 'react';
 import { ContentItem } from '@/types/content';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { InfoIcon, DollarSign, Users, Calendar } from 'lucide-react';
-import { toast } from "@/hooks/use-toast";
+import { Card, CardContent } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { DetailItem } from './DetailItem';
+import { 
+  Target, 
+  FileText, 
+  Type, 
+  Users, 
+  Info, 
+  Briefcase, 
+  Building2, 
+  BarChart3, 
+  Calendar, 
+  Clock, 
+  AlertCircle,
+  DollarSign
+} from 'lucide-react';
+import { useUpdateBrandContent } from '@/hooks/useBrandContentOperations';
+import { BrandContent } from '@/types/brand';
+import { CharacteristicCard } from './CharacteristicCard';
+import { ImprovementArea } from './ImprovementArea';
 
 interface ContentDetailsProps {
   item: ContentItem;
@@ -19,222 +35,254 @@ const ContentDetails: React.FC<ContentDetailsProps> = ({
   open, 
   onOpenChange 
 }) => {
-  const [editedItem, setEditedItem] = useState<ContentItem>({...item});
-  const [isEditing, setIsEditing] = useState(false);
-  const [kpiInput, setKpiInput] = useState('');
+  const { mutate: updateContent } = useUpdateBrandContent();
   
-  const handleSave = () => {
-    // In a real app, this would update the data in a database
-    console.log('Saving updated content:', editedItem);
-    toast("Content updated", {
-      description: `${editedItem.name} has been updated successfully.`
-    });
-    setIsEditing(false);
+  // Helper function to get icon for characteristic
+  const getCharacteristicIcon = (checkName?: string) => {
+    if (!checkName) return null;
+    const name = checkName.toLowerCase();
+    
+    if (name.includes('color') || name.includes('colour')) return '🎨';
+    if (name.includes('font') || name.includes('text')) return '📝';
+    if (name.includes('image') || name.includes('visual')) return '🖼️';
+    if (name.includes('layout') || name.includes('design')) return '📐';
+    if (name.includes('emotion') || name.includes('feel')) return '💭';
+    if (name.includes('message') || name.includes('communication')) return '💬';
+    if (name.includes('brand')) return '🏷️';
+    if (name.includes('call to action') || name.includes('cta')) return '👆';
+    
+    return '📊'; // Default icon
   };
-
-  const handleAddKpi = () => {
-    if (kpiInput.trim()) {
-      setEditedItem({
-        ...editedItem,
-        kpis: [...(editedItem.kpis || []), kpiInput.trim()]
+  
+  // Helper function to format dates
+  const formatDate = (dateString?: string | null) => {
+    if (!dateString) return null;
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
       });
-      setKpiInput('');
+    } catch {
+      return dateString;
     }
   };
 
-  const handleRemoveKpi = (index: number) => {
-    const newKpis = [...(editedItem.kpis || [])];
-    newKpis.splice(index, 1);
-    setEditedItem({
-      ...editedItem,
-      kpis: newKpis
-    });
-  };
-
+  // Helper function to format currency
   const formatCurrency = (amount?: number) => {
-    if (amount === undefined) return 'Not specified';
+    if (amount === undefined || amount === null) return null;
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD'
     }).format(amount);
   };
 
-  // Pre-determine the values for conditional rendering to avoid hook issues
-  const currentName = editedItem.name;
-  const currentAudience = editedItem.audience || '';
-  const currentObjective = editedItem.objective || '';
-  const currentKpis = editedItem.kpis || [];
-  const currentCost = editedItem.cost;
-  const currentAgency = editedItem.agency || '';
-  const hasKpis = currentKpis.length > 0;
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-xl font-semibold flex items-center gap-2">
-            {isEditing ? (
-              <Input 
-                value={currentName} 
-                onChange={(e) => setEditedItem({...editedItem, name: e.target.value})}
-                className="text-xl font-semibold h-10"
-              />
-            ) : (
-              currentName
-            )}
-          </DialogTitle>
-          <div className="flex justify-between items-center mt-2">
-            <div className="text-sm text-muted-foreground">
-              {editedItem.format} · {editedItem.type} · Quality: {editedItem.qualityScore}/100
-            </div>
-            <Button 
-              variant={isEditing ? "default" : "outline"} 
-              onClick={() => isEditing ? handleSave() : setIsEditing(true)}
-            >
-              {isEditing ? "Save Changes" : "Edit Details"}
-            </Button>
-          </div>
+          <DialogTitle className="text-2xl font-semibold">{item.name}</DialogTitle>
         </DialogHeader>
         
-        <div className="grid gap-6 py-4">
-          <div className="grid gap-2">
-            <div className="flex items-center gap-2">
-              <Users className="h-5 w-5 text-muted-foreground" />
-              <Label className="font-medium text-base">Target Audience</Label>
-            </div>
-            {isEditing ? (
-              <Textarea 
-                value={currentAudience} 
-                onChange={(e) => setEditedItem({...editedItem, audience: e.target.value})}
-                placeholder="Describe the target audience"
-                className="min-h-[60px]"
-              />
-            ) : (
-              <div className="text-sm p-2 bg-muted rounded-md">
-                {currentAudience || 'Not specified'}
-              </div>
-            )}
-          </div>
+        <Tabs defaultValue="details" className="mt-6">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="performance">Performance Scores</TabsTrigger>
+            <TabsTrigger value="details">Content Details</TabsTrigger>
+            <TabsTrigger value="characteristics">Characteristics</TabsTrigger>
+            <TabsTrigger value="areas">Areas to Improve</TabsTrigger>
+          </TabsList>
           
-          <div className="grid gap-2">
-            <div className="flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-muted-foreground" />
-              <Label className="font-medium text-base">Objective</Label>
-            </div>
-            {isEditing ? (
-              <Textarea 
-                value={currentObjective} 
-                onChange={(e) => setEditedItem({...editedItem, objective: e.target.value})}
-                placeholder="Define the content objective"
-                className="min-h-[60px]"
-              />
-            ) : (
-              <div className="text-sm p-2 bg-muted rounded-md">
-                {currentObjective || 'Not specified'}
-              </div>
-            )}
-          </div>
+          {/* Performance Scores Tab */}
+          <TabsContent value="performance" className="mt-4">
+            <Card>
+              <CardContent className="p-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-4">
+                    <h3 className="font-medium text-lg">Content Scores</h3>
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-sm text-muted-foreground">Quality Score</span>
+                        <span className="font-medium">{item.qualityScore || 0}/100</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <h3 className="font-medium text-lg">Campaign Alignment</h3>
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-sm text-muted-foreground">Overall Effectiveness</span>
+                        <span className="font-medium">{item.campaignScores?.overallEffectiveness || 0}%</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-muted-foreground">Strategic Alignment</span>
+                        <span className="font-medium">{item.campaignScores?.strategicAlignment || 0}%</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-muted-foreground">Customer Alignment</span>
+                        <span className="font-medium">{item.campaignScores?.customerAlignment || 0}%</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-muted-foreground">Content Effectiveness</span>
+                        <span className="font-medium">{item.campaignScores?.contentEffectiveness || 0}%</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
           
-          <div className="grid gap-2">
-            <div className="flex items-center gap-2">
-              <InfoIcon className="h-5 w-5 text-muted-foreground" />
-              <Label className="font-medium text-base">KPIs</Label>
-            </div>
-            {isEditing ? (
-              <div className="space-y-2">
-                <ul className="list-disc ml-5 space-y-1">
-                  {currentKpis.map((kpi, index) => (
-                    <li key={index} className="flex items-center justify-between">
-                      <span>{kpi}</span>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={() => handleRemoveKpi(index)}
-                        className="h-6 px-2 text-destructive"
-                      >
-                        Remove
-                      </Button>
-                    </li>
-                  ))}
-                </ul>
-                <div className="flex gap-2 mt-2">
-                  <Input 
-                    value={kpiInput} 
-                    onChange={(e) => setKpiInput(e.target.value)}
-                    placeholder="Add new KPI"
-                    className="flex-1"
-                    onKeyDown={(e) => e.key === 'Enter' && handleAddKpi()}
+          {/* Content Details Tab */}
+          <TabsContent value="details" className="mt-4">
+            <Card>
+              <CardContent className="p-6 space-y-6">
+                {/* Content Objectives */}
+                <div className="space-y-2">
+                  <h3 className="text-lg font-medium flex items-center gap-2">
+                    <Target className="w-5 h-5 text-primary" />
+                    Content Objectives
+                  </h3>
+                  <p className="text-sm text-muted-foreground bg-muted/30 p-3 rounded-md border">
+                    {item.contentObjectives || item.objective || "No objectives specified."}
+                  </p>
+                </div>
+
+                {/* Metadata Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                  <DetailItem
+                    icon={<FileText className="w-3.5 h-3.5" />}
+                    label="Format"
+                    value={item.format}
                   />
-                  <Button 
-                    onClick={handleAddKpi}
-                    disabled={!kpiInput.trim()}
-                    size="sm"
-                  >
-                    Add
-                  </Button>
+                  <DetailItem
+                    icon={<Type className="w-3.5 h-3.5" />}
+                    label="Type"
+                    value={item.type}
+                  />
+                  <DetailItem
+                    icon={<Users className="w-3.5 h-3.5" />}
+                    label="Audience"
+                    value={item.audience}
+                  />
+                  <DetailItem
+                    icon={<Info className="w-3.5 h-3.5" />}
+                    label="Status"
+                    value={item.status}
+                  />
+                  <DetailItem
+                    icon={<Briefcase className="w-3.5 h-3.5" />}
+                    label="Campaign"
+                    value={item.campaignAlignedTo || item.campaign}
+                  />
+                  <DetailItem
+                    icon={<Building2 className="w-3.5 h-3.5" />}
+                    label="Agency"
+                    value={item.agency || (item.agencies && item.agencies[0])}
+                  />
+                  <DetailItem
+                    icon={<Target className="w-3.5 h-3.5" />}
+                    label="Strategy Alignment"
+                    value={item.strategyAlignedTo || item.strategicObjective}
+                  />
+                  <DetailItem
+                    icon={<BarChart3 className="w-3.5 h-3.5" />}
+                    label="Funnel Alignment"
+                    value={item.funnelAlignment}
+                  />
+                  <DetailItem
+                    icon={<Calendar className="w-3.5 h-3.5" />}
+                    label="Created On"
+                    value={formatDate(item.createdAt)}
+                  />
+                  <DetailItem
+                    icon={<Clock className="w-3.5 h-3.5" />}
+                    label="Expiry Date"
+                    value={formatDate(item.expiryDate)}
+                  />
+                  <DetailItem
+                    icon={<AlertCircle className="w-3.5 h-3.5" />}
+                    label="Last Updated"
+                    value={formatDate(item.updatedAt)}
+                  />
+                  <DetailItem
+                    icon={<DollarSign className="w-3.5 h-3.5" />}
+                    label="Cost"
+                    value={formatCurrency(item.cost)}
+                  />
                 </div>
-              </div>
-            ) : (
-              <div className="text-sm p-2 bg-muted rounded-md">
-                {hasKpis 
-                  ? (
-                    <ul className="list-disc pl-5">
-                      {currentKpis.map((kpi, index) => (
-                        <li key={index}>{kpi}</li>
-                      ))}
-                    </ul>
-                  ) 
-                  : 'Not specified'
-                }
-              </div>
-            )}
-          </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
           
-          <div className="grid gap-2">
-            <div className="flex items-center gap-2">
-              <DollarSign className="h-5 w-5 text-muted-foreground" />
-              <Label className="font-medium text-base">Cost</Label>
+          {/* Characteristics Tab */}
+          <TabsContent value="characteristics" className="mt-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {item.characteristics && item.characteristics.length > 0 ? (
+                item.characteristics.map((characteristic) => (
+                  <CharacteristicCard
+                    key={characteristic.id}
+                    icon={getCharacteristicIcon(characteristic.check_name)}
+                    label={characteristic.check_name || 'Unknown Characteristic'}
+                    value={characteristic.score_value || 0}
+                    comments={characteristic.comments}
+                  />
+                ))
+              ) : (
+                <Card className="col-span-full text-center py-6 bg-muted/50">
+                  <CardContent>
+                    <h3 className="font-medium mb-1">No Characteristics Data</h3>
+                    <p className="text-sm text-muted-foreground">
+                      No content characteristics found in analysis results.
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
             </div>
-            {isEditing ? (
-              <Input 
-                type="number"
-                value={currentCost || ''} 
-                onChange={(e) => setEditedItem({...editedItem, cost: parseFloat(e.target.value) || undefined})}
-                placeholder="Enter cost amount"
-              />
-            ) : (
-              <div className="text-sm p-2 bg-muted rounded-md font-mono">
-                {formatCurrency(currentCost)}
-              </div>
-            )}
-          </div>
+          </TabsContent>
           
-          <div className="grid gap-2">
-            <Label className="font-medium text-base">Agency</Label>
-            {isEditing ? (
-              <Input 
-                value={currentAgency} 
-                onChange={(e) => setEditedItem({...editedItem, agency: e.target.value})}
-                placeholder="Assign agency"
-              />
-            ) : (
-              <div className="flex justify-between items-center">
-                <div className="text-sm p-2 bg-muted rounded-md flex-1">
-                  {currentAgency || 'Not assigned'}
-                </div>
-                {!isEditing && !currentAgency && (
-                  <Button 
-                    variant="outline" 
-                    className="ml-2"
-                    onClick={() => setIsEditing(true)}
-                  >
-                    Assign Agency
-                  </Button>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
+          {/* Areas to Improve Tab */}
+          <TabsContent value="areas" className="mt-4">
+            <div className="space-y-4">
+              {item.areasToImprove && item.areasToImprove.length > 0 ? (
+                <>
+                  <h3 className="text-lg font-medium mb-3">Recommended Improvements</h3>
+                  <div className="grid grid-cols-1 gap-4">
+                    {item.areasToImprove.map((improvement, index) => {
+                      // Determine priority based on score
+                      const scoreValue = improvement.score_value || 0;
+                      let priority: 'high' | 'medium' | 'low' = 'medium';
+                      if (scoreValue < 50) priority = 'high';
+                      else if (scoreValue >= 70) priority = 'low';
+                      
+                      return (
+                        <ImprovementArea
+                          key={improvement.id}
+                          id={improvement.id}
+                          title={improvement.check_name || `Improvement Area ${index + 1}`}
+                          description={improvement.fix_recommendation || "No specific recommendation provided."}
+                          priority={priority}
+                        />
+                      );
+                    })}
+                  </div>
+                </>
+              ) : (
+                <Card className="text-center py-6 bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-900/50">
+                  <CardContent>
+                    <h3 className="text-emerald-600 font-medium mb-1">
+                      Great job! No significant improvements needed.
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      This content meets or exceeds all quality standards.
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );

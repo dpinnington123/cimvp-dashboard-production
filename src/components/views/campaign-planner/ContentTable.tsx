@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -41,6 +42,8 @@ const ContentTable: React.FC<ContentTableProps> = ({
     format: '',
     type: '',
   });
+  
+  const navigate = useNavigate();
   
   // Hook for updating content status
   const updateContentStatus = useUpdateContentStatus();
@@ -104,7 +107,7 @@ const ContentTable: React.FC<ContentTableProps> = ({
             onFilterChange={setFilters} 
             showCampaignFilter={false}
           />
-          <Button onClick={() => setAddContentOpen(true)}>
+          <Button onClick={() => navigate('/process-content')}>
             <FilePlus className="mr-2 h-4 w-4" />
             Add Content
           </Button>

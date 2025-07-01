@@ -33,7 +33,20 @@ export const CampaignPlannerPage = () => {
           strategicAlignment: item.scores?.strategic || 0, // Now populated from database
           customerAlignment: item.scores?.customer || 0, // Now populated from database
           contentEffectiveness: item.scores?.execution || 0, // Now populated from database
-        }
+        },
+        // Map additional fields from content table
+        contentObjectives: item.contentObjectives,
+        strategyAlignedTo: item.strategyAlignedTo,
+        campaignAlignedTo: item.campaignAlignedTo,
+        funnelAlignment: item.funnelAlignment,
+        expiryDate: item.expiryDate,
+        agency: item.agency,
+        createdAt: item.created_at,
+        updatedAt: item.updated_at,
+        // Map scores data
+        scores: item.scores,
+        characteristics: item.characteristics,
+        areasToImprove: item.areasToImprove
       };
     });
   }, [brandData, selectedBrand]);
