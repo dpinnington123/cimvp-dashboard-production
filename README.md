@@ -1,74 +1,96 @@
-# React + TypeScript + Vite
+# Change Influence MVP Dashboard
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A comprehensive content management and analytics platform for brand strategy and campaign planning.
 
-Currently, two official plugins are available:
+## Tech Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Frontend**: React 19 + TypeScript 5.7 + Vite 6.0
+- **Backend**: Supabase (PostgreSQL + Auth + Storage)
+- **Styling**: Tailwind CSS v4 + shadcn/ui
+- **State Management**: TanStack Query v5 + React Context
 
-## Deployment on Vercel
+## Getting Started
 
-This project is configured for deployment on Vercel. Follow these steps to deploy:
+### Prerequisites
 
-1. **Environment Setup**:
-   - Copy `env.example` to `.env.local` for local development
-   - Add your Supabase URL and anonymous key to `.env.local`
-   - In Vercel, add the same environment variables in the project settings
+- Node.js 18+ and Yarn
+- Supabase account and project
 
-2. **Deployment Steps**:
-   - Push your code to GitHub/GitLab/Bitbucket
-   - Import the repository in Vercel
-   - Vercel will automatically detect the Vite configuration
-   - Ensure the build command is set to `yarn build` and output directory to `dist`
-   - Deploy!
+### Installation
 
-3. **Client-Side Routing**:
-   - A `vercel.json` file is included to handle React Router navigation
-   - All routes will be redirected to index.html for client-side routing
+1. Clone the repository
+2. Install dependencies:
+   ```bash
+   yarn install
+   ```
 
-## Expanding the ESLint configuration
+3. Set up environment variables:
+   ```bash
+   cp env.example .env.local
+   ```
+   
+4. Update `.env.local` with your Supabase credentials:
+   ```
+   VITE_SUPABASE_URL=your-supabase-url
+   VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
+   ```
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+5. Start the development server:
+   ```bash
+   yarn dev
+   ```
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+## Development
+
+### Available Scripts
+
+- `yarn dev` - Start development server
+- `yarn build` - Build for production
+- `yarn build:with-types` - Build with TypeScript checking
+- `yarn preview` - Preview production build
+- `yarn lint` - Run ESLint
+
+### Project Structure
+
+```
+src/
+├── components/      # UI components
+├── contexts/        # React Context providers
+├── hooks/           # Custom React hooks
+├── lib/             # Utilities and Supabase client
+├── pages/           # Route pages
+├── services/        # API service layer
+├── types/           # TypeScript definitions
+└── utils/           # Utility functions
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Features
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+- **Brand Management**: Create and manage multiple brands
+- **Strategic Planning**: Define objectives, messages, and target audiences
+- **Campaign Planning**: Plan and track marketing campaigns
+- **Content Analysis**: Upload and analyze content effectiveness
+- **Market Intelligence**: Competitor analysis and market insights
+- **Export Capabilities**: Export data as PDF or PowerPoint
 
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
-```
+## Deployment
+
+### Vercel Deployment
+
+1. Push code to GitHub
+2. Import repository in Vercel
+3. Add environment variables in Vercel project settings
+4. Deploy
+
+The project includes `vercel.json` for proper client-side routing configuration.
+
+## Documentation
+
+For detailed developer documentation, see the `/docs` directory:
+- [Developer Guide](./docs/guides/DEVELOPER_GUIDE.md)
+- [Service Layer Guide](./docs/guides/SERVICE_LAYER_GUIDE.md)
+- [Authentication & Security Guide](./docs/guides/AUTHENTICATION_SECURITY_GUIDE.md)
+
+## License
+
+Proprietary - All rights reserved
