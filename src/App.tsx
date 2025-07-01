@@ -6,7 +6,6 @@ import AuthProvider, { useAuth } from './hooks/useAuth';
 import LoadingSpinner from './components/common/LoadingSpinner';
 import { BrandProvider } from './contexts/BrandContext';
 import { EnvironmentCheck } from './components/common/EnvironmentCheck';
-import { DebugInfo } from './components/common/DebugInfo';
 
 // Keep DashboardLayout as a regular import since it's used everywhere
 import DashboardLayout from './components/layout/DashboardLayout';
@@ -85,7 +84,6 @@ function AppRoutes() {
   return (
     <Suspense fallback={<LoadingSpinner />}>
       <EnvironmentCheck />
-      <DebugInfo />
       <Routes>
         {/* Public Routes */}
         <Route path="/login" element={<LoginPage />} />
