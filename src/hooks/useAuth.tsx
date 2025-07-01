@@ -2,6 +2,7 @@ import { useState, useEffect, createContext, useContext, ReactNode } from 'react
 import { Session, User, AuthError, SignInWithPasswordCredentials } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabaseClient';
 import React from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface AuthContextType {
   session: Session | null;
@@ -26,6 +27,7 @@ export default function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [emailVerified, setEmailVerified] = useState(false);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     const setData = async (sessionData: Session | null) => {
@@ -48,22 +50,30 @@ export default function AuthProvider({ children }: AuthProviderProps) {
     });
 
     // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, sessionData) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, sessionData) => {
       setData(sessionData);
+      
+      // Invalidate all queries when auth state changes to force fresh data
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        await queryClient.invalidateQueries();
+      }
     });
 
     // Cleanup subscription on unmount
     return () => {
       subscription?.unsubscribe();
     };
-  }, []);
+  }, [queryClient]);
 
   const signInWithPassword = async (credentials: SignInWithPasswordCredentials) => {
       setLoading(true);
-      const { error } = await supabase.auth.signInWithPassword(credentials);
+      const { error, data } = await supabase.auth.signInWithPassword(credentials);
       if (error) {
           console.error('Sign in error:', error);
           setLoading(false);
+      } else if (data.session) {
+          // Immediately invalidate all queries after successful sign in
+          await queryClient.invalidateQueries();
       }
       return { error };
   };

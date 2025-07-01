@@ -54,7 +54,29 @@ const EMPTY_BRAND_DATA: BrandData = {
     website: { overall: 0, strategic: 0, customer: 0, execution: 0 },
     digital: { overall: 0, strategic: 0, customer: 0, execution: 0 }
   },
-  funnelData: []
+  funnelData: [],
+  // Add all optional fields to prevent undefined errors
+  marketAnalysis: {
+    marketSize: '',
+    growthRate: '',
+    keyTrends: [],
+    opportunities: [],
+    threats: []
+  },
+  customerAnalysis: {
+    segments: [],
+    insights: []
+  },
+  personas: [],
+  performanceTimeData: [],
+  customer_segments: [],
+  customer_journey: [],
+  market_analysis: {
+    market_size: '',
+    growth_rate: '',
+    analysis_year: new Date().getFullYear()
+  },
+  competitors: []
 };
 
 export const DatabaseBrandProvider = ({ children }: BrandProviderProps) => {

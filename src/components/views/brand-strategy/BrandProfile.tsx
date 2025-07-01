@@ -666,13 +666,13 @@ const BrandProfile = () => {
               <TableRow>
                 <TableHead className="w-1/5">Characteristic</TableHead>
                 <TableHead className="w-1/5">{brandData.profile.name}</TableHead>
-                {brandData.competitors.slice(0, 3).map((competitor, index) => (
+                {(brandData.competitors || []).slice(0, 3).map((competitor, index) => (
                   <TableHead key={competitor.id || index} className="w-1/5">
                     {competitor.name}
                   </TableHead>
                 ))}
                 {/* Fill empty columns if less than 3 competitors */}
-                {Array.from({ length: Math.max(0, 3 - brandData.competitors.length) }).map((_, index) => (
+                {Array.from({ length: Math.max(0, 3 - (brandData.competitors?.length || 0)) }).map((_, index) => (
                   <TableHead key={`empty-${index}`} className="w-1/5 text-gray-400">
                     -
                   </TableHead>
@@ -712,7 +712,7 @@ const BrandProfile = () => {
                       </span>
                     )}
                   </TableCell>
-                  {brandData.competitors.slice(0, 3).map((competitor) => (
+                  {(brandData.competitors || []).slice(0, 3).map((competitor) => (
                     <TableCell key={competitor.id}>
                       {editingProfile ? (
                         <Select
@@ -742,7 +742,7 @@ const BrandProfile = () => {
                     </TableCell>
                   ))}
                   {/* Fill empty cells if less than 3 competitors */}
-                  {Array.from({ length: Math.max(0, 3 - brandData.competitors.length) }).map((_, index) => (
+                  {Array.from({ length: Math.max(0, 3 - (brandData.competitors?.length || 0)) }).map((_, index) => (
                     <TableCell key={`empty-${index}`} className="text-gray-400">
                       -
                     </TableCell>
