@@ -2,7 +2,6 @@ import { useState, useEffect, createContext, useContext, ReactNode } from 'react
 import { Session, User, AuthError, SignInWithPasswordCredentials } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabaseClient';
 import React from 'react';
-import { QueryClient } from '@tanstack/react-query';
 
 interface AuthContextType {
   session: Session | null;
@@ -20,13 +19,6 @@ const AuthContext = React.createContext<AuthContextType | undefined>(undefined);
 
 interface AuthProviderProps {
   children: React.ReactNode;
-}
-
-// Create a global query client instance that can be accessed by auth
-let globalQueryClient: QueryClient | null = null;
-
-export function setGlobalQueryClient(client: QueryClient) {
-  globalQueryClient = client;
 }
 
 export default function AuthProvider({ children }: AuthProviderProps) {
@@ -59,10 +51,8 @@ export default function AuthProvider({ children }: AuthProviderProps) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, sessionData) => {
       setData(sessionData);
       
-      // Invalidate all queries when auth state changes to force fresh data
-      if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && globalQueryClient) {
-        await globalQueryClient.invalidateQueries();
-      }
+      // Log auth state changes for debugging
+      console.log('Auth state changed:', event);
     });
 
     // Cleanup subscription on unmount
@@ -78,10 +68,7 @@ export default function AuthProvider({ children }: AuthProviderProps) {
           console.error('Sign in error:', error);
           setLoading(false);
       } else if (data.session) {
-          // Immediately invalidate all queries after successful sign in
-          if (globalQueryClient) {
-            await globalQueryClient.invalidateQueries();
-          }
+          console.log('Sign in successful');
       }
       return { error };
   };

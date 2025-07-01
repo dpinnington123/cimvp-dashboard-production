@@ -36,34 +36,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     storageKey: 'change-influence-auth',
     autoRefreshToken: true,
     detectSessionInUrl: true,
-    flowType: 'pkce', // Use PKCE flow for better security
-    debug: true, // Enable debug even in production temporarily
-  },
-  global: {
-    headers: {
-      'x-application-name': 'change-influence-dashboard',
-    },
-    fetch: (url, options = {}) => {
-      // Log all Supabase requests
-      console.log('🌐 Supabase request:', url);
-      
-      // Add timeout to fetch
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
-      
-      return fetch(url, {
-        ...options,
-        signal: controller.signal,
-      }).then(response => {
-        clearTimeout(timeoutId);
-        console.log('📡 Supabase response:', response.status, url);
-        return response;
-      }).catch(error => {
-        clearTimeout(timeoutId);
-        console.error('❌ Supabase fetch error:', error, url);
-        throw error;
-      });
-    },
+    flowType: 'implicit', // Changed from 'pkce' to 'implicit' - PKCE seems to be causing issues in production
   },
 });
 
