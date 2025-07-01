@@ -2,7 +2,7 @@ import { useState, useEffect, createContext, useContext, ReactNode } from 'react
 import { Session, User, AuthError, SignInWithPasswordCredentials } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabaseClient';
 import React from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { QueryClient } from '@tanstack/react-query';
 
 interface AuthContextType {
   session: Session | null;
@@ -22,12 +22,18 @@ interface AuthProviderProps {
   children: React.ReactNode;
 }
 
+// Create a global query client instance that can be accessed by auth
+let globalQueryClient: QueryClient | null = null;
+
+export function setGlobalQueryClient(client: QueryClient) {
+  globalQueryClient = client;
+}
+
 export default function AuthProvider({ children }: AuthProviderProps) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [emailVerified, setEmailVerified] = useState(false);
-  const queryClient = useQueryClient();
 
   useEffect(() => {
     const setData = async (sessionData: Session | null) => {
@@ -54,8 +60,8 @@ export default function AuthProvider({ children }: AuthProviderProps) {
       setData(sessionData);
       
       // Invalidate all queries when auth state changes to force fresh data
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-        await queryClient.invalidateQueries();
+      if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && globalQueryClient) {
+        await globalQueryClient.invalidateQueries();
       }
     });
 
@@ -63,7 +69,7 @@ export default function AuthProvider({ children }: AuthProviderProps) {
     return () => {
       subscription?.unsubscribe();
     };
-  }, [queryClient]);
+  }, []);
 
   const signInWithPassword = async (credentials: SignInWithPasswordCredentials) => {
       setLoading(true);
@@ -73,7 +79,9 @@ export default function AuthProvider({ children }: AuthProviderProps) {
           setLoading(false);
       } else if (data.session) {
           // Immediately invalidate all queries after successful sign in
-          await queryClient.invalidateQueries();
+          if (globalQueryClient) {
+            await globalQueryClient.invalidateQueries();
+          }
       }
       return { error };
   };
