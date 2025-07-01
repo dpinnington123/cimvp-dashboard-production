@@ -6,7 +6,10 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 // Basic check to ensure variables are loaded
 if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Supabase URL and Anon Key must be defined in .env.local');
+  console.error('⚠️ Supabase environment variables missing!');
+  console.error('VITE_SUPABASE_URL:', supabaseUrl ? '✓ Set' : '✗ Missing');
+  console.error('VITE_SUPABASE_ANON_KEY:', supabaseAnonKey ? '✓ Set' : '✗ Missing');
+  throw new Error('Supabase URL and Anon Key must be defined in environment variables');
 }
 
 // Create and export the Supabase client with explicit session persistence

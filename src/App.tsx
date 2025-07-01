@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/sonner";
 import AuthProvider, { useAuth } from './hooks/useAuth';
 import LoadingSpinner from './components/common/LoadingSpinner';
 import { BrandProvider } from './contexts/BrandContext';
+import { EnvironmentCheck } from './components/common/EnvironmentCheck';
 
 // Keep DashboardLayout as a regular import since it's used everywhere
 import DashboardLayout from './components/layout/DashboardLayout';
@@ -82,6 +83,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 function AppRoutes() {
   return (
     <Suspense fallback={<LoadingSpinner />}>
+      <EnvironmentCheck />
       <Routes>
         {/* Public Routes */}
         <Route path="/login" element={<LoginPage />} />

@@ -88,8 +88,8 @@ export const DatabaseBrandProvider = ({ children }: BrandProviderProps) => {
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
     enabled: !!selectedBrand,
-    retry: 3,
-    retryDelay: 1000,
+    retry: USE_DATABASE_BRANDS ? 3 : 0,
+    retryDelay: USE_DATABASE_BRANDS ? 1000 : 0,
   });
 
   const availableBrands = useMemo(() => 
