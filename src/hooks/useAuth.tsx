@@ -107,7 +107,14 @@ export default function AuthProvider({ children }: AuthProviderProps) {
       
       // Proceed with sign out since we have a session
       console.log('🔐 Attempting to sign out with active session');
-      const { error } = await supabase.auth.signOut();
+      
+      // Add timeout to signOut
+      const signOutPromise = supabase.auth.signOut();
+      const timeoutPromise = new Promise<{ error: AuthError }>((resolve) => 
+        setTimeout(() => resolve({ error: new Error('Sign out timeout after 5s') as AuthError }), 5000)
+      );
+      
+      const { error } = await Promise.race([signOutPromise, timeoutPromise]);
       
       if(error) {
         console.error('Sign out error:', error);

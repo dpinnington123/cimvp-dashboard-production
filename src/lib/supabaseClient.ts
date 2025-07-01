@@ -46,13 +46,41 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   },
 });
 
-// Add a connection test
-supabase.auth.getSession().then(({ data, error }) => {
-  if (error) {
-    console.error('❌ Initial Supabase connection test failed:', error.message);
-  } else {
-    console.log('✅ Supabase connection established, session:', !!data.session);
+// Add a connection test with timeout
+const testConnection = async () => {
+  const timeoutPromise = new Promise((_, reject) => 
+    setTimeout(() => reject(new Error('Connection timeout after 5s')), 5000)
+  );
+  
+  try {
+    const result = await Promise.race([
+      supabase.auth.getSession(),
+      timeoutPromise
+    ]);
+    
+    if ('error' in result && result.error) {
+      console.error('❌ Initial Supabase connection test failed:', result.error.message);
+      console.error('Error details:', result.error);
+    } else if ('data' in result) {
+      console.log('✅ Supabase connection established, session:', !!result.data.session);
+    }
+  } catch (err: any) {
+    console.error('❌ Failed to test Supabase connection:', err.message);
+    console.error('This usually indicates a CORS or network issue');
+    
+    // Try a simple fetch to the Supabase URL to test connectivity
+    try {
+      const response = await fetch(`${supabaseUrl}/auth/v1/health`, {
+        method: 'GET',
+        headers: {
+          'apikey': supabaseAnonKey,
+        }
+      });
+      console.log('Direct API health check status:', response.status);
+    } catch (fetchErr) {
+      console.error('Direct API call also failed:', fetchErr);
+    }
   }
-}).catch(err => {
-  console.error('❌ Failed to test Supabase connection:', err);
-}); 
+};
+
+testConnection(); 

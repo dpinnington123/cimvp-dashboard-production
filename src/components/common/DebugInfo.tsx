@@ -7,25 +7,32 @@ export function DebugInfo() {
   const [dbTest, setDbTest] = useState<{ status: string; error?: string }>({ status: 'testing...' });
   
   useEffect(() => {
-    // Test database connection
+    // Test database connection with timeout
     const testConnection = async () => {
       try {
         console.log('🔍 Testing database connection...');
-        const { data, error } = await supabase
-          .from('brands')
-          .select('count')
-          .limit(1);
-          
-        if (error) {
-          console.error('❌ Database test failed:', error);
-          setDbTest({ status: 'failed', error: error.message });
+        
+        // Create a timeout promise
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Database query timeout after 5s')), 5000)
+        );
+        
+        // Race between the query and timeout
+        const result = await Promise.race([
+          supabase.from('brands').select('count').limit(1),
+          timeoutPromise
+        ]) as any;
+        
+        if (result.error) {
+          console.error('❌ Database test failed:', result.error);
+          setDbTest({ status: 'failed', error: result.error.message });
         } else {
           console.log('✅ Database test successful');
           setDbTest({ status: 'success' });
         }
       } catch (err: any) {
         console.error('❌ Database test exception:', err);
-        setDbTest({ status: 'error', error: err.message });
+        setDbTest({ status: 'timeout', error: err.message });
       }
     };
     
