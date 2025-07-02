@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, ReactNode, useMemo, useRef 
 import { useQuery } from '@tanstack/react-query';
 import { brandService } from '@/services/brandService';
 import type { BrandData } from '@/types/brand';
+import { useAuth } from '@/hooks/useAuth';
 
 // Feature flag to enable database brands
 const USE_DATABASE_BRANDS = import.meta.env.VITE_USE_DATABASE_BRANDS === 'true';
@@ -82,6 +83,10 @@ const EMPTY_BRAND_DATA: BrandData = {
 export const DatabaseBrandProvider = ({ children }: BrandProviderProps) => {
   const [selectedBrand, setSelectedBrand] = useState<string>('eco-solutions');
   const [selectedRegion, setSelectedRegion] = useState<string>('North America');
+  const { session } = useAuth();
+
+  // Only fetch data when user is authenticated
+  const isAuthenticated = !!session;
 
   // Fetch available brands
   const { data: brands = [], isLoading: brandsLoading } = useQuery({
@@ -89,6 +94,7 @@ export const DatabaseBrandProvider = ({ children }: BrandProviderProps) => {
     queryFn: brandService.getAllBrands,
     staleTime: 15 * 60 * 1000, // 15 minutes
     gcTime: 30 * 60 * 1000, // 30 minutes
+    enabled: isAuthenticated, // Only fetch when authenticated
   });
 
   // Fetch available regions
@@ -97,6 +103,7 @@ export const DatabaseBrandProvider = ({ children }: BrandProviderProps) => {
     queryFn: brandService.getAllRegions,
     staleTime: 15 * 60 * 1000, // 15 minutes
     gcTime: 30 * 60 * 1000, // 30 minutes
+    enabled: isAuthenticated, // Only fetch when authenticated
   });
 
   // Fetch selected brand data
@@ -109,7 +116,7 @@ export const DatabaseBrandProvider = ({ children }: BrandProviderProps) => {
     queryFn: () => brandService.getBrandWithFullData(selectedBrand),
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
-    enabled: !!selectedBrand,
+    enabled: !!selectedBrand && isAuthenticated, // Only fetch when authenticated
     retry: USE_DATABASE_BRANDS ? 3 : 0,
     retryDelay: USE_DATABASE_BRANDS ? 1000 : 0,
   });
