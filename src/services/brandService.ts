@@ -430,7 +430,21 @@ class BrandService {
           opportunities: journey.opportunities || []
         }))
       } : undefined,
-      personas: dbData.personas || [],
+      personas: (dbData.personas || []).map((persona: any) => {
+        // If persona already has scores, use them; otherwise add default scores
+        if (!persona.scores) {
+          return {
+            ...persona,
+            scores: {
+              overall: 0,
+              strategic: 0,
+              customer: 0,
+              execution: 0
+            }
+          };
+        }
+        return persona;
+      }),
       performanceTimeData: (dbData.performance_history || []).map((history: any) => ({
         month: history.month,
         year: history.year,

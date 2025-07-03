@@ -33,7 +33,17 @@ const iconMap = {
   BadgeCheck: BadgeCheck,
 };
 
-export function CustomerEngagementSection({ engagementScores, personas }: CustomerEngagementSectionProps) {
+export function CustomerEngagementSection({ engagementScores, personas = [] }: CustomerEngagementSectionProps) {
+  // Filter out personas without scores and add default scores if needed
+  const validPersonas = personas.filter(p => p).map(persona => ({
+    ...persona,
+    scores: persona.scores || {
+      overall: 0,
+      strategic: 0,
+      customer: 0,
+      execution: 0
+    }
+  }));
   const getScoreClass = (score: number) => {
     if (score >= 85) return "text-score-excellent";
     if (score >= 70) return "text-score-good";
@@ -52,7 +62,7 @@ export function CustomerEngagementSection({ engagementScores, personas }: Custom
     <div className="space-y-6">
       {/* Personas */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {personas.map((persona, index) => {
+        {validPersonas.map((persona, index) => {
           const IconComponent = iconMap[persona.icon];
           return (
             <Card key={index} className="h-full">
