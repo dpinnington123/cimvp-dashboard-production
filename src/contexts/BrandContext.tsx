@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode, useMemo, useRef } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { brandService } from '@/services/brandService';
 import type { BrandData } from '@/types/brand';
@@ -81,29 +81,38 @@ const EMPTY_BRAND_DATA: BrandData = {
 };
 
 export const DatabaseBrandProvider = ({ children }: BrandProviderProps) => {
-  const [selectedBrand, setSelectedBrand] = useState<string>('eco-solutions');
+  const [selectedBrand, setSelectedBrand] = useState<string>('');
   const [selectedRegion, setSelectedRegion] = useState<string>('North America');
-  const { session } = useAuth();
+  const { session, user } = useAuth();
 
   // Only fetch data when user is authenticated
   const isAuthenticated = !!session;
+  const userId = user?.id;
+
+  // Reset selected brand when user changes
+  useEffect(() => {
+    if (!userId) {
+      // Clear selection when user logs out
+      setSelectedBrand('');
+    }
+  }, [userId]);
 
   // Fetch available brands
   const { data: brands = [], isLoading: brandsLoading } = useQuery({
-    queryKey: ['brands'],
+    queryKey: ['brands', userId], // Include user ID to prevent cross-user cache hits
     queryFn: brandService.getAllBrands,
     staleTime: 15 * 60 * 1000, // 15 minutes
     gcTime: 30 * 60 * 1000, // 30 minutes
-    enabled: isAuthenticated, // Only fetch when authenticated
+    enabled: isAuthenticated && !!userId, // Only fetch when authenticated with user ID
   });
 
   // Fetch available regions
   const { data: regionsData = [], isLoading: regionsLoading } = useQuery({
-    queryKey: ['regions'],
+    queryKey: ['regions', userId], // Include user ID to prevent cross-user cache hits
     queryFn: brandService.getAllRegions,
     staleTime: 15 * 60 * 1000, // 15 minutes
     gcTime: 30 * 60 * 1000, // 30 minutes
-    enabled: isAuthenticated, // Only fetch when authenticated
+    enabled: isAuthenticated && !!userId, // Only fetch when authenticated with user ID
   });
 
   // Fetch selected brand data
@@ -112,11 +121,11 @@ export const DatabaseBrandProvider = ({ children }: BrandProviderProps) => {
     isLoading: brandDataLoading, 
     error 
   } = useQuery({
-    queryKey: ['brand', selectedBrand],
+    queryKey: ['brand', selectedBrand, userId], // Include user ID to prevent cross-user cache hits
     queryFn: () => brandService.getBrandWithFullData(selectedBrand),
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
-    enabled: !!selectedBrand && isAuthenticated, // Only fetch when authenticated
+    enabled: !!selectedBrand && isAuthenticated && !!userId, // Only fetch when authenticated with user ID
     retry: USE_DATABASE_BRANDS ? 3 : 0,
     retryDelay: USE_DATABASE_BRANDS ? 1000 : 0,
   });
@@ -125,6 +134,13 @@ export const DatabaseBrandProvider = ({ children }: BrandProviderProps) => {
     brands.map((brand) => brand.slug), 
     [brands]
   );
+
+  // Set initial brand when brands are loaded and no brand is selected
+  useEffect(() => {
+    if (availableBrands.length > 0 && !selectedBrand && userId) {
+      setSelectedBrand(availableBrands[0]);
+    }
+  }, [availableBrands, selectedBrand, userId]);
 
   const isLoading = brandsLoading || regionsLoading || brandDataLoading;
 

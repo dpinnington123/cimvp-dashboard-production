@@ -1,11 +1,12 @@
-import React, { Suspense } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import React, { Suspense, useEffect, useMemo } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useLocation, Outlet } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from "@/components/ui/sonner";
 import AuthProvider, { useAuth } from './hooks/useAuth';
 import LoadingSpinner from './components/common/LoadingSpinner';
 import { BrandProvider } from './contexts/BrandContext';
 import { EnvironmentCheck } from './components/common/EnvironmentCheck';
+import { supabase } from './lib/supabaseClient';
 
 // Keep DashboardLayout as a regular import since it's used everywhere
 import DashboardLayout from './components/layout/DashboardLayout';
@@ -42,9 +43,45 @@ const StrategyMessages = React.lazy(() => import('./pages/brand-strategy-builder
 const MarketResearch = React.lazy(() => import('./pages/brand-strategy-builder/MarketResearch.tsx'));
 const StrategyDocument = React.lazy(() => import('./pages/brand-strategy-builder/StrategyDocument.tsx'));
 
-const queryClient = new QueryClient();
-
 function App() {
+  // Create QueryClient inside component to manage it properly
+  const queryClient = useMemo(
+    () => new QueryClient({
+      defaultOptions: {
+        queries: {
+          staleTime: 5 * 60 * 1000, // 5 minutes
+          gcTime: 10 * 60 * 1000, // 10 minutes
+        },
+      },
+    }),
+    []
+  );
+
+  // Listen for auth state changes and clear cache on logout
+  useEffect(() => {
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        console.log('[Security] Auth state changed:', event);
+        
+        if (event === 'SIGNED_OUT') {
+          // CRITICAL: Clear all cached data when user signs out
+          console.log('[Security] User signed out - clearing React Query cache');
+          queryClient.clear();
+        }
+        
+        if (event === 'SIGNED_IN' && session) {
+          // Invalidate queries to ensure fresh data for new user
+          console.log('[Security] User signed in - invalidating queries');
+          queryClient.invalidateQueries();
+        }
+      }
+    );
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, [queryClient]);
+
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
@@ -78,6 +115,21 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   }
 
   return <>{children}</>;
+}
+
+// Wrapper component that forces remount when user changes
+function AuthenticatedLayout() {
+  const { user } = useAuth();
+  
+  // Key prop forces full remount when user ID changes
+  // This ensures all component state is reset on user switch
+  return (
+    <div key={user?.id || 'logged-out'}>
+      <DashboardLayout>
+        <Outlet />
+      </DashboardLayout>
+    </div>
+  );
 }
 
 function AppRoutes() {
@@ -116,7 +168,7 @@ function AppRoutes() {
         path="/dashboard"
         element={
           <ProtectedRoute>
-            <DashboardLayout />
+            <AuthenticatedLayout />
           </ProtectedRoute>
         }
       >
@@ -138,7 +190,7 @@ function AppRoutes() {
         path="/process-content"
         element={
           <ProtectedRoute>
-            <DashboardLayout />
+            <AuthenticatedLayout />
           </ProtectedRoute>
         }
       >
@@ -149,7 +201,7 @@ function AppRoutes() {
         path="/campaign-planner"
         element={
           <ProtectedRoute>
-            <DashboardLayout />
+            <AuthenticatedLayout />
           </ProtectedRoute>
         }
       >
@@ -160,7 +212,7 @@ function AppRoutes() {
         path="/brand-dashboard"
         element={
           <ProtectedRoute>
-            <DashboardLayout />
+            <AuthenticatedLayout />
           </ProtectedRoute>
         }
       >
@@ -172,7 +224,7 @@ function AppRoutes() {
         path="/content-processing"
         element={
           <ProtectedRoute>
-            <DashboardLayout />
+            <AuthenticatedLayout />
           </ProtectedRoute>
         }
       >
@@ -184,7 +236,7 @@ function AppRoutes() {
         path="/strategic-dashboard"
         element={
           <ProtectedRoute>
-            <DashboardLayout />
+            <AuthenticatedLayout />
           </ProtectedRoute>
         }
       >
@@ -195,7 +247,7 @@ function AppRoutes() {
         path="/brand-strategy"
         element={
           <ProtectedRoute>
-            <DashboardLayout />
+            <AuthenticatedLayout />
           </ProtectedRoute>
         }
       >
@@ -206,7 +258,7 @@ function AppRoutes() {
         path="/brand-strategy-builder"
         element={
           <ProtectedRoute>
-            <DashboardLayout />
+            <AuthenticatedLayout />
           </ProtectedRoute>
         }
       >
@@ -223,7 +275,7 @@ function AppRoutes() {
         path="/content-reports"
         element={
           <ProtectedRoute>
-            <DashboardLayout />
+            <AuthenticatedLayout />
           </ProtectedRoute>
         }
       >
@@ -236,7 +288,7 @@ function AppRoutes() {
         path="/tools/ai-market-research"
         element={
           <ProtectedRoute>
-            <DashboardLayout />
+            <AuthenticatedLayout />
           </ProtectedRoute>
         }
       >
@@ -247,7 +299,7 @@ function AppRoutes() {
         path="/tools/ai-message-testing"
         element={
           <ProtectedRoute>
-            <DashboardLayout />
+            <AuthenticatedLayout />
           </ProtectedRoute>
         }
       >
