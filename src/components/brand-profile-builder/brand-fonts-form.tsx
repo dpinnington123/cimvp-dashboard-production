@@ -4,7 +4,7 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Type, Heading, FileText, Sparkles } from "lucide-react"
+import { Heading, FileText, Sparkles } from "lucide-react"
 
 interface BrandFontsFormProps {
   brandFonts: {

@@ -137,7 +137,7 @@ export function BrandStyleCreator() {
       try {
         const imported = JSON.parse(e.target?.result as string)
         setBrandStyle(imported)
-      } catch (error) {
+      } catch {
         console.error('Invalid file format')
       }
     }

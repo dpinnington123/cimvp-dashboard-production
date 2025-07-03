@@ -2,13 +2,10 @@
 // Type definitions for company-level aggregated data
 
 import { 
-  BrandProfile, 
   Campaign, 
   ContentItem, 
   ChannelScores, 
-  FunnelStep, 
-  MarketAnalysis, 
-  CustomerAnalysis 
+  FunnelStep
 } from './brand';
 
 /**

@@ -122,14 +122,15 @@ export const DatabaseBrandProvider = ({ children }: BrandProviderProps) => {
   });
 
   const availableBrands = useMemo(() => 
-    (brands as any[]).map((brand: any) => brand.slug), 
+    brands.map((brand) => brand.slug), 
     [brands]
   );
 
   const isLoading = brandsLoading || regionsLoading || brandDataLoading;
 
+
   const getBrandData = (): BrandData => {
-    if (!brandData || isLoading) {
+    if (!brandData) {
       return EMPTY_BRAND_DATA;
     }
     return brandData as BrandData;

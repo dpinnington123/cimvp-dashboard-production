@@ -18,7 +18,6 @@ import {
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -32,8 +31,30 @@ import {
 import { cn } from "@/lib/utils";
 import * as React from 'react';
 
+// Types for navigation items
+interface NavItem {
+  title: string;
+  icon: React.ComponentType;
+  path: string;
+}
+
+interface NavGroup {
+  type: 'group';
+  title: string;
+  icon: React.ComponentType;
+  headerColor: string;
+  defaultOpen: boolean;
+  items: NavItem[];
+}
+
+interface NavSingleItem extends NavItem {
+  type: 'item';
+}
+
+type NavigationItem = NavGroup | NavSingleItem;
+
 // Navigation structure with groups
-const navigationStructure = [
+const navigationStructure: NavigationItem[] = [
   {
     type: 'item',
     title: "Home",
@@ -152,9 +173,9 @@ export function AppSidebar() {
   };
 
   // Check if any child in a group is active
-  const hasActiveChild = (items: any[]) => {
+  const hasActiveChild = React.useCallback((items: NavItem[]) => {
     return items.some(item => isPathActive(item.path));
-  };
+  }, [location.pathname]);
 
   // Auto-expand groups with active children
   React.useEffect(() => {
@@ -163,9 +184,9 @@ export function AppSidebar() {
         setOpenGroups(prev => ({ ...prev, [navItem.title]: true }));
       }
     });
-  }, [location.pathname]);
+  }, [location.pathname, hasActiveChild]);
 
-  const renderMenuItem = (item: any, isNested = false) => {
+  const renderMenuItem = (item: NavItem, isNested = false) => {
     const isActive = isPathActive(item.path);
     
     return (
@@ -200,14 +221,13 @@ export function AppSidebar() {
     );
   };
 
-  const renderNavItem = (navItem: any) => {
+  const renderNavItem = (navItem: NavigationItem) => {
     if (navItem.type === 'item') {
       return renderMenuItem(navItem);
     }
 
     if (navItem.type === 'group') {
       const isOpen = openGroups[navItem.title];
-      const hasActive = navItem.items && hasActiveChild(navItem.items);
 
       return (
         <Collapsible
@@ -236,7 +256,7 @@ export function AppSidebar() {
           </CollapsibleTrigger>
           <CollapsibleContent>
             <SidebarMenu className="mt-1">
-              {navItem.items?.map((item: any) => renderMenuItem(item, true))}
+              {navItem.items?.map((item) => renderMenuItem(item, true))}
             </SidebarMenu>
           </CollapsibleContent>
         </Collapsible>

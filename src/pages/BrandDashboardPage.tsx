@@ -22,7 +22,6 @@ import {
   Star, 
   Heart, 
   Zap, 
-  AlertCircle,
   ChevronRight 
 } from "lucide-react";
 
@@ -51,8 +50,13 @@ interface ChannelScores {
 
 export default function BrandDashboardPage() {
   // Get selected brand and region from context along with the brand data
-  const { selectedBrand, selectedRegion, getBrandData } = useBrand();
+  const { selectedBrand, selectedRegion, getBrandData, isLoading, error } = useBrand();
   const brandData = getBrandData();
+
+
+  if (!brandData) {
+    return null;
+  }
 
   return (
     <div className="space-y-6 p-6 animate-in fade-in">

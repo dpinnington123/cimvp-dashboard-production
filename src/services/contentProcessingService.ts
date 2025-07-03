@@ -1,5 +1,4 @@
 import { supabase } from '@/lib/supabaseClient';
-import { ProcessedContent } from './uploadService';
 
 /**
  * Get the analysis status of a content item
@@ -76,7 +75,7 @@ export const startContentAnalysis = async (
  */
 export const getContentAnalysisResults = async (
   contentId: string
-): Promise<{ data: any | null, error: Error | null }> => {
+): Promise<{ data: unknown | null, error: Error | null }> => {
   try {
     const { data, error } = await supabase
       .from('content_analysis')
