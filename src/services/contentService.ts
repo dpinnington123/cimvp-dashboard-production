@@ -36,6 +36,20 @@ export const getContentById = async (id: number): Promise<Content | null> => { /
         customer_score,
         execution_score,
         quality_score
+      ),
+      brand_strategies!strategy_id (
+        name
+      ),
+      brand_campaigns!campaign_id (
+        name
+      ),
+      brand_audiences!audience_id (
+        name
+      ),
+      brand_objectives!objective_id (
+        id,
+        title,
+        behavioral_change
       )
     `)
     .eq('id', id)      // Use the actual column name
@@ -291,6 +305,28 @@ export const getAudienceIdByName = async (audienceName: string, brandId: string)
   if (error) {
     if (error.code === 'PGRST116') return null;
     console.error('Error looking up audience ID:', error);
+    return null;
+  }
+  
+  return data?.id || null;
+};
+
+/**
+ * Look up objective ID by title for a specific brand
+ */
+export const getObjectiveIdByName = async (objectiveTitle: string, brandId: string): Promise<string | null> => {
+  if (!objectiveTitle || !brandId) return null;
+  
+  const { data, error } = await supabase
+    .from('brand_objectives')
+    .select('id')
+    .eq('title', objectiveTitle)
+    .eq('brand_id', brandId)
+    .single();
+    
+  if (error) {
+    if (error.code === 'PGRST116') return null;
+    console.error('Error looking up objective ID:', error);
     return null;
   }
   

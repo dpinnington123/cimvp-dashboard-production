@@ -692,7 +692,7 @@ export default function ContentReportsPage() {
             contentType={contentDetails?.format}
             datePublished={contentDetails?.created_at ? new Date(contentDetails.created_at).toLocaleDateString() : null}
             duration={undefined}
-            audience={contentDetails?.audience}
+            audience={contentDetails?.brand_audiences?.name}
           />
 
           {/* Overall Score Card - Updated with new styling */}
@@ -845,7 +845,7 @@ export default function ContentReportsPage() {
                     </h3>
                     <p className="text-sm text-muted-foreground bg-muted/30 p-3 rounded-md border">
                       {/* Access the objectives field from contentDetails object */}
-                      {contentDetails?.content_objectives || "No objectives specified."}
+                      {contentDetails?.brand_objectives?.title || "No objectives specified."}
                     </p>
                   </div>
 
@@ -865,7 +865,7 @@ export default function ContentReportsPage() {
                      <DetailItem
                       icon={<UsersIcon className="w-3.5 h-3.5" />}
                       label="Audience"
-                      value={contentDetails?.audience} // Access the 'audience' field
+                      value={contentDetails?.brand_audiences?.name} // Use joined audience name
                     />
                      <DetailItem
                       icon={<InfoIcon className="w-3.5 h-3.5" />}
@@ -875,7 +875,7 @@ export default function ContentReportsPage() {
                     <DetailItem
                       icon={<BriefcaseIcon className="w-3.5 h-3.5" />}
                       label="Campaign"
-                      value={contentDetails?.campaign_aligned_to} // Access the 'campaign_aligned_to' field
+                      value={contentDetails?.brand_campaigns?.name} // Use joined campaign name
                     />
                      <DetailItem
                       icon={<Building2Icon className="w-3.5 h-3.5" />}
@@ -885,7 +885,7 @@ export default function ContentReportsPage() {
                     <DetailItem
                       icon={<TargetIcon className="w-3.5 h-3.5" />}
                       label="Strategy Alignment"
-                      value={contentDetails?.strategy_aligned_to} // Access the 'strategy_aligned_to' field
+                      value={contentDetails?.brand_strategies?.name} // Use joined strategy name
                     />
                     <DetailItem
                       icon={<BarChart3Icon className="w-3.5 h-3.5" />}

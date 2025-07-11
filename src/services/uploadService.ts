@@ -4,6 +4,7 @@ import {
   getBrandIdByName,
   getCampaignIdByName, 
   getAudienceIdByName, 
+  getObjectiveIdByName,
   getStrategyIdByName,
   getAgencyIdByName,
   getFormatIdByName,
@@ -27,6 +28,7 @@ export interface ContentMetadata {
   agency?: string;
   cost?: string;
   contentType?: string;
+  strategyAlignedTo?: string; // Strategy dropdown value
 }
 
 export interface ContentFile {
@@ -210,6 +212,7 @@ export const storeContentMetadata = async (
     let brand_id: string | null = null;
     let campaign_id: string | null = null;
     let audience_id: string | null = null;
+    let objective_id: string | null = null;
     let strategy_id: string | null = null;
     let agency_id: string | null = null;
     let format_id: string | null = null;
@@ -236,14 +239,19 @@ export const storeContentMetadata = async (
       audience_id = isUUID(metadata.audience) ? metadata.audience : await getAudienceIdByName(metadata.audience, brand_id);
     }
     
-    // Strategy ID lookup (using businessObjective field, use the resolved brand_id)
+    // Objective ID lookup (use the resolved brand_id)
     if (metadata.businessObjective) {
-      strategy_id = isUUID(metadata.businessObjective) ? metadata.businessObjective : await getStrategyIdByName(metadata.businessObjective, brand_id);
+      objective_id = isUUID(metadata.businessObjective) ? metadata.businessObjective : await getObjectiveIdByName(metadata.businessObjective, brand_id);
+    }
+    
+    // Strategy ID lookup (using strategyAlignedTo field, use the resolved brand_id)
+    if (metadata.strategyAlignedTo) {
+      strategy_id = isUUID(metadata.strategyAlignedTo) ? metadata.strategyAlignedTo : await getStrategyIdByName(metadata.strategyAlignedTo, brand_id);
       // Only use the strategy_id if it's actually found
       if (strategy_id) {
         console.log('Found strategy ID:', strategy_id);
       } else {
-        console.log('Strategy not found for:', metadata.businessObjective);
+        console.log('Strategy not found for:', metadata.strategyAlignedTo);
         strategy_id = null; // Explicitly set to null if not found
       }
     }
@@ -270,30 +278,27 @@ export const storeContentMetadata = async (
       job_id: metadata.jobId, // REQUIRED - User-provided job identifier
       brand_id: brand_id, // REQUIRED - Resolved brand UUID
       
-      // Optional text fields (keep for backward compatibility)
+      // Optional fields (removed dropped text columns)
       agency: metadata.agency || null,
-      audience: metadata.audience || null,
       bucket_id: bucketId,
-      campaign_aligned_to: metadata.campaign || null,
       client_id: userId, // Must match auth.uid()
-      content_objectives: metadata.businessObjective || null,
       expiry_date: metadata.expiryDate || null,
       file_storage_path: filePath,
       format: metadata.contentFormat || null,
       funnel_alignment: metadata.campaign || null,
-      strategy_aligned_to: metadata.businessObjective || null,
       status: 'draft',
       processing_status: 'pending', // Initial processing status
       type: metadata.contentType || null,
     };
     
-    // Only add foreign key fields if they have valid values
-    if (campaign_id) insertData.campaign_id = campaign_id;
-    if (audience_id) insertData.audience_id = audience_id;
-    if (strategy_id) insertData.strategy_id = strategy_id;
-    if (agency_id) insertData.agency_id = agency_id;
-    if (format_id) insertData.format_id = format_id;
-    if (type_id) insertData.type_id = type_id;
+    // Only add foreign key fields if they have valid UUID values
+    if (campaign_id && isUUID(campaign_id)) insertData.campaign_id = campaign_id;
+    if (audience_id && isUUID(audience_id)) insertData.audience_id = audience_id;
+    if (objective_id && isUUID(objective_id)) insertData.objective_id = objective_id;
+    if (strategy_id && isUUID(strategy_id)) insertData.strategy_id = strategy_id;
+    if (agency_id && isUUID(agency_id)) insertData.agency_id = agency_id;
+    if (format_id && isUUID(format_id)) insertData.format_id = format_id;
+    if (type_id && isUUID(type_id)) insertData.type_id = type_id;
     
     console.log('Content data being inserted:', JSON.stringify(insertData, null, 2));
     
@@ -331,7 +336,7 @@ export const storeContentMetadata = async (
     if (data?.id && metadata.brandId) {
       try {
         const brandContentData = {
-          brand_id: metadata.brandId,
+          brand_id: brand_id, // Use the resolved UUID, not the slug
           campaign_id: campaign_id, // Use the looked-up campaign ID
           content_id: data.id, // The ID of the content we just created
           name: metadata.title || 'Untitled Content',

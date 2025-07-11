@@ -61,17 +61,13 @@ function App() {
   useEffect(() => {
     const { data: authListener } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        console.log('[Security] Auth state changed:', event);
-        
         if (event === 'SIGNED_OUT') {
           // CRITICAL: Clear all cached data when user signs out
-          console.log('[Security] User signed out - clearing React Query cache');
           queryClient.clear();
         }
         
         if (event === 'SIGNED_IN' && session) {
           // Invalidate queries to ensure fresh data for new user
-          console.log('[Security] User signed in - invalidating queries');
           queryClient.invalidateQueries();
         }
       }

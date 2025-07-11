@@ -185,7 +185,8 @@ const ContentUploadForm: React.FC = () => {
         campaign: metadata.campaign_aligned_to,
         agency: metadata.agency,
         cost: "",
-        contentType: metadata.type
+        contentType: metadata.type,
+        strategyAlignedTo: metadata.strategy_aligned_to // Map strategy dropdown value
       };
       
       console.log('Mapped metadata:', mappedMetadata);
